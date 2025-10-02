@@ -20,10 +20,10 @@ Linux Users:
 Installation macros are included in the Geant4 folder to perform most of the setup. Follow these steps (adapted from Physics Matters [YouTube tutorial](https://youtu.be/4DTumUo3IKw?si=EoMsXBIljGOl0YsK)):
 1. Open a terminal and install relevent dependencies:
   
-  ```bash
-  sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev \
-  libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-dev
-  ```
+    ```bash
+    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev \
+    libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-dev
+    ```
 2. In the home user directory (~), create the file structure for the installation:
 
 	```bash
