@@ -21,15 +21,15 @@ Installation macros are included in the Geant4 folder to perform most of the set
 1. Open a terminal and install relevent dependencies:
   
     ```bash
-    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev \
-    libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-dev
+    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev  \
+    libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-dev libxerces-c-dev
     ```
 2. In the home user directory (~), create the file structure for the installation:
 
 	```bash
-	mkdir Software && cd Software && mkdir Geant4 && cd Geant4
+	mkdir Software && cd Software && mkdir GEANT4 && cd GEANT4
 	```
-3. Clone the Geant4 installer:
+3. Get the Geant4 installer:
     1. Go to the [Geant4 webpage](https://geant4.web.cern.ch/) and click Download at the top.
     2. Right-click "Download tar.gz" under "Source code" and copy the link.
     3. In your terminal, type `wget` followed by a space, then paste the download link and execute. It will look like the example below. (If you do not have `wget`, install it with `sudo apt install wget`).
@@ -40,9 +40,9 @@ Installation macros are included in the Geant4 folder to perform most of the set
 4. Extract the installation:
    
 	```bash
-	tar xvfv geant4-v11.3.2.tar.gz
+	tar xzfv geant4-v11.3.2.tar.gz
 	```
-5. Make a build directory:
+5. Make the build directory:
    
 	```bash
 	mkdir geant4-v11.3.2-build && cd geant4-v11.3.2-build
