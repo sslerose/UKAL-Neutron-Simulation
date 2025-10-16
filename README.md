@@ -29,12 +29,13 @@ where `/path/to` is the directory you cloned this repository to. It will prompt 
 If you would prefer to install manually, follow these steps (adapted from Physics Matters [YouTube tutorial](https://youtu.be/4DTumUo3IKw?si=EoMsXBIljGOl0YsK)):
 1. Open a terminal and install relevent dependencies:  
     ```bash
-    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev  \
-    libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-dev libxerces-c-dev \
-    qtbase5-dev qtbase5-dev-tools qtchooser qt5-qmake
+    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev \
+    libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-de \
+    libxerces-c-dev qtbase5-dev qtbase5-dev-tools qtchooser qt5-qmake
     ```
 2. In the home user directory (~), create the file structure for the installation:  
 	```bash
+ 	cd
 	mkdir Software && cd Software && mkdir GEANT4 && cd GEANT4
 	```
 3. Get the Geant4 installer:
@@ -94,7 +95,7 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
 2. At the end of the bash file, insert the alias and a header:  
    ```bash
    # Geant4 source alias
-   alias geant4make="source /home/username/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh"
+   alias geant4make="source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh"
    ```
    Press <kbd>Ctrl</kbd> + <kbd>X</kbd> to exit the file, press <kbd>Y</kbd> to accept changes, and press <kbd>Enter</kbd> to write to the file.
    
@@ -110,13 +111,13 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
     	fi
     
     	# Source GEANT4 environment
-    	source /home/sslerose/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/ge>
+    	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
     
     	# Mark GEANT4 as active
     	export GEANT4_ACTIVE=true
     
     	echo "GEANT4 environment activated with system Qt (if available)"
-    	echo "Final LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+    	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 	}
 	alias geant4make="setup_geant4"
 	# <<< geant4 initialize >>>
@@ -157,7 +158,7 @@ I could offer a script for this section, but this particular set of actions must
    ```
 
 After a few moments, Geant4 will open in a new window. The largest section is the visualizer and is our main concern. You should see the following:  
-<img width="700" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
 
 (If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to **Sourcing the Geant4 Shell Script**, and in step (2), use the Optional sourcing method with
 ```bash
@@ -174,15 +175,45 @@ setup_geant4() {
     export WAYLAND_DISPLAY=""
 	
 	# Source GEANT4 environment
-	source /home/sslerose/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/ge>
+	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/ge>
 	
 	# Mark GEANT4 as active
 	export GEANT4_ACTIVE=true
 	
 	echo "GEANT4 environment activated with system Qt (if available)"
-	echo "Final LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 }
 alias geant4make="setup_geant4"
 # <<< geant4 initialize >>>
 ```
 To generalize the above to any project, just change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name will be listed in the terminal after it has been created.
+
+
+## Running Projects on the Morgan Compute Cluster (UKY Users Only)
+
+The Morgan Compute Cluster (MCC) is a high-performance computational resource provided to certified users by the UKY Center for Computational Sciences. If you happen to be working under a PI with access to the MCC, you will be given access to the cluster for your projects. The MCC provides remote desktop or batch-mode connections, each with their own benefits.
+
+**Connecting via Remote Desktop**  
+A remote desktop connection provides access to the cluster with visualization, allowing for start-to-finish project creation and testing just as you would on a personal machine. Access is provided via Open OnDemand (OOD) for the [MCC](https://mcc-ood.ccs.uky.edu/).
+1. Log in to OOD using your LinkBlue credentials.
+2. From the Interactive Apps menu at the top, select Morgan Compute Cluster (MCC).
+3. Request a node with:
+	1. Account: `coa_pi_uksr`, where `pi` is the LinkBlue ID of your PI.
+ 	2. Hours: the number of hours you need continuous access.
+	3. Cores: 4.
+	4. Queue: Normal
+4. Launch the node and wait for your session to start.
+
+**Connecting via Secure Shell (SSH)**  
+A simple SSH connection with X11 forwarding can be established via PuTTY or a terminal, but visualization is often quite slow. SSH connections are ideal for batch jobs, and X11 forwarding should only be used for quick visualization checks. If you are not connected to the UKY campus network, you will need to connect to the campus VPN (see instructions [here](https://ukyrcd.atlassian.net/wiki/spaces/RCDDocs/pages/162103748/VPN+connection+to+UK+Campus+Resources)).
+
+Using PuTTY:
+
+Using terminal:
+1. Connect via a simple ssh command:
+
+	```bash
+ 	ssh -X linkblue@mcc.uky.edu
+ 	```
+
+**Running Projects on the MCC**
