@@ -1,6 +1,6 @@
 # University of Kentucky Accelerator Lab (UKAL) Quasi-Stellar Neutron Simulations
 
-SimLiT and Geant4 simulations for stellar neutron generation and detection. Simulated quasi-stellar neutrons are generated via the SimLiT code developed by M. Friedman, et. al. (see their paper [here](https://doi.org/10.1016/j.nima.2012.09.027)). Resultant event-by-event output files are used as the neutron source for Geant4 simulations to track neutron energy and angular distributions as they pass through materials present in the physical design of the neutron detection housing.
+Geant4 particle simulations for quasi-stellar neutron generation and detection. Simulated neutrons are generated via the SimLiT code developed by M. Friedman, et. al. (see [here](https://doi.org/10.1016/j.nima.2012.09.027)). Resultant event-by-event output neutron data are used as the particle source for Geant4 simulations to track neutrons into a scintillation detection assembly.
 
 
 ## Cloning the Repository
@@ -11,7 +11,7 @@ SimLiT and Geant4 simulations for stellar neutron generation and detection. Simu
 
 **Linux Users:**
 1. Install Git using `sudo apt install git`.
-2. Within your desired install directory, run `git clone https://github.com/sslerose/UKAL_Neutron_Simulation.git`.
+2. Within your desired install directory, run `git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git`.
 
 
 ## Installing Geant4
@@ -237,7 +237,7 @@ If you're using the remote desktop, open a terminal. If you're accessing via SSH
 	cp ~/Geant4/UKAL-Neutron-Simulation/mcc_variables.sh ~/Geant4
  	. mcc_variables.sh
 	```
-	**NOTE:** Sourcing `mcc_variables.sh` must be done at the beginning of every new session.
+	**NOTE:** Sourcing `mcc_variables.sh` must be done at the beginning of every new Geant4 session.
 4. Copy the B1 project folder and create a build folder:
 	```bash
 	$SING_RUN bash -c 'cp -r $CONDA_PREFIX/share/Geant4/examples/basic/B1 ./B1'
@@ -253,16 +253,20 @@ If you're using the remote desktop, open a terminal. If you're accessing via SSH
 	```bash
 	$BUILD_RUN ./exampleB1
 	```
-The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in OOD or `nano` in the terminal), verify `/vis/open TSG_QT_ZB` near the top of the file, and retry step (6).
+The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in OOD or `nano` in the terminal), verify `/vis/open` near the top of the file does not have a driver tag (like OGL or TSGQt), and retry step (6).
 
 **Building and Running the UKAL Project**
-1. Verify that steps (1) -- (3) from above have been performed.
+1. Verify that steps (1) -- (3) from above have been performed, specifically sourcing `mcc_variables.sh`.
 2. Enter the repo directory:
 
 	```bash
 	cd ~/Geant4/UKAL-Neutron-Simulation
 	```
-3. Run the build script:
+3. Source the build script:
 	```bash
-	./build_UKAL_ND.sh
+	. build_UKAL_ND.sh
 	```
+4. Run the project:
+   ```bash
+   $BUILD_RUN ./NeutronDetection
+   ```

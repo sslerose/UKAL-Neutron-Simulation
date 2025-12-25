@@ -5,6 +5,9 @@ if [ ! -d /tmp/$UID ]; then
 fi
 chmod 700 $XDG_RUNTIME_DIR
 
+# Set default visualization driver and display variables
+export G4VIS_DEFAULT_DRIVER=TSG_QT_ZB
+
 export QT_X11_NO_MITSHM=1 && export LIBGL_ALWAYS_INDIRECT=1 && export LIBGL_DIR3_DISABLE=1
 
 # Create singularity variables
