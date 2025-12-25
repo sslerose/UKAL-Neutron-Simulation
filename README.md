@@ -160,7 +160,7 @@ I could offer a script for this section, but this particular set of actions must
 After a few moments, Geant4 will open in a new window. The largest section is the visualizer and is our main concern. You should see the following:  
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
 
-If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to **Sourcing the Geant4 Shell Script**, and in step (2), use the Optional sourcing method with
+If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to **Sourcing the Geant4 Shell Script**, step (2), and use the Optional sourcing method with
 ```bash
 # <<< geant4 initialize >>>
 setup_geant4() {
@@ -175,7 +175,7 @@ setup_geant4() {
     export WAYLAND_DISPLAY=""
 	
 	# Source GEANT4 environment
-	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/ge>
+	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
 	
 	# Mark GEANT4 as active
 	export GEANT4_ACTIVE=true
@@ -186,6 +186,8 @@ setup_geant4() {
 alias geant4make="setup_geant4"
 # <<< geant4 initialize >>>
 ```
+where the three exports after the if statement have been added.
+
 To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name will be listed in the terminal after it has been created.
 
 
@@ -227,12 +229,12 @@ If you're using the remote desktop, open a terminal. If you're accessing via SSH
 	```
 2. Running projects using the Singularity requires extensive scripts, so we'll copy this project now to get a setup script for the cluster that can be used for any project:
 	```bash
-	git clone https://github.com/sslerose/UKAL_Neutron_Simulation.git
+	git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
  	```
 	If you've already cloned this repo to your computer, you may alternatively upload the `mcc_variables.sh` script to the `~/Geant4` directory via OOD (Files -> Home Directory at the top of the OOD page).
 3. Copy the variable script to the main Geant4 folder and source it:
 	```bash
-	cp ~/Geant4/UKAL_Neutron_Simulation/mcc_variables.sh ~/Geant4
+	cp ~/Geant4/UKAL-Neutron-Simulation/mcc_variables.sh ~/Geant4
  	. mcc_variables.sh
 	```
 	**NOTE:** Sourcing `mcc_variables.sh` must be done at the beginning of every new session.
@@ -258,9 +260,9 @@ The same window seen when testing the basic example on your personal computer sh
 2. Enter the repo directory:
 
 	```bash
-	cd ~/Geant4/UKAL_Neutron_Simulation
+	cd ~/Geant4/UKAL-Neutron-Simulation
 	```
 3. Run the build script:
 	```bash
-	. build_UKAL_ND.sh
+	./build_UKAL_ND.sh
 	```
