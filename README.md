@@ -160,7 +160,7 @@ I could offer a script for this section, but this particular set of actions must
 After a few moments, Geant4 will open in a new window. The largest section is the visualizer and is our main concern. You should see the following:  
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
 
-(If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to **Sourcing the Geant4 Shell Script**, and in step (2), use the Optional sourcing method with
+If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to **Sourcing the Geant4 Shell Script**, and in step (2), use the Optional sourcing method with
 ```bash
 # <<< geant4 initialize >>>
 setup_geant4() {
@@ -186,18 +186,18 @@ setup_geant4() {
 alias geant4make="setup_geant4"
 # <<< geant4 initialize >>>
 ```
-To generalize the above to any project, just change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name will be listed in the terminal after it has been created.
+To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name will be listed in the terminal after it has been created.
 
 
 ## Running Projects on the Morgan Compute Cluster (UKY Users Only)
 
-The Morgan Compute Cluster (MCC) is a high-performance computational resource provided to certified users by the UKY Center for Computational Sciences. If you happen to be working under a PI with access to the MCC, you will be given access to the cluster for your projects. The MCC provides remote desktop or batch-mode connections, each with their own benefits.
+The Morgan Compute Cluster (MCC) is a high-performance computational resource provided to certified users by the UKY Center for Computational Sciences. If you happen to be working under a PI with access to the MCC, you will be given access to the cluster for your projects. The MCC provides remote desktop or batch-mode connections, each with their own benefits. (Note that the MCC is accessed by many users, and you should be mindful of your active working directory when managing projects.)
 
-**Connecting via Remote Desktop**  
-A remote desktop connection provides access to the cluster with visualization, allowing for start-to-finish project creation and testing just as you would on a personal machine. Access is provided via Open OnDemand (OOD) for the [MCC](https://mcc-ood.ccs.uky.edu/).
+**(Recommended) Connecting via Remote Desktop**  
+A remote desktop connection provides access to the cluster with visualization, allowing for start-to-finish project creation and testing just as you would on a personal machine. Access is provided via [Open OnDemand](https://mcc-ood.ccs.uky.edu/) (OOD) through your browser.
 1. Log in to OOD using your LinkBlue credentials.
 2. From the Interactive Apps menu at the top, select Morgan Compute Cluster (MCC).
-3. Request a node with:
+3. Request a node:
 	1. Account: `coa_pi_uksr`, where `pi` is the LinkBlue ID of your PI.
  	2. Hours: the number of hours you need continuous access.
 	3. Cores: 4.
@@ -205,7 +205,7 @@ A remote desktop connection provides access to the cluster with visualization, a
 4. Launch the node and wait for your session to start.
 
 **Connecting via Secure Shell (SSH)**  
-A simple SSH connection with X11 forwarding can be established via PuTTY or a terminal, but visualization is often quite slow. SSH connections are ideal for batch jobs, and X11 forwarding should only be used for quick visualization checks. If you are not connected to the UKY campus network, you will need to connect to the campus VPN (see instructions [here](https://ukyrcd.atlassian.net/wiki/spaces/RCDDocs/pages/162103748/VPN+connection+to+UK+Campus+Resources)).
+A simple SSH connection with X11 forwarding can be established via PuTTY or a terminal, but visualization is often quite slow. SSH connections are ideal for batch jobs, and X11 forwarding should only be used for quick visualization checks. If you are not connected to the UKY campus network (eduroam), you will need to connect to the campus VPN (see instructions [here](https://ukyrcd.atlassian.net/wiki/spaces/RCDDocs/pages/162103748/VPN+connection+to+UK+Campus+Resources)).
 
 Using PuTTY:
 
@@ -216,4 +216,51 @@ Using terminal:
  	ssh -X linkblue@mcc.uky.edu
  	```
 
-**Running Projects on the MCC**
+**Building and Running a Basic Project**
+Geant4 is provided by a Singularity container with all libraries, datasets, visualization drivers, ROOT, and official examples. Before importing this project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future untested projects run into issues.
+
+If you're using the remote desktop, open a terminal. If you're accessing via SSH, you're ready to go.
+1. Make a directory to house your Geant4 projects:
+	
+	```bash
+	mkdir -p ~/Geant4 && cd ~/Geant4
+	```
+2. Running projects using the Singularity requires extensive scripts, so we'll copy this project now to get a setup script for the cluster that can be used for any project:
+	```bash
+	git clone https://github.com/sslerose/UKAL_Neutron_Simulation.git
+ 	```
+	If you've already cloned this repo to your computer, you may alternatively upload the `mcc_variables.sh` script to the `~/Geant4` directory via OOD (Files -> Home Directory at the top of the OOD page).
+3. Copy the variable script to the main Geant4 folder and source it:
+	```bash
+	cp ~/Geant4/UKAL_Neutron_Simulation/mcc_variables.sh ~/Geant4
+ 	. mcc_variables.sh
+	```
+	**NOTE:** Sourcing `mcc_variables.sh` must be done at the beginning of every new session.
+4. Copy the B1 project folder and create a build folder:
+	```bash
+	$SING_RUN bash -c 'cp -r $CONDA_PREFIX/share/Geant4/examples/basic/B1 ./B1'
+	cd B1
+	mkdir build && cd build
+	```
+5. Make the example:
+	```bash
+	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.3.2/cmake
+	$SING_RUN make
+	```
+6. Run the example:
+	```bash
+	$BUILD_RUN ./exampleB1
+	```
+The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in OOD or `nano` in the terminal), verify `/vis/open TSG_QT_ZB` near the top of the file, and retry step (6).
+
+**Building and Running the UKAL Project**
+1. Verify that steps (1) -- (3) from above have been performed.
+2. Enter the repo directory:
+
+	```bash
+	cd ~/Geant4/UKAL_Neutron_Simulation
+	```
+3. Run the build script:
+	```bash
+	. build_UKAL_ND.sh
+	```

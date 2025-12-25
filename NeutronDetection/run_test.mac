@@ -1,0 +1,13 @@
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Set print progress
+/run/printProgress 10000
+
+# Initialize
+/run/initialize
+
+# Run 10000 neutrons
+/run/beamOn 500000

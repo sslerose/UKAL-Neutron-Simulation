@@ -1,0 +1,59 @@
+# Macro file for running events with visualization
+# Usage: /control/execute vis.mac
+
+# Initialize if not already done
+/run/initialize
+
+# Set verbosity
+/control/verbose 2
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Visualization settings
+/vis/viewer/set/autoRefresh false
+/vis/verbose warnings
+
+# Set viewing angle - side view to see particles traveling through
+/vis/viewer/set/viewpointVector 1 0.5 0.3
+/vis/viewer/zoom 1.5
+
+# Optional: Change detector parameters
+# Uncomment and modify as needed:
+# /neutrondet/det/setCopperThickness 3 mm
+# /neutrondet/det/setDetectorDistance 30 cm
+
+# Configure trajectory drawing
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set neutron blue
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set e- red
+/vis/modeling/trajectories/drawByParticleID-0/set e+ yellow
+/vis/modeling/trajectories/drawByParticleID-0/set proton cyan
+/vis/modeling/trajectories/drawByParticleID-0/set alpha magenta
+
+# Show trajectory step points
+/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
+/vis/modeling/trajectories/drawByParticleID-0/default/setStepPtsSize 1
+
+# Only draw certain particles (optional - uncomment to filter)
+# /vis/filtering/trajectories/create/particleFilter
+# /vis/filtering/trajectories/particleFilter-0/add neutron
+# /vis/filtering/trajectories/particleFilter-0/add gamma
+
+# Set time window for visualization (optional)
+# /vis/ogl/set/displayListLimit 500000
+
+# Run some events
+/run/beamOn 10
+
+# Re-enable auto refresh
+/vis/viewer/set/autoRefresh true
+
+# Print some info
+G4cout << "========================================" << G4endl;
+G4cout << "Visualization complete!" << G4endl;
+G4cout << "Use mouse to rotate/zoom the view" << G4endl;
+G4cout << "Try: /run/beamOn N  to run more events" << G4endl;
+G4cout << "========================================" << G4endl;
