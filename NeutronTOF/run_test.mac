@@ -1,0 +1,17 @@
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Set print progress
+/run/printProgress 10000
+
+# Initialize
+/run/initialize
+
+# Set parameters
+/neutronTOF/gun/useSimLiT true
+/neutronTOF/det/setDetectorDistance 50 cm
+
+# Run events
+/control/loop run_angle.mac angle -90 90 10

@@ -1,13 +1,16 @@
+# Establish cluster variables
+. mcc_variables.sh
+
 # Escape from shell on command fail
 set -e
 
 # Build directory
-if [ -d NeutronDetection/build ]; then
+if [ -d NeutronTimeOfFlight/build ]; then
 	echo "build directory exists, entering.."
-	cd NeutronDetection/build
+	cd NeutronTimeOfFlight/build
 else
 	echo "Creating and entering build directory..."
-	cd NeutronDetection && mkdir build && cd build
+	cd NeutronTimeOfFlight && mkdir build && cd build
 fi
 
 # Prepare build files

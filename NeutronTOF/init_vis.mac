@@ -1,0 +1,63 @@
+# Macro file for visualization initialization
+# This is run automatically when starting in interactive mode
+
+# Initialize kernel
+/run/initialize
+
+# Use OpenGL viewer (change to "VRML" or "HepRep" if preferred)
+/vis/open
+
+# Disable auto refresh for better performance
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+
+# Draw geometry
+/vis/drawVolume
+
+# Set camera position (view from side)
+/vis/viewer/set/viewpointVector 1 1 1
+/vis/viewer/set/lightsVector -1 0 0
+
+# Set zoom and style
+/vis/viewer/set/style surface
+/vis/viewer/set/auxiliaryEdge true
+/vis/viewer/set/lineSegmentsPerCircle 100
+
+# Draw coordinate axes (10 cm length)
+/vis/scene/add/axes 0 0 0 5 cm
+
+# To draw particle trajectories (when you run events)
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts false
+/vis/modeling/trajectories/drawByParticleID-0/default/setStepPtsSize 6
+
+# Draw hits at end of event
+/vis/scene/add/hits
+
+# Make the "World" and "AssemblyMother" box invisible
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility AssemblyMother 0 false
+/vis/geometry/set/visibility InnerAssembly 0 false
+
+# Add color to volumes
+/vis/viewer/set/background white
+/vis/geometry/set/colour Holder 0 0.45 0.25 0 0.25
+/vis/geometry/set/colour Can 0 0 0 1 0.25
+/vis/geometry/set/colour CanCap 0 0 0 1 0.25
+/vis/geometry/set/colour Rubber 0 1 1 0 0.25
+/vis/geometry/set/colour Teflon 0 1 0 0 0.25
+/vis/geometry/set/colour Detector 0 0 1 1 0.5
+/vis/geometry/set/colour PMT 0 0 1 0 0.25
+
+# To superimpose all of the events from a given run:
+/vis/scene/endOfEventAction accumulate
+
+# Re-establish auto refreshing
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+/hits/verbose 2
+
+# Print detector parameters
+#/help /neutronTOF/det/

@@ -1,0 +1,3 @@
+# Set detector angle and run events
+/neutronTOF/det/setDetectorAngle {angle} degree
+/run/beamOn 10000

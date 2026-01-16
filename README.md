@@ -1,4 +1,4 @@
-# University of Kentucky Accelerator Lab (UKAL) Quasi-Stellar Neutron Simulations
+# University of Kentucky Accelerator Lab (UKAL) Quasi-Stellar Neutron Activation (Q-SNAc) Simulations
 
 Geant4 particle simulations for quasi-stellar neutron generation and detection. Simulated neutrons are generated via the SimLiT code developed by M. Friedman, et. al. (see [here](https://doi.org/10.1016/j.nima.2012.09.027)). Resultant event-by-event output neutron data are used as the particle source for Geant4 simulations to track neutrons into a scintillation detection assembly.
 
@@ -36,7 +36,7 @@ If you would prefer to install manually, follow these steps (adapted from Physic
 2. In the home user directory (~), create the file structure for the installation:  
 	```bash
  	cd
-	mkdir Software && cd Software && mkdir GEANT4 && cd GEANT4
+	mkdir Software && cd Software && mkdir Geant4 && cd Geant4
 	```
 3. Get the Geant4 installer:
     1. Go to the [Geant4 webpage](https://geant4.web.cern.ch/) and click "Download" at the top.
@@ -51,7 +51,7 @@ If you would prefer to install manually, follow these steps (adapted from Physic
 	```bash
 	tar xzfv geant4-v11.3.2.tar.gz
 	```
-5. Make the build directory:  
+5. Make and enter the build directory:  
 	```bash
 	mkdir geant4-v11.3.2-build && cd geant4-v11.3.2-build
 	```
@@ -61,7 +61,7 @@ If you would prefer to install manually, follow these steps (adapted from Physic
 	```
     1. When the CMake GUI pops up, type <kbd>C</kbd> to Configure.
     2. Once finished, type <kbd>E</kbd> to enter the build selections.
-    3. Change CMAKE_INSTALL_PREFIX to `/home/username/Software/GEANT4/geant4-v11.3.2-install` (remember to change the version number if yours is different).
+    3. Change CMAKE_INSTALL_PREFIX to `/home/username/Software/Geant4/geant4-v11.3.2-install` (remember to change the version number if yours is different).
     4. Enable the following:
 		  * BUILD_MULTITHREADED
         * INSTALL_DATA
@@ -104,19 +104,19 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
    ```bash
     # <<< geant4 initialize >>>
 	setup_geant4() {
-    	# Check if GEANT4 is already set up
+    	# Check if Geant4 is already set up
     	if [[ "$GEANT4_ACTIVE" == "true" ]]; then
-        	echo "GEANT4 environment already active"
+        	echo "Geant4 environment already active"
         	return 0
     	fi
     
-    	# Source GEANT4 environment
-    	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
+    	# Source Geant4 environment
+    	source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
     
-    	# Mark GEANT4 as active
+    	# Mark Geant4 as active
     	export GEANT4_ACTIVE=true
     
-    	echo "GEANT4 environment activated with system Qt (if available)"
+    	echo "Geant4 environment activated with system Qt (if available)"
     	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 	}
 	alias geant4make="setup_geant4"
@@ -126,19 +126,22 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
    ```bash
    geant4make
    ```
-   It is *not* recommended that you make this alias activate on startup.
+   **NOTE:** It is *not* recommended that you make this alias activate on startup.
 
-## Testing a Basic Example
+## Running Projects Locally
 
-*Ensure you have sourced the Geant4 libraries (i.e., called the alias* `geant4make`*) before performing this step.*
+*Ensure you have sourced the Geant4 libraries (i.e., called the alias* `geant4make`*) before performing the following.*
+
+### Building and Running a Basic Example
+
 Although you should have received an error if any of the above failed, it is best to check that everything is working by building and running a basic example, B1.
 
 **Linux Users:**  
 I could offer a script for this section, but this particular set of actions must be repeated when building any project from source, so it is best to perform the steps manually as practice:
-1. Navigate to the basic examples directory:  
+1. Navigate to the B1 project in the basic examples directory:  
 
    ```bash
-   cd ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/examples/basic/B1
+   cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/examples/basic/B1
    ```
 2. Create a build directory:  
    ```bash
@@ -164,24 +167,27 @@ If you experience ghosting of the Geant4 window (i.e., the visualizer is transpa
 ```bash
 # <<< geant4 initialize >>>
 setup_geant4() {
-	# Check if GEANT4 is already set up
+	# Check if Geant4 is already set up
 	if [[ "$GEANT4_ACTIVE" == "true" ]]; then
-		echo "GEANT4 environment already active"
+		echo "Geant4 environment already active"
 		return 0
 	fi
 	
     export QT_QPA_PLATFORM=xcb
     export GDK_BACKEND=x11\
     export WAYLAND_DISPLAY=""
+	export G4VIS_DEFAULT_DRIVER=TSGQt
 	
-	# Source GEANT4 environment
-	source ~/Software/GEANT4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
+	# Source Geant4 environment
+	source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
 	
-	# Mark GEANT4 as active
+	# Mark Geant4 as active
 	export GEANT4_ACTIVE=true
 	
-	echo "GEANT4 environment activated with system Qt (if available)"
+	echo "Geant4 environment activated with system Qt (if available)"
 	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+
+	cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4
 }
 alias geant4make="setup_geant4"
 # <<< geant4 initialize >>>
@@ -191,9 +197,47 @@ where the three exports after the if statement have been added.
 To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name will be listed in the terminal after it has been created.
 
 
+### Building and Running the Neutron Time-of-Flight Project
+
+**Linux Users:**  
+The steps to run this project are essentially identical to those for the basic example (as they are for all projects). Source the Geant4 libraries before starting (`geant4make`).
+1. Create a directory for your projects:
+
+   ```bash
+   cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/examples
+   mkdir my_projects
+   ```
+2. Copy the repo folder to your projects directory:
+   ```bash
+   cp -r /path/to/UKAL-Neutron-Simulation ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/examples/my_projects
+   ```
+3. Enter the UKAL-Neutron-Simulation folder and make a build directory:
+   ```bash
+   cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/examples/my_projects/UKAL-Neutron-Simulation
+   mkdir build && cd build
+   ```
+4. Create the make file:  
+   ```bash
+   cmake ..
+   ```
+5. Make the simulation executable file:
+   ```bash
+   make
+   ```
+6. Launch the simulation:
+   ```bash
+   ./NeutronTimeOfFlight
+   ```
+
+
 ## Running Projects on the Morgan Compute Cluster (UKY Users Only)
 
-The Morgan Compute Cluster (MCC) is a high-performance computational resource provided to certified users by the UKY Center for Computational Sciences. If you happen to be working under a PI with access to the MCC, you will be given access to the cluster for your projects. The MCC provides remote desktop or batch-mode connections, each with their own benefits. (Note that the MCC is accessed by many users, and you should be mindful of your active working directory when managing projects.)
+The Morgan Compute Cluster (MCC) is a high-performance computational resource provided to certified users by the UKY Center for Computational Sciences. If you happen to be working under a PI with access to the MCC, you will be given access to the cluster for your projects.
+
+
+### Connecting to the Cluster
+
+The MCC provides remote desktop or batch-mode connections, each with their own benefits. (Note that the MCC is accessed by many users, and you should be mindful of your active working directory when managing projects.)
 
 **(Recommended) Connecting via Remote Desktop**  
 A remote desktop connection provides access to the cluster with visualization, allowing for start-to-finish project creation and testing just as you would on a personal machine. Access is provided via [Open OnDemand](https://mcc-ood.ccs.uky.edu/) (OOD) through your browser.
@@ -217,17 +261,20 @@ Using terminal:
 	```bash
  	ssh -X linkblue@mcc.uky.edu
  	```
+2. (WIP)
 
-**Building and Running a Basic Project**
-Geant4 is provided by a Singularity container with all libraries, datasets, visualization drivers, ROOT, and official examples. Before importing this project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future untested projects run into issues.
 
-If you're using the remote desktop, open a terminal. If you're accessing via SSH, you're ready to go.
+### Building and Running a Basic Example
+
+Geant4 is provided by a Singularity container with all libraries, datasets, visualization drivers, ROOT, and official examples. Before importing the Neutron Simulation project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future untested projects run into issues.
+
+If you're using the remote desktop, open a terminal in that instance. If you're accessing via SSH, you're ready to go.
 1. Make a directory to house your Geant4 projects:
 	
 	```bash
 	mkdir -p ~/Geant4 && cd ~/Geant4
 	```
-2. Running projects using the Singularity requires extensive scripts, so we'll copy this project now to get a setup script for the cluster that can be used for any project:
+2. Running projects using the Singularity requires extensive scripts, so we'll copy this repo to get a setup script for the cluster that can be used for any project:
 	```bash
 	git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
  	```
@@ -253,10 +300,12 @@ If you're using the remote desktop, open a terminal. If you're accessing via SSH
 	```bash
 	$BUILD_RUN ./exampleB1
 	```
-The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in OOD or `nano` in the terminal), verify `/vis/open` near the top of the file does not have a driver tag (like OGL or TSGQt), and retry step (6).
+The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in OOD or `nano` in the terminal), verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (6).
 
-**Building and Running the UKAL Project**
-1. Verify that steps (1) -- (3) from above have been performed, specifically sourcing `mcc_variables.sh`.
+
+### Building and Running the Neutron Time-of-Flight Project
+
+1. Verify that steps (1) and (2) from above have been performed.
 2. Enter the repo directory:
 
 	```bash
@@ -268,5 +317,5 @@ The same window seen when testing the basic example on your personal computer sh
 	```
 4. Run the project:
    ```bash
-   $BUILD_RUN ./NeutronDetection
+   $BUILD_RUN ./NeutronTimeOfFlight
    ```
