@@ -24,6 +24,7 @@ assumptions:
 #include "SimLiT_data.hh"
 #include <iostream>
 #include <G4ios.hh>
+#include <G4Threading.hh>
 
 //constants
 const double SimLiT::pi = 3.14159265;
@@ -59,9 +60,9 @@ const double SimLiT::Li7Density[7] = {0.499,0.709,0.935,0.659,0.395,0.669,0.4784
 //variable needed for lowest energies fit
 const double SimLiT::C = 6;
 
-double debug_Ncalls = 0;
-double debug_Noverflow = 0;
-double debug_Ntries = 0;
+G4ThreadLocal double debug_Ncalls = 0;
+G4ThreadLocal double debug_Noverflow = 0;
+G4ThreadLocal double debug_Ntries = 0;
 
 
 SimLiT::SimLiT(double BeamEnergy, double BeamSigma)

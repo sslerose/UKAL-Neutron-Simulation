@@ -105,6 +105,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
 DetectorMessenger::~DetectorMessenger()
 {
   delete fDetectorDistanceCmd;
+  delete fDetectorAngleCmd;
   delete fDetectorSpanningStartAngleCmd;
   delete fDetectorSpanningEndAngleCmd;
   delete fDetDir;

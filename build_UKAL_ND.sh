@@ -5,12 +5,12 @@
 set -e
 
 # Build directory
-if [ -d NeutronTimeOfFlight/build ]; then
+if [ -d NeutronTOF/build ]; then
 	echo "build directory exists, entering.."
-	cd NeutronTimeOfFlight/build
+	cd NeutronTOF/build
 else
 	echo "Creating and entering build directory..."
-	cd NeutronTimeOfFlight && mkdir build && cd build
+	cd NeutronTOF && mkdir build && cd build
 fi
 
 # Prepare build files

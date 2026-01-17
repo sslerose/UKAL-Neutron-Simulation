@@ -5,7 +5,9 @@
 Initializes and builds user action classes for each worker thread in multi-threaded mode. This file manages the creation of primary generator, run, event, and stacking actions that control particle generation, data collection, and event processing throughout the simulation.
 
 **ActionInitialization constructor**  
-Initializes the action initialization with a pointer to the detector construction, creates the primary generator messenger for UI command processing, and initializes the PrimaryGeneratorConfig singleton with default values.
+Initializes the action initialization with a pointer to the detector construction. Creates the primary generator messenger for UI and macro file command processing. Initializes the PrimaryGeneratorConfig singleton with default values, permitting config command outputs to the master thread.
+
+*Note: PrimaryGeneratorMessengers are generally created within PrimaryGeneratorAction as thread-local instanes that pull from a UI or macro command fed to the master*
 
 **~ActionInitialization destructor**  
 Cleans up the primary generator messenger.
