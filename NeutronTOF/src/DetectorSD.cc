@@ -146,39 +146,6 @@ G4bool DetectorSD::ProcessHits(G4Step* step, G4TouchableHistory*)
   fHitsCollection->insert(newHit);
 
   return true;
-
-  // Get energy deposit for this step
-  // G4double edep = step->GetTotalEnergyDeposit();
-  // G4double edep = 0.0;
-  
-  // Get step length (for charged particles only)
-  // G4double stepLength = 0.;
-  // if (step->GetTrack()->GetDefinition()->GetPDGCharge() != 0.) {
-  //   stepLength = step->GetStepLength();
-  // }
-
-  // G4String processName = "";
-  // if (process) {
-  //   processName = process->GetProcessName();
-  // }
-  
-  // Always record if there's energy deposition
-  // if (edep > 0. || stepLength > 0.) {
-  //   recordHit = true;
-  // }
-  
-  // Also record neutron interactions even without edep (for visualization)
-  // if (particleName == "neutron") {
-  //   if (processName == "hadElastic" || 
-  //       processName == "nCapture" || 
-  //       processName == "neutronInelastic" ||
-  //       processName == "nFission") {
-  //     recordHit = true;
-  //   }
-  // }
-
-  // Skip steps with no energy deposit and no track length
-  // if (edep == 0. && stepLength == 0.) return false;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

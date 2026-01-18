@@ -86,8 +86,6 @@ G4String RunAction::GenerateFileName() const
   //========================================================================//
   // Generate output filename based on current configuration
   // Format: nDet_<source>_<energy>keV_<angle>deg
-  //
-  // Reads from PrimaryGeneratorConfig (thread-safe singleton)
   //========================================================================//
   
   PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
@@ -151,17 +149,11 @@ void RunAction::BeginOfRunAction(const G4Run*)
     fRun->SetPrimary(particle, energy);
   }
 
+  
   //========================================================================//
   // Set up analysis manager and open output file
-  //
-  // MT SYNCHRONIZATION:
-  // 1. Master thread generates filename FIRST and stores in PrimaryGeneratorConfig
-  // 2. Worker threads wait until filename is available
-  // 3. All threads call SetFileName() with identical value
-  // 4. All threads call OpenFile()
-  //
-  // This ensures ntuple merging works correctly.
   //========================================================================//
+
   auto analysisManager = G4AnalysisManager::Instance();
   
   if (analysisManager->IsActive()) {

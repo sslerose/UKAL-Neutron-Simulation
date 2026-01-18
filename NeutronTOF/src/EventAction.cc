@@ -50,6 +50,7 @@
 
 #include "EventAction.hh"
 #include "DetectorHit.hh"
+#include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
 #include "HistoManager.hh"
 #include "Constants.hh"
@@ -67,7 +68,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-EventAction::EventAction(PrimaryGeneratorAction* primaryGen) : fPrimaryGenerator(primaryGen) {}
+EventAction::EventAction(DetectorConstruction* det, PrimaryGeneratorAction* primaryGen) : fDetector(det), fPrimaryGenerator(primaryGen) {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -153,11 +154,6 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
         captureOccurred = true;
         break;  // Exit loop after first capture marker (defensive for edge cases)
       }
-
-      // if (hit->GetProcessName() == "nCapture" && !captureOccurred) {
-      //   captureTime = hit->GetTime();
-      //   captureOccurred = true;
-      // }
     }
   }
 
@@ -175,8 +171,9 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   
   // TOF and TOF energy for capture events
   if (captureOccurred) {
-    G4double n_velocity = 0.51 / (captureTime / ns) * 1e9; // in m/s
-    TOF_Energy = 0.5 * (939.57 / (3e8 * 3e8)) * (n_velocity * n_velocity) * 1000; // in keV
+    G4double n_velocity = (fDetector->GetDetectorDistance() / m) / (captureTime / s); // in m/s
+    // KE = (1/2)mv^2 ; m_neutron = 939.57 MeV/c^2
+    TOF_Energy = 0.5 * (939.57 / (3e8 * 3e8)) * (n_velocity * n_velocity) * 1000; // (1/2)mv^2 in keV
 
     analysisManager->FillH1(HistoManager::kH_TOF, captureTime / ns);
     analysisManager->FillH1(HistoManager::kH_TOFEnergy, TOF_Energy);

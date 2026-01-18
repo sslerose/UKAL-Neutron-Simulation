@@ -98,7 +98,7 @@ void ActionInitialization::Build() const
   RunAction* runAction = new RunAction(fDetector, primary);
   SetUserAction(runAction);
 
-  EventAction* eventAction = new EventAction(primary);
+  EventAction* eventAction = new EventAction(fDetector, primary);
   SetUserAction(eventAction);
 
   StackingAction* stackingAction = new StackingAction();

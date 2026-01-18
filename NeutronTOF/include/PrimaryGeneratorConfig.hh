@@ -55,13 +55,6 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-/// Singleton class to store primary generator configuration
-/// 
-/// This class provides thread-safe storage for generator parameters
-/// that can be accessed from both master and worker threads.
-/// The messenger modifies these values, and PrimaryGeneratorAction
-/// reads them when generating primaries.
-
 class PrimaryGeneratorConfig
 {
   public:

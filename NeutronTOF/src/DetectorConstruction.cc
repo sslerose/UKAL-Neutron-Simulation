@@ -110,7 +110,7 @@ DetectorConstruction::DetectorConstruction()
   fAssemblyWidth = kHolderOuterRadius * 2;
 
   // Detector placement
-  fDetectorDistance = 51.0 * cm;  // Dist. from target to detector face
+  fDetectorDistance = 50.0 * cm;  // Dist. from target to detector face
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Dist. from target to assembly face
 
   fAssemblyAngle = 0.0 * deg;

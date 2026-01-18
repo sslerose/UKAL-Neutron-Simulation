@@ -55,6 +55,7 @@
 #include "globals.hh"
 
 class G4Event;
+class DetectorConstruction;
 class PrimaryGeneratorAction;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -75,7 +76,7 @@ class EventAction : public G4UserEventAction
   public:
     // Constructor requires PrimaryGeneratorAction pointer to access
     // SimLiT neutron energy and angle for each event
-    EventAction(PrimaryGeneratorAction*);
+    EventAction(DetectorConstruction*, PrimaryGeneratorAction*);
     ~EventAction() override = default;
 
     void BeginOfEventAction(const G4Event*) override;
@@ -89,6 +90,7 @@ class EventAction : public G4UserEventAction
 
     // Data members
     G4int fDetectorHCID = -1;  // Hits collection ID
+    DetectorConstruction* fDetector = nullptr; // Pointer to detector construction
     PrimaryGeneratorAction* fPrimaryGenerator = nullptr; // Pointer to primary generator
 };
 

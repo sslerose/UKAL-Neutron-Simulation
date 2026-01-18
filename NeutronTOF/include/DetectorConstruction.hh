@@ -84,7 +84,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     const G4VPhysicalVolume* GetDetector() const { return fDetectorPV; }
     
     G4double GetDetectorAngle() const { return fAssemblyAngle; }
-    G4double GetDetectorDistance() const { return fAssemblyDistance; }
+    G4double GetDetectorDistance() const { return fDetectorDistance; }
     
     G4Material* GetDetectorMaterial() const { return fLi6GlassMaterial; }
 
