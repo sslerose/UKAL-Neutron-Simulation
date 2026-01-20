@@ -260,7 +260,7 @@ Stores pointers to detector construction and primary generator action, and creat
 Deletes the HistoManager.
 
 **GenerateFileName**  
-Creates descriptive output filename from current configuration. Reads source type (SimLiT or Gun), beam/gun energy, and detector angle from configuration singletons, and formats filename as "nDet_<source>_<energy>keV_<angle>deg" with integer and decimal parts for precise identification of simulation conditions.
+Creates descriptive output filename from current configuration. Reads source type (SimLiT or Gun), beam/gun energy, and detector angle from configuration singletons, and formats filename as "nTOF_<source>_<energy>keV_<angle>deg" with integer and decimal parts for precise identification of simulation conditions.
 
 **GenerateRun**  
 Factory method that creates custom Run object for accumulating neutron transport statistics.

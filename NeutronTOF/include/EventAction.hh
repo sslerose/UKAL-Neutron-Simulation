@@ -92,6 +92,7 @@ class EventAction : public G4UserEventAction
     G4int fDetectorHCID = -1;  // Hits collection ID
     DetectorConstruction* fDetector = nullptr; // Pointer to detector construction
     PrimaryGeneratorAction* fPrimaryGenerator = nullptr; // Pointer to primary generator
+    G4double fDetDist = 0.; // Distance from target to detector
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

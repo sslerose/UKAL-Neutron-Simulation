@@ -85,7 +85,7 @@ G4String RunAction::GenerateFileName() const
 {
   //========================================================================//
   // Generate output filename based on current configuration
-  // Format: nDet_<source>_<energy>keV_<angle>deg
+  // Format: nTOF<source>_<energy>keV_<angle>deg
   //========================================================================//
   
   PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
@@ -104,20 +104,26 @@ G4String RunAction::GenerateFileName() const
   G4int energyInt = static_cast<G4int>(std::round(energy));
   G4int energyDecimal = static_cast<G4int>(std::round((energy - energyInt) * 100));
   
-  // Get detector angle from DetectorConstruction
+  // Get detector angle and distance from DetectorConstruction
   G4double detectorAngle = 0.0;
+  G4double detectorDistance = 0.0;
   if (fDetector) {
     detectorAngle = -(fDetector->GetDetectorAngle() / deg);
+    detectorDistance = fDetector->GetDetectorDistance() / cm;
   }
 
   G4int angleInt = static_cast<G4int>(std::round(detectorAngle));
   G4int angleDecimal = static_cast<G4int>(std::round((detectorAngle - angleInt) * 100));
+
+  G4int distanceInt = static_cast<G4int>(std::round(detectorDistance));
+  G4int distanceDecimal = static_cast<G4int>(std::round((detectorDistance - distanceInt) * 100));
   
   // Build filename string
   std::ostringstream oss;
-  oss << "nDet_" << sourceType 
+  oss << "nTOF_" << sourceType 
       << "_" << std::fixed << energyInt << "_" << energyDecimal << "keV"
-      << "_" << std::fixed << angleInt << "_" << angleDecimal << "deg";
+      << "_" << std::fixed << angleInt << "_" << angleDecimal << "deg"
+      << "_" << std::fixed << distanceInt << "_" << distanceDecimal << "cm";
 
   return oss.str();
 }

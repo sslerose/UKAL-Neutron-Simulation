@@ -1,3 +1,17 @@
-# Set detector angle and run events
-/neutronTOF/det/setDetectorAngle {angle} degree
-/run/beamOn 10000
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Set print progress
+/run/printProgress 1000000
+
+# Initialize
+/run/initialize
+
+# Set parameters
+/neutronTOF/gun/useSimLiT true
+/neutronTOF/det/setDetectorDistance 50 cm
+
+# Run events
+/control/loop angles.mac angle 0 90 5

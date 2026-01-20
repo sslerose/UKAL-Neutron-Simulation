@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time 00:30:00         # Time limit for the job (REQUIRED)
-#SBATCH --job-name=NeutronDet_Angle        # Job name
+#SBATCH --job-name=NeutronTOF_Angle        # Job name
 #SBATCH --ntasks=8              # Number of cores to allocate. Same as SBATCH -n
 #SBATCH --partition=normal      # Partition/queue to run the job in. (REQUIRED)
 #SBATCH -e slurm-%j.err         # Error file for this job.

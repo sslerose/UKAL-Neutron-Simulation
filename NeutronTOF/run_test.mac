@@ -4,14 +4,15 @@
 /tracking/verbose 0
 
 # Set print progress
-/run/printProgress 10000
+/run/printProgress 100000
 
 # Initialize
 /run/initialize
 
-# Set parameters
-/neutronTOF/gun/useSimLiT true
+# Set simple gun parameters
+/neutronTOF/gun/useSimLiT false
 /neutronTOF/det/setDetectorDistance 50 cm
+/neutronTOF/det/setDetectorAngle 0 degree
 
-# Run events
-/control/loop run_angle.mac angle -90 90 10
+# Run beam
+/run/beamOn 500000

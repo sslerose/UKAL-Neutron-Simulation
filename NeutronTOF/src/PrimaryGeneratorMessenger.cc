@@ -91,11 +91,11 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fBeamEnergyCmd->SetGuidance("Set proton beam energy for SimLiT source (in keV).");
   fBeamEnergyCmd->SetGuidance("  Threshold: 1880.4 keV");
   fBeamEnergyCmd->SetGuidance("  Typical values: 1912-2500 keV");
-  fBeamEnergyCmd->SetGuidance("  Reference neutron energies at 0 degrees:");
-  fBeamEnergyCmd->SetGuidance("    1912 keV -> ~30 keV neutrons");
-  fBeamEnergyCmd->SetGuidance("    1950 keV -> ~70 keV neutrons");
-  fBeamEnergyCmd->SetGuidance("    2000 keV -> ~120 keV neutrons");
-  fBeamEnergyCmd->SetGuidance("    2500 keV -> ~600 keV neutrons");
+  // fBeamEnergyCmd->SetGuidance("  Reference neutron energies at 0 degrees:");
+  // fBeamEnergyCmd->SetGuidance("    1912 keV -> ~30 keV neutrons");
+  // fBeamEnergyCmd->SetGuidance("    1950 keV -> ~70 keV neutrons");
+  // fBeamEnergyCmd->SetGuidance("    2000 keV -> ~120 keV neutrons");
+  // fBeamEnergyCmd->SetGuidance("    2500 keV -> ~600 keV neutrons");
   fBeamEnergyCmd->SetParameterName("beamEnergy", false);
   fBeamEnergyCmd->SetRange("beamEnergy >= 1880.4");
   fBeamEnergyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
@@ -137,14 +137,6 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fTargetThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Print current parameters
-  //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
-  fPrintCmd->SetGuidance("Print current neutron source configuration.");
-  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
-  // fPrintCmd->AvailableForStates(G4State_Idle, G4State_GeomClosed);
-
-  //========================================================================//
   // Simple gun energy (when SimLiT disabled)
   //========================================================================//
   fGunEnergyCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/gun/energy", this);
@@ -155,6 +147,13 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fGunEnergyCmd->SetUnitCategory("Energy");
   fGunEnergyCmd->SetDefaultUnit("MeV");
   fGunEnergyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Print current parameters
+  //========================================================================//
+  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
+  fPrintCmd->SetGuidance("Print current neutron source configuration.");
+  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
