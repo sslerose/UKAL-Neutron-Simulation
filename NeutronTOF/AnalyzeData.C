@@ -140,7 +140,7 @@ FilenameParams parseFilenameParams(const TString& filename) {
 
 //============================================================================//
 // Calculate planar angle range phi for detector coverage
-// Formula: phi = 2*pi - 2*arcsin(D / sqrt(D^2 + R^2/4))
+// Formula: phi = arccos(D / sqrt(D^2 + R^2/4))
 // Where D = distance to detector face, R = detector diameter (5.08 cm)
 // Returns phi in RADIANS
 //============================================================================//
@@ -149,31 +149,32 @@ Double_t calculatePlanarAnglePhi(Double_t distance_cm) {
     Double_t D = distance_cm;
 
     Double_t denominator = TMath::Sqrt(D * D + (R * R / 4.0));
-    Double_t sinArg = D / denominator;
+    Double_t cosArg = D / denominator;
 
-    // Clamp to valid range for arcsin
-    if (sinArg > 1.0) sinArg = 1.0;
-    if (sinArg < -1.0) sinArg = -1.0;
+    // Clamp to valid range for arccos
+    if (cosArg > 1.0) cosArg = 1.0;
+    if (cosArg < -1.0) cosArg = -1.0;
 
-    Double_t phi = 2.0 * TMath::Pi() - 2.0 * TMath::ASin(sinArg);
+    Double_t phi = TMath::ACos(cosArg);
     return phi;  // radians
 }
 
 //============================================================================//
 // Get theta range for filtering neutrons
 // Returns [thetaMin, thetaMax] in degrees
-// For alpha=0 with no negative data, use [0, phi/2]
+// Range is alpha +/- phi
+// For alpha=0 with no negative data, use [0, phi]
 //============================================================================//
 std::pair<Double_t, Double_t> getThetaRange(Double_t alpha_deg, Double_t phi_rad, Bool_t hasNegativeAngles) {
-    Double_t halfPhi_deg = TMath::RadToDeg() * (phi_rad / 2.0);
+    Double_t phi_deg = TMath::RadToDeg() * phi_rad;
 
-    Double_t thetaMin = alpha_deg - halfPhi_deg;
-    Double_t thetaMax = alpha_deg + halfPhi_deg;
+    Double_t thetaMin = alpha_deg - phi_deg;
+    Double_t thetaMax = alpha_deg + phi_deg;
 
     // Edge case: alpha = 0 and no negative angle files in dataset
     if (TMath::Abs(alpha_deg) < 0.001 && !hasNegativeAngles) {
         thetaMin = 0.0;
-        thetaMax = halfPhi_deg;
+        thetaMax = phi_deg;
     }
 
     return std::make_pair(thetaMin, thetaMax);
