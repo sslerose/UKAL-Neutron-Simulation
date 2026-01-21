@@ -139,48 +139,6 @@ FilenameParams parseFilenameParams(const TString& filename) {
 }
 
 //============================================================================//
-// Calculate planar angle range phi for detector coverage
-// Formula: phi = arccos(D / sqrt(D^2 + R^2/4))
-// Where D = distance to detector face, R = detector diameter (5.08 cm)
-// Returns phi in RADIANS
-//============================================================================//
-Double_t calculatePlanarAnglePhi(Double_t distance_cm) {
-    const Double_t R = 5.08;  // Detector diameter in cm
-    Double_t D = distance_cm;
-
-    Double_t denominator = TMath::Sqrt(D * D + (R * R / 4.0));
-    Double_t cosArg = D / denominator;
-
-    // Clamp to valid range for arccos
-    if (cosArg > 1.0) cosArg = 1.0;
-    if (cosArg < -1.0) cosArg = -1.0;
-
-    Double_t phi = TMath::ACos(cosArg);
-    return phi;  // radians
-}
-
-//============================================================================//
-// Get theta range for filtering neutrons
-// Returns [thetaMin, thetaMax] in degrees
-// Range is alpha +/- phi
-// For alpha=0 with no negative data, use [0, phi]
-//============================================================================//
-std::pair<Double_t, Double_t> getThetaRange(Double_t alpha_deg, Double_t phi_rad, Bool_t hasNegativeAngles) {
-    Double_t phi_deg = TMath::RadToDeg() * phi_rad;
-
-    Double_t thetaMin = alpha_deg - phi_deg;
-    Double_t thetaMax = alpha_deg + phi_deg;
-
-    // Edge case: alpha = 0 and no negative angle files in dataset
-    if (TMath::Abs(alpha_deg) < 0.001 && !hasNegativeAngles) {
-        thetaMin = 0.0;
-        thetaMax = phi_deg;
-    }
-
-    return std::make_pair(thetaMin, thetaMax);
-}
-
-//============================================================================//
 // Result structure for per-angle analysis
 //============================================================================//
 struct AngleResults {
@@ -188,8 +146,9 @@ struct AngleResults {
     Double_t angle;
     Double_t distance;           // Parsed distance from filename (cm)
     ULong64_t totalEvents;
+    ULong64_t entries;           // Neutrons that entered the detector
     ULong64_t captures;
-    Double_t efficiency;
+    Double_t efficiency;         // Capture efficiency: captures / entries
     Double_t efficiencyError;
 
     // TOF energy statistics
@@ -197,29 +156,26 @@ struct AngleResults {
     Double_t stddevTOFEnergy;
     Double_t stderrTOFEnergy;
 
-    // Generated neutron energy statistics (within detector theta range)
+    // Generated neutron energy statistics (for neutrons that entered detector)
     Double_t meanGenEnergy;
     Double_t stddevGenEnergy;
     Double_t stderrGenEnergy;
-    ULong64_t nFilteredNeutrons;  // Count of neutrons in theta range
 
     // Histogram result (for per-angle TOF spectrum)
     ROOT::RDF::RResultPtr<TH1D> histTOF;
 
     AngleResults()
-        : angle(-999.0), distance(-999.0), totalEvents(0), captures(0),
+        : angle(-999.0), distance(-999.0), totalEvents(0), entries(0), captures(0),
           efficiency(0.0), efficiencyError(0.0),
           meanTOFEnergy(0.0), stddevTOFEnergy(0.0), stderrTOFEnergy(0.0),
-          meanGenEnergy(0.0), stddevGenEnergy(0.0), stderrGenEnergy(0.0),
-          nFilteredNeutrons(0) {}
+          meanGenEnergy(0.0), stddevGenEnergy(0.0), stderrGenEnergy(0.0) {}
 };
 
 //============================================================================//
 // Analyze a single file or group of files at the same angle
 //============================================================================//
 AngleResults analyzeAngleGroup(Double_t angle, Double_t distance,
-                               const std::vector<TString>& files,
-                               Bool_t hasNegativeAngles) {
+                               const std::vector<TString>& files) {
 
     AngleResults result;
     result.angle = angle;
@@ -235,15 +191,27 @@ AngleResults analyzeAngleGroup(Double_t angle, Double_t distance,
         chain.Add(file);
     }
 
-    // Do NOT disable neutron branches - we need them for generated energy calculation
-
     // Create RDataFrame from chain
     ROOT::RDataFrame df(chain);
 
     // Count total events
     auto countTotal = df.Count();
 
-    // Filter for captures only
+    //========================================================================//
+    // Filter for neutrons that entered the detector (EntryFlag == 1)
+    //========================================================================//
+    auto dfEntered = df.Filter("EntryFlag == 1");
+
+    // Count entries
+    auto countEntries = dfEntered.Count();
+
+    // Compute generated neutron energy statistics for neutrons that entered
+    auto meanGenE = dfEntered.Mean("NeutronEnergy");
+    auto stddevGenE = dfEntered.StdDev("NeutronEnergy");
+
+    //========================================================================//
+    // Filter for captures (CaptureFlag == 1 with valid TOF energy)
+    //========================================================================//
     auto dfCapture = df.Filter("CaptureFlag == 1 && TOFEnergy > 0");
 
     // Count captures
@@ -259,45 +227,27 @@ AngleResults analyzeAngleGroup(Double_t angle, Double_t distance,
     auto histTOF = dfCapture.Histo1D({histName, histName, 100, 0, 300}, "TOFEnergy");
 
     //========================================================================//
-    // Calculate generated neutron energy within detector theta range
-    //========================================================================//
-    Double_t phi = calculatePlanarAnglePhi(distance);
-    auto thetaRange = getThetaRange(angle, phi, hasNegativeAngles);
-    Double_t thetaMin = thetaRange.first;
-    Double_t thetaMax = thetaRange.second;
-
-    // Filter for neutrons within theta range using lambda
-    auto dfFiltered = df.Filter(
-        [thetaMin, thetaMax](Double_t theta) {
-            return theta >= thetaMin && theta <= thetaMax;
-        },
-        {"NeutronTheta"}
-    );
-
-    auto countFiltered = dfFiltered.Count();
-    auto meanGenE = dfFiltered.Mean("NeutronEnergy");
-    auto stddevGenE = dfFiltered.StdDev("NeutronEnergy");
-
     // Trigger computation (lazy evaluation up to this point)
+    //========================================================================//
     result.totalEvents = *countTotal;
+    result.entries = *countEntries;
     result.captures = *countCaptures;
     result.meanTOFEnergy = *meanTOF;
     result.stddevTOFEnergy = *stddevTOF;
 
-    // Store generated neutron energy statistics
-    result.nFilteredNeutrons = *countFiltered;
-    if (result.nFilteredNeutrons > 0) {
+    // Store generated neutron energy statistics (for neutrons that entered)
+    if (result.entries > 0) {
         result.meanGenEnergy = *meanGenE;
         result.stddevGenEnergy = *stddevGenE;
-        if (result.nFilteredNeutrons > 1) {
-            result.stderrGenEnergy = result.stddevGenEnergy / TMath::Sqrt(result.nFilteredNeutrons);
+        if (result.entries > 1) {
+            result.stderrGenEnergy = result.stddevGenEnergy / TMath::Sqrt(result.entries);
         }
     }
 
-    // Calculate efficiency with binomial error
-    if (result.totalEvents > 0) {
-        result.efficiency = (Double_t)result.captures / result.totalEvents;
-        result.efficiencyError = TMath::Sqrt(result.efficiency * (1.0 - result.efficiency) / result.totalEvents);
+    // Calculate efficiency: captures / entries (with binomial error)
+    if (result.entries > 0) {
+        result.efficiency = (Double_t)result.captures / result.entries;
+        result.efficiencyError = TMath::Sqrt(result.efficiency * (1.0 - result.efficiency) / result.entries);
     }
 
     // Standard error of mean for TOF
@@ -392,15 +342,6 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
         return;
     }
 
-    // Determine if dataset has negative angles (for edge case handling)
-    Bool_t hasNegativeAngles = false;
-    for (const auto& [angle, _] : filesByAngle) {
-        if (angle < 0) {
-            hasNegativeAngles = true;
-            break;
-        }
-    }
-
     //========================================================================//
     // Analyze each angle group
     //========================================================================//
@@ -410,13 +351,14 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
 
     for (const auto& [angle, angleFiles] : filesByAngle) {
         Double_t distance = distanceByAngle[angle];
-        AngleResults res = analyzeAngleGroup(angle, distance, angleFiles, hasNegativeAngles);
+        AngleResults res = analyzeAngleGroup(angle, distance, angleFiles);
         results.push_back(res);
 
         std::ostringstream oss;
         oss << "  Angle " << std::setw(6) << std::fixed << std::setprecision(1)
             << angle << " deg @ " << std::setprecision(1) << distance << " cm: "
-            << angleFiles.size() << " file(s), " << res.totalEvents << " events\n";
+            << angleFiles.size() << " file(s), " << res.totalEvents << " events, "
+            << res.entries << " entries\n";
         printBoth(oss.str());
     }
 
@@ -496,10 +438,11 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
     //========================================================================//
     std::ostringstream tableStream;
     tableStream << std::fixed << std::setprecision(1);
-    tableStream << "--------------------------------------------------------------------------------------------------------------------------------\n";
+    tableStream << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
     tableStream << std::setw(10) << "Angle"
                 << std::setw(10) << "Distance"
                 << std::setw(12) << "Events"
+                << std::setw(12) << "Entries"
                 << std::setw(12) << "Captures"
                 << std::setw(18) << "Efficiency"
                 << std::setw(22) << "Gen Energy"
@@ -509,19 +452,22 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
                 << std::setw(10) << "[cm]"
                 << std::setw(12) << ""
                 << std::setw(12) << ""
+                << std::setw(12) << ""
                 << std::setw(18) << "[%]"
                 << std::setw(22) << "[keV]"
                 << std::setw(22) << "[keV]"
                 << "\n";
-    tableStream << "--------------------------------------------------------------------------------------------------------------------------------\n";
+    tableStream << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
 
     ULong64_t totalEventsAll = 0;
+    ULong64_t totalEntriesAll = 0;
     ULong64_t totalCapturesAll = 0;
 
     for (const auto& res : results) {
         tableStream << std::setw(10) << res.angle
                     << std::setw(10) << res.distance
                     << std::setw(12) << res.totalEvents
+                    << std::setw(12) << res.entries
                     << std::setw(12) << res.captures
                     << std::setw(11) << std::setprecision(3) << 100.0 * res.efficiency
                     << " +/- " << std::setprecision(3) << std::setw(5) << 100.0 * res.efficiencyError
@@ -531,17 +477,19 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
                     << " +/- " << std::setprecision(2) << std::setw(6) << res.stderrTOFEnergy
                     << "\n";
         totalEventsAll += res.totalEvents;
+        totalEntriesAll += res.entries;
         totalCapturesAll += res.captures;
     }
 
-    tableStream << "--------------------------------------------------------------------------------------------------------------------------------\n";
+    tableStream << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
     tableStream << std::setw(10) << "TOTAL"
                 << std::setw(10) << ""
                 << std::setw(12) << totalEventsAll
+                << std::setw(12) << totalEntriesAll
                 << std::setw(12) << totalCapturesAll
-                << std::setw(11) << std::setprecision(3) << 100.0 * totalCapturesAll / totalEventsAll
+                << std::setw(11) << std::setprecision(3) << 100.0 * totalCapturesAll / totalEntriesAll
                 << "\n";
-    tableStream << "================================================================================================================================\n\n";
+    tableStream << "================================================================================================================================================\n\n";
 
     printBoth(tableStream.str());
 

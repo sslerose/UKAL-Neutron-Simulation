@@ -110,7 +110,8 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   // Initialize event variables
   //========================================================================//
   
-  G4bool captureOccurred = false;
+  G4bool neutronEntered = false;    // track if neutron entered detector
+  G4bool captureOccurred = false;   // track if neutron capture occurred
   G4double captureTime = -1.0;      // time of neutron capture (-1 = no capture)
   G4double TOF_Energy = -1.0;       // neutron energy from TOF (keV)
 
@@ -147,6 +148,11 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   if (nHits > 0) {
     for (G4int i = 0; i < nHits; i++) {
       DetectorHit* hit = (*hc)[i];
+
+      // Check for neutron entry into detector
+      if (hit->GetNeutronEntered() && hit->GetProcessName() == "neutronEntry") {
+        neutronEntered = true;
+      }
       
       // Check for neutron capture event - marks where scintillation occurs
       if (hit->GetProcessName() == "nCapture") {
@@ -187,6 +193,7 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
 
   analysisManager->FillNtupleDColumn(HistoManager::kNT_NeutronEnergy, neutronEnergy_keV);
   analysisManager->FillNtupleDColumn(HistoManager::kNT_NeutronTheta, neutronTheta_deg);
+  analysisManager->FillNtupleIColumn(HistoManager::kNT_EntryFlag, neutronEntered ? 1 : 0);
   analysisManager->FillNtupleIColumn(HistoManager::kNT_CaptureFlag, captureOccurred ? 1 : 0);
   analysisManager->FillNtupleDColumn(HistoManager::kNT_TOF, captureTime / ns);  // -1 if no capture
   analysisManager->FillNtupleDColumn(HistoManager::kNT_TOFEnergy, TOF_Energy);  // -1 if no capture

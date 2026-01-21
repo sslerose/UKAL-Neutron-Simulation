@@ -195,4 +195,4 @@ Most of the data from the test run is not insightful, but the captures histogram
 
 ### Full Run
 
-Run the full TOF simulation using `run_angle.mac` . If using the cluster, change the macro file in `run_nTOF.sh` .
+Run the full TOF simulation using `run_angle.mac` . If using the cluster, change the macro file in `run_nTOF.sh` and increase the time limit (roughly 30 minutes for every 100 million neutrons generated).

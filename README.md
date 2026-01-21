@@ -264,7 +264,11 @@ If you're using the remote desktop, open a terminal in that instance. If you're 
    }
    alias geant4make="setup_geant4"
    ```
-   **NOTE:** The alias `geant4make` must be called at the beginning of every new Geant4 session, just like when running projects locally.  
+3. Source the bash file:
+   ```bash
+   source ~/.bashrc
+   ```
+   **NOTE:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session, just like when running projects locally.  
    **NOTE 2:** If `setup_geant4` already exists, change that command (and the corresponding alias) to `geant4_singularity` .
 
 

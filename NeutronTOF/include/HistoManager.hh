@@ -76,9 +76,10 @@ class HistoManager
     //========================================================================//
     static constexpr G4int kNT_NeutronEnergy = 0; // Neutron energy from primary generator (keV)
     static constexpr G4int kNT_NeutronTheta = 1;  // Neutron angle from primary generator (deg)
-    static constexpr G4int kNT_CaptureFlag = 2;   // Capture occurred flag (1=capture, 0=no capture)
-    static constexpr G4int kNT_TOF = 3;           // Time of flight (i.e., capture time) (ns)
-    static constexpr G4int kNT_TOFEnergy = 4;     // Neutron energy from TOF (keV)
+    static constexpr G4int kNT_EntryFlag = 2;   // Entry occurred flag (1=entered, 0=not entered)
+    static constexpr G4int kNT_CaptureFlag = 3;   // Capture occurred flag (1=capture, 0=no capture)
+    static constexpr G4int kNT_TOF = 4;           // Time of flight (i.e., capture time) (ns)
+    static constexpr G4int kNT_TOFEnergy = 5;     // Neutron energy from TOF (keV)
 
   private:
     void Book();

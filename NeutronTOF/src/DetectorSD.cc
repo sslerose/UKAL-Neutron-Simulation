@@ -94,56 +94,84 @@ void DetectorSD::Initialize(G4HCofThisEvent* hce)
 G4bool DetectorSD::ProcessHits(G4Step* step, G4TouchableHistory*)
 {
   //=======================================================================//
-  // Get current neutron process
+  // Get particle information
   //=======================================================================//
 
-  G4String particleName = step->GetTrack()->GetDefinition()->GetParticleName();
+  G4Track* track = step->GetTrack();
+  G4String particleName = track->GetDefinition()->GetParticleName();
 
   if (particleName != "neutron") {
     return false;
   }
 
-  // Get process that defined this step
-  const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
-  G4String processName = "";
 
-  if (!process) {
-    return false;  // No process defined (user limit step, etc.)
-  }
+  //=======================================================================//
+  // Check if neutron is entering the detector volume
+  //=======================================================================//
   
-  processName = process->GetProcessName();
+  G4StepPoint* preStepPoint = step->GetPreStepPoint();
+  G4StepPoint* postStepPoint = step->GetPostStepPoint();
+  
+  // Check if this step crosses a geometry boundary
+  G4bool isEntering = false;
+  if (preStepPoint->GetStepStatus() == fGeomBoundary) {
+    // Neutron crossed a boundary to enter this volume
+    isEntering = true;
+    
+    // Create a hit to mark neutron entry
+    DetectorHit* entryHit = new DetectorHit();
+    entryHit->SetTrackID(track->GetTrackID());
+    entryHit->SetPos(preStepPoint->GetPosition());
+    entryHit->SetTime(preStepPoint->GetGlobalTime());
+    entryHit->SetParticleType(particleName);
+    entryHit->SetProcessName("neutronEntry");  // Special marker for entry
+    entryHit->SetNeutronEntered(true);
+    
+    fHitsCollection->insert(entryHit);
+  }
 
 
   //========================================================================//
   // Record hits for neutron interaction processes
   //========================================================================//
+
+  // Get process that defined this step
+  const G4VProcess* process = postStepPoint->GetProcessDefinedStep();
+  G4String processName = "";
+
+  if (!process) {
+    return isEntering;  // Return true if entry but no process defined
+  }
   
-  G4bool recordHit = false;
+  processName = process->GetProcessName();
+  
+  G4bool recordInteraction = false;
 
   // Check for neutron interaction processes of interest
   if (processName == "hadElastic" || 
       processName == "nCapture" || 
       processName == "neutronInelastic" ||
       processName == "nFission") {
-    recordHit = true;
+    recordInteraction = true;
   }
   
-  if (!recordHit) return false;
+  if (!recordInteraction) {
+    return isEntering;  // Return true if entry but no hit to record
+  }
 
   // Create a new hit for this step
-  DetectorHit* newHit = new DetectorHit();
+  DetectorHit* interactionHit = new DetectorHit();
 
   // Fill hit with step information
-  newHit->SetTrackID(step->GetTrack()->GetTrackID());
-  // newHit->SetEdep(edep);
-  // newHit->SetTrackLength(stepLength);
-  newHit->SetPos(step->GetPostStepPoint()->GetPosition());
-  newHit->SetTime(step->GetPostStepPoint()->GetGlobalTime());
-  newHit->SetParticleType(particleName);
-  newHit->SetProcessName(processName);
+  interactionHit->SetTrackID(track->GetTrackID());
+  interactionHit->SetPos(postStepPoint->GetPosition());
+  interactionHit->SetTime(postStepPoint->GetGlobalTime());
+  interactionHit->SetParticleType(particleName);
+  interactionHit->SetProcessName(processName);
+  interactionHit->SetNeutronEntered(false);  // This is an interaction, not entry
 
   // Add hit to the collection
-  fHitsCollection->insert(newHit);
+  fHitsCollection->insert(interactionHit);
 
   return true;
 }

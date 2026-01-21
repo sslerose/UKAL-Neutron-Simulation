@@ -131,13 +131,16 @@ void HistoManager::Book()
   // Column 1: Primary neutron angle (degrees)
   analysisManager->CreateNtupleDColumn("NeutronTheta");
 
-  // Column 2: Capture flag (1 = capture occurred, 0 = no capture)
+  // Column 2: Entry flag (1 = entered detector, 0 = did not enter)
+  analysisManager->CreateNtupleIColumn("EntryFlag");
+
+  // Column 3: Capture flag (1 = capture occurred, 0 = no capture)
   analysisManager->CreateNtupleIColumn("CaptureFlag");
   
-  // Column 3: Time of flight = capture time (ns), -1 if no capture
+  // Column 4: Time of flight = capture time (ns), -1 if no capture
   analysisManager->CreateNtupleDColumn("TOF");
 
-  // Column 4: Neutron energy from TOF (keV), -1 if no capture
+  // Column 5: Neutron energy from TOF (keV), -1 if no capture
   analysisManager->CreateNtupleDColumn("TOFEnergy");
   
   

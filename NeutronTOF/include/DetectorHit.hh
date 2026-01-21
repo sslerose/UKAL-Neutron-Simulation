@@ -60,14 +60,6 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-/// Neutron detector hit class
-///
-/// Stores information about energy depositions in the Li-6 glass detector.
-/// Each step that deposits energy creates or updates a hit.
-/// Key data for neutron detection analysis:
-/// - Time (for time-of-flight measurements)
-/// - Particle type (neutron, triton, alpha, etc.)
-
 class DetectorHit : public G4VHit
 {
   public:
@@ -97,6 +89,7 @@ class DetectorHit : public G4VHit
     void SetTime(G4double t)                  { fTime = t; }
     void SetParticleType(G4String type)       { fParticleType = type; }
     void SetProcessName(G4String process)     { fProcessName = process; }
+    void SetNeutronEntered(G4bool entered)    { fNeutronEntered = entered; }
 
     // Getters
     G4int GetTrackID() const                  { return fTrackID; }
@@ -106,6 +99,7 @@ class DetectorHit : public G4VHit
     G4double GetTime() const                  { return fTime; }
     G4String GetParticleType() const          { return fParticleType; }
     G4String GetProcessName() const           { return fProcessName; }
+    G4bool GetNeutronEntered() const          { return fNeutronEntered; }
 
   private:
     G4int         fTrackID = -1;        // Track ID number
@@ -114,6 +108,7 @@ class DetectorHit : public G4VHit
     G4ThreeVector fPos;                 // Position of the hit
     G4double      fTime = 0.;           // Global time of the hit (for TOF)
     G4String      fParticleType = "";   // Particle type causing the hit
+    G4bool        fNeutronEntered = false;  // Flag to indicate if neutron has entered detector
     G4String      fProcessName = "";    // Process that created this step
 };
 
