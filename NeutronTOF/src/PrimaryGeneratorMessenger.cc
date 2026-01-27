@@ -154,6 +154,18 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
   fPrintCmd->SetGuidance("Print current neutron source configuration.");
   fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
+
+  //========================================================================//
+  // Detector-focused generation
+  //========================================================================//
+  fLimitToDetectorCmd = new G4UIcmdWithABool("/neutronTOF/gun/limitToDetector", this);
+  fLimitToDetectorCmd->SetGuidance("Limit neutron generation to detector direction.");
+  fLimitToDetectorCmd->SetGuidance("  true  = Only generate neutrons that can hit the detector");
+  fLimitToDetectorCmd->SetGuidance("  false = Generate neutrons in all directions (default)");
+  fLimitToDetectorCmd->SetGuidance("  Note: Uses current detector angle and distance from DetectorConstruction");
+  fLimitToDetectorCmd->SetParameterName("limitToDetector", false);
+  fLimitToDetectorCmd->SetDefaultValue(false);
+  fLimitToDetectorCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -167,6 +179,7 @@ PrimaryGeneratorMessenger::~PrimaryGeneratorMessenger()
   delete fTargetThicknessCmd;
   delete fPrintCmd;
   delete fGunEnergyCmd;
+  delete fLimitToDetectorCmd;
   delete fGunDir;
 }
 
@@ -224,6 +237,13 @@ void PrimaryGeneratorMessenger::SetNewValue(G4UIcommand* command, G4String newVa
   //========================================================================//
   else if (command == fGunEnergyCmd) {
     config->SetGunEnergy(fGunEnergyCmd->GetNewDoubleValue(newValue));
+  }
+
+  //========================================================================//
+  // Detector-focused generation
+  //========================================================================//
+  else if (command == fLimitToDetectorCmd) {
+    config->SetLimitToDetector(fLimitToDetectorCmd->GetNewBoolValue(newValue));
   }
 }
 

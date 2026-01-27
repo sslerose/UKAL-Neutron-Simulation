@@ -57,6 +57,7 @@
 class G4Event;
 class SimLiT;
 class PrimaryGeneratorMessenger;
+class DetectorConstruction;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -132,7 +133,17 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     // Sync local SimLiT with shared configuration
     //========================================================================//
     void SyncWithConfig();
-    
+
+    //========================================================================//
+    // Compute angular limits for detector-focused generation
+    //========================================================================//
+    void ComputeDetectorAngleLimits();
+
+    //========================================================================//
+    // Generate phi angle (with optional detector focusing)
+    //========================================================================//
+    G4double GeneratePhiForTheta(G4double theta) const;
+
     //========================================================================//
     // Map material name to SimLiT composition enum
     //========================================================================//
@@ -149,7 +160,20 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4String fCachedTargetMaterial = "";
     G4double fCachedTargetThickness = -1.;
     G4double fCachedGunEnergy = -1.;
-    
+
+    //========================================================================//
+    // Detector geometry cache for focused generation
+    //========================================================================//
+    G4bool fCachedLimitToDetector = false;
+    G4double fCachedDetectorAngle = 0.;      // radians
+    G4double fCachedDetectorDistance = 0.;   // Geant4 internal units
+
+    // Computed angle limits (updated when detector params change)
+    G4double fThetaMin = 0.;                 // radians
+    G4double fThetaMax = CLHEP::pi;          // radians
+    G4double fThetaHalfAngle = 0.;           // theta_r/2 in radians
+    G4double fDetectorRadius = 0.;           // Geant4 internal units
+
     //========================================================================//
     // Last generated neutron parameters (for analysis)
     //========================================================================//

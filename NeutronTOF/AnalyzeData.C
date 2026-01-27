@@ -164,6 +164,10 @@ struct AngleResults {
     // Histogram result (for per-angle TOF spectrum)
     ROOT::RDF::RResultPtr<TH1D> histTOF;
 
+    // Fine-binned histograms for Feinberg-style analysis (1 keV bins, 0-150 keV)
+    ROOT::RDF::RResultPtr<TH1D> histTOF_fine;        // TOF energy (captures only)
+    ROOT::RDF::RResultPtr<TH1D> histGenEnergy_fine;  // Generated energy (entries)
+
     AngleResults()
         : angle(-999.0), distance(-999.0), totalEvents(0), entries(0), captures(0),
           efficiency(0.0), efficiencyError(0.0),
@@ -227,6 +231,19 @@ AngleResults analyzeAngleGroup(Double_t angle, Double_t distance,
     auto histTOF = dfCapture.Histo1D({histName, histName, 100, 0, 300}, "TOFEnergy");
 
     //========================================================================//
+    // Fine-binned histograms for Feinberg-style analysis (1 keV bins, 0-150 keV)
+    //========================================================================//
+    // TOF energy histogram (captures only) - fine binning
+    auto histNameTOF_fine = Form("hTOF_fine_angle_%.1f", angle);
+    auto histTOF_fine = dfCapture.Histo1D(
+        {histNameTOF_fine, histNameTOF_fine, 150, 0, 150}, "TOFEnergy");
+
+    // Generated energy histogram for neutrons that ENTERED detector (better statistics)
+    auto histNameGen_fine = Form("hGenEnergy_fine_angle_%.1f", angle);
+    auto histGenEnergy_fine = dfEntered.Histo1D(
+        {histNameGen_fine, histNameGen_fine, 150, 0, 150}, "NeutronEnergy");
+
+    //========================================================================//
     // Trigger computation (lazy evaluation up to this point)
     //========================================================================//
     result.totalEvents = *countTotal;
@@ -255,10 +272,261 @@ AngleResults analyzeAngleGroup(Double_t angle, Double_t distance,
         result.stderrTOFEnergy = result.stddevTOFEnergy / TMath::Sqrt(result.captures);
     }
 
-    // Store histogram result pointer (not evaluated yet)
+    // Store histogram result pointers (not evaluated yet)
     result.histTOF = histTOF;
+    result.histTOF_fine = histTOF_fine;
+    result.histGenEnergy_fine = histGenEnergy_fine;
 
     return result;
+}
+
+//============================================================================//
+// Feinberg-style individual angular spectra (Figure 37/41 style)
+// Plots generated vs detected (TOF) energy spectra for selected angles
+// Both spectra normalized to unit integral for shape comparison
+//============================================================================//
+void plotFeinbergAngularSpectra(std::vector<AngleResults>& results,
+                                 const std::vector<Double_t>& targetAngles = {10.0, 30.0, 50.0, 60.0}) {
+
+    // Find which target angles are available in the data
+    std::vector<AngleResults*> matchedResults;
+    std::vector<Double_t> matchedAngles;
+
+    for (Double_t targetAngle : targetAngles) {
+        AngleResults* bestMatch = nullptr;
+        Double_t minDiff = 999.0;
+
+        for (auto& res : results) {
+            Double_t diff = TMath::Abs(res.angle - targetAngle);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestMatch = &res;
+            }
+        }
+
+        // Only include if within 2.5 degrees of target (half a typical 5-deg bin)
+        if (bestMatch && minDiff <= 2.5) {
+            matchedResults.push_back(bestMatch);
+            matchedAngles.push_back(bestMatch->angle);
+        }
+    }
+
+    if (matchedResults.empty()) {
+        std::cerr << "Warning: No matching angles found for Feinberg angular spectra plot.\n";
+        return;
+    }
+
+    // Determine canvas layout based on number of matched angles
+    Int_t nPlots = matchedResults.size();
+    Int_t nCols = (nPlots <= 2) ? nPlots : 2;
+    Int_t nRows = (nPlots + nCols - 1) / nCols;
+
+    TCanvas* cFeinberg = new TCanvas("cFeinberg_angular",
+        "Feinberg-Style Angular Spectra", 600 * nCols, 500 * nRows);
+    cFeinberg->Divide(nCols, nRows);
+
+    for (size_t idx = 0; idx < matchedResults.size(); idx++) {
+        AngleResults* res = matchedResults[idx];
+
+        cFeinberg->cd(idx + 1);
+        gPad->SetGrid();
+        gPad->SetLeftMargin(0.12);
+        gPad->SetRightMargin(0.05);
+
+        // Clone histograms to avoid modifying originals
+        TH1D* hTOF = (TH1D*)res->histTOF_fine->Clone(
+            Form("hTOF_feinberg_%.1f", res->angle));
+        TH1D* hGen = (TH1D*)res->histGenEnergy_fine->Clone(
+            Form("hGen_feinberg_%.1f", res->angle));
+
+        // Normalize both histograms to same integral for shape comparison
+        Double_t integralTOF = hTOF->Integral();
+        Double_t integralGen = hGen->Integral();
+
+        if (integralTOF > 0) hTOF->Scale(1.0 / integralTOF);
+        if (integralGen > 0) hGen->Scale(1.0 / integralGen);
+
+        // Style for generated spectrum (filled, semi-transparent)
+        hGen->SetFillColor(kBlue);
+        hGen->SetFillStyle(3004);
+        hGen->SetLineColor(kBlue);
+        hGen->SetLineWidth(2);
+
+        // Style for TOF spectrum (line only, overlaid)
+        hTOF->SetLineColor(kRed);
+        hTOF->SetLineWidth(2);
+        hTOF->SetFillStyle(0);
+
+        // Set axis labels
+        hGen->SetTitle(Form("#theta = %.1f#circ;Energy [keV];Normalized Counts / keV",
+                            res->angle));
+        hGen->SetStats(0);
+        hGen->GetYaxis()->SetTitleOffset(1.4);
+
+        // Find maximum for Y axis scaling
+        Double_t maxY = TMath::Max(hGen->GetMaximum(), hTOF->GetMaximum());
+        hGen->SetMaximum(maxY * 1.2);
+        hGen->SetMinimum(0);
+
+        // Draw
+        hGen->Draw("HIST");
+        hTOF->Draw("HIST SAME");
+
+        // Add legend
+        TLegend* leg = new TLegend(0.55, 0.75, 0.93, 0.88);
+        leg->AddEntry(hGen, "Generated (entries)", "f");
+        leg->AddEntry(hTOF, "Detected (TOF)", "l");
+        leg->SetBorderSize(0);
+        leg->Draw();
+    }
+
+    cFeinberg->Update();
+    cFeinberg->SaveAs("feinberg_angular_spectra.png");
+
+    std::cout << "Feinberg angular spectra created for angles: ";
+    for (size_t i = 0; i < matchedAngles.size(); i++) {
+        std::cout << matchedAngles[i];
+        if (i < matchedAngles.size() - 1) std::cout << ", ";
+    }
+    std::cout << " degrees\n";
+}
+
+//============================================================================//
+// Feinberg-style solid-angle weighted integral spectrum (Figure 38 style)
+// Sums spectra from all angles with weight = sin(theta_center)
+// The constant 2*pi*dtheta cancels in normalization
+//============================================================================//
+void plotFeinbergIntegralSpectrum(std::vector<AngleResults>& results) {
+
+    if (results.empty()) {
+        std::cerr << "Warning: No results for Feinberg integral spectrum.\n";
+        return;
+    }
+
+    // Create output histograms for weighted sum (1 keV bins, 0-150 keV)
+    TH1D* hWeightedTOF = new TH1D("hWeightedTOF_integral",
+        "Solid-Angle Weighted TOF Spectrum", 150, 0, 150);
+    TH1D* hWeightedGen = new TH1D("hWeightedGen_integral",
+        "Solid-Angle Weighted Generated Spectrum", 150, 0, 150);
+
+    std::cout << "\nSolid Angle Weights Applied (weight = sin(theta)):\n";
+
+    // Sum contributions from all angles with solid angle weighting
+    for (auto& res : results) {
+        // Calculate solid angle weight: sin(theta_center)
+        // The factor 2*pi*dtheta is constant and cancels in normalization
+        Double_t thetaRad = TMath::Abs(res.angle) * TMath::DegToRad();
+        Double_t weight = TMath::Sin(thetaRad);
+
+        // Handle theta=0 case (weight would be 0)
+        if (weight < 1e-10) {
+            std::cout << "  Angle " << std::setw(6) << std::fixed << std::setprecision(1)
+                      << res.angle << " deg: weight = " << std::setprecision(4)
+                      << weight << " (skipped, zero weight)\n";
+            continue;
+        }
+
+        std::cout << "  Angle " << std::setw(6) << std::fixed << std::setprecision(1)
+                  << res.angle << " deg: weight = " << std::setprecision(4) << weight << "\n";
+
+        // Get fine-binned histograms and add weighted contribution
+        TH1D* hTOF = (TH1D*)res.histTOF_fine->Clone();
+        TH1D* hGen = (TH1D*)res.histGenEnergy_fine->Clone();
+
+        hWeightedTOF->Add(hTOF, weight);
+        hWeightedGen->Add(hGen, weight);
+
+        delete hTOF;
+        delete hGen;
+    }
+
+    // Create canvas with two panels: absolute and normalized
+    TCanvas* cIntegral = new TCanvas("cFeinberg_integral",
+        "Feinberg-Style Integral Spectrum", 1200, 500);
+    cIntegral->Divide(2, 1);
+
+    //--- Panel 1: Absolute counts (weighted) ---
+    cIntegral->cd(1);
+    gPad->SetGrid();
+    gPad->SetLeftMargin(0.12);
+
+    TH1D* hGenAbs = (TH1D*)hWeightedGen->Clone("hGen_abs");
+    TH1D* hTOFAbs = (TH1D*)hWeightedTOF->Clone("hTOF_abs");
+
+    hGenAbs->SetFillColor(kBlue);
+    hGenAbs->SetFillStyle(3004);
+    hGenAbs->SetLineColor(kBlue);
+    hGenAbs->SetLineWidth(2);
+
+    hTOFAbs->SetLineColor(kRed);
+    hTOFAbs->SetLineWidth(2);
+    hTOFAbs->SetFillStyle(0);
+
+    hGenAbs->SetTitle("Solid-Angle Weighted (Absolute);Energy [keV];Weighted Counts / keV");
+    hGenAbs->SetStats(0);
+    hGenAbs->GetYaxis()->SetTitleOffset(1.4);
+
+    Double_t maxAbs = TMath::Max(hGenAbs->GetMaximum(), hTOFAbs->GetMaximum());
+    hGenAbs->SetMaximum(maxAbs * 1.2);
+    hGenAbs->SetMinimum(0);
+
+    hGenAbs->Draw("HIST");
+    hTOFAbs->Draw("HIST SAME");
+
+    TLegend* legAbs = new TLegend(0.55, 0.75, 0.88, 0.88);
+    legAbs->AddEntry(hGenAbs, "Generated (weighted)", "f");
+    legAbs->AddEntry(hTOFAbs, "Detected (weighted)", "l");
+    legAbs->SetBorderSize(0);
+    legAbs->Draw();
+
+    //--- Panel 2: Normalized for shape comparison ---
+    cIntegral->cd(2);
+    gPad->SetGrid();
+    gPad->SetLeftMargin(0.12);
+
+    TH1D* hGenNorm = (TH1D*)hWeightedGen->Clone("hGen_norm");
+    TH1D* hTOFNorm = (TH1D*)hWeightedTOF->Clone("hTOF_norm");
+
+    // Normalize to unit integral
+    Double_t intGen = hGenNorm->Integral();
+    Double_t intTOF = hTOFNorm->Integral();
+    if (intGen > 0) hGenNorm->Scale(1.0 / intGen);
+    if (intTOF > 0) hTOFNorm->Scale(1.0 / intTOF);
+
+    hGenNorm->SetFillColor(kBlue);
+    hGenNorm->SetFillStyle(3004);
+    hGenNorm->SetLineColor(kBlue);
+    hGenNorm->SetLineWidth(2);
+
+    hTOFNorm->SetLineColor(kRed);
+    hTOFNorm->SetLineWidth(2);
+    hTOFNorm->SetFillStyle(0);
+
+    hGenNorm->SetTitle("Solid-Angle Weighted (Normalized);Energy [keV];Normalized Counts / keV");
+    hGenNorm->SetStats(0);
+    hGenNorm->GetYaxis()->SetTitleOffset(1.4);
+
+    Double_t maxNorm = TMath::Max(hGenNorm->GetMaximum(), hTOFNorm->GetMaximum());
+    hGenNorm->SetMaximum(maxNorm * 1.2);
+    hGenNorm->SetMinimum(0);
+
+    hGenNorm->Draw("HIST");
+    hTOFNorm->Draw("HIST SAME");
+
+    TLegend* legNorm = new TLegend(0.55, 0.75, 0.88, 0.88);
+    legNorm->AddEntry(hGenNorm, "Generated (norm)", "f");
+    legNorm->AddEntry(hTOFNorm, "Detected (norm)", "l");
+    legNorm->SetBorderSize(0);
+    legNorm->Draw();
+
+    cIntegral->Update();
+    cIntegral->SaveAs("feinberg_integral_spectrum.png");
+
+    // Cleanup base histograms
+    delete hWeightedTOF;
+    delete hWeightedGen;
+
+    std::cout << "Feinberg integral spectrum saved.\n";
 }
 
 //============================================================================//
@@ -806,6 +1074,19 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
     c7->SaveAs("neutron_theta_distribution.png");
     c8->SaveAs("neutron_energy_vs_theta.png");
 
+    //========================================================================//
+    // Feinberg-style analysis plots
+    //========================================================================//
+    printBoth("\n--- Feinberg-Style Analysis ---\n");
+
+    // Plot individual angular spectra for representative angles (10, 30, 50, 60 deg)
+    plotFeinbergAngularSpectra(results);
+
+    // Plot solid-angle weighted integral spectrum
+    plotFeinbergIntegralSpectrum(results);
+
+    printBoth("\n");
+
     std::ostringstream plotList;
     plotList << "Plots saved:\n"
              << "  efficiency_vs_angle.png\n"
@@ -815,7 +1096,9 @@ void analyzeData(const char* directory = ".", const char* pattern = "nTOF_", int
              << "  tof_energy_per_angle.png\n"
              << "  neutron_energy_distribution.png\n"
              << "  neutron_theta_distribution.png\n"
-             << "  neutron_energy_vs_theta.png\n\n";
+             << "  neutron_energy_vs_theta.png\n"
+             << "  feinberg_angular_spectra.png (Feinberg Fig 37/41 style)\n"
+             << "  feinberg_integral_spectrum.png (Feinberg Fig 38 style)\n\n";
     printBoth(plotList.str());
 
     printBoth("============================================================\n");

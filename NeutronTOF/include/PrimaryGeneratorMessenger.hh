@@ -82,9 +82,12 @@ class PrimaryGeneratorMessenger : public G4UImessenger
     G4UIcmdWithAString*        fTargetMaterialCmd = nullptr;
     G4UIcmdWithADouble*        fTargetThicknessCmd = nullptr;
     G4UIcmdWithoutParameter*   fPrintCmd = nullptr;
-    
+
     // Simple gun energy command (when SimLiT disabled)
     G4UIcmdWithADoubleAndUnit* fGunEnergyCmd = nullptr;
+
+    // Detector-focused generation command
+    G4UIcmdWithABool*          fLimitToDetectorCmd = nullptr;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

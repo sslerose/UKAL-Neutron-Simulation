@@ -50,12 +50,15 @@
 #include "PrimaryGeneratorAction.hh"
 #include "PrimaryGeneratorMessenger.hh"
 #include "PrimaryGeneratorConfig.hh"
+#include "DetectorConstruction.hh"
+#include "Constants.hh"
 #include "SimLiT.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleGun.hh"
 #include "G4ParticleTable.hh"
 #include "G4ParticleDefinition.hh"
+#include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4PhysicalConstants.hh"
 #include "Randomize.hh"
@@ -183,6 +186,121 @@ void PrimaryGeneratorAction::SyncWithConfig()
     fParticleGun->SetParticleEnergy(gunEnergy);
     fCachedGunEnergy = gunEnergy;
   }
+
+  // Check and update detector-focused mode
+  G4bool limitToDetector = config->GetLimitToDetector();
+  if (limitToDetector != fCachedLimitToDetector) {
+    fCachedLimitToDetector = limitToDetector;
+    if (limitToDetector) {
+      ComputeDetectorAngleLimits();
+    }
+  }
+
+  // If detector-focused mode is on, also check if detector geometry changed
+  if (fCachedLimitToDetector) {
+    const DetectorConstruction* detConstruction =
+      static_cast<const DetectorConstruction*>(
+        G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+    if (detConstruction) {
+      // Use absolute value since DetectorConstruction stores negated angle
+      G4double currentAngle = std::abs(detConstruction->GetDetectorAngle());
+      G4double currentDistance = detConstruction->GetDetectorDistance();
+      if (std::abs(currentAngle - fCachedDetectorAngle) > 1e-6 ||
+          std::abs(currentDistance - fCachedDetectorDistance) > 1e-6) {
+        ComputeDetectorAngleLimits();
+      }
+    }
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Compute angular limits for detector-focused generation
+//------------------------------------------------------------------------//
+void PrimaryGeneratorAction::ComputeDetectorAngleLimits()
+{
+  // Get detector construction from run manager
+  const DetectorConstruction* detConstruction =
+    static_cast<const DetectorConstruction*>(
+      G4RunManager::GetRunManager()->GetUserDetectorConstruction());
+
+  if (!detConstruction) {
+    G4cerr << "PrimaryGeneratorAction::ComputeDetectorAngleLimits: "
+           << "Could not get DetectorConstruction" << G4endl;
+    return;
+  }
+
+  // Cache detector parameters
+  // Note: DetectorConstruction stores fAssemblyAngle as negative of user input,
+  // so we take absolute value to get the polar angle (theta is always positive)
+  fCachedDetectorAngle = std::abs(detConstruction->GetDetectorAngle());
+  fCachedDetectorDistance = detConstruction->GetDetectorDistance();
+  fDetectorRadius = kDetectorRadius;
+
+  // Compute detector half-angle: theta_r/2 = arctan(R/D)
+  fThetaHalfAngle = std::atan(fDetectorRadius / fCachedDetectorDistance);
+
+  // Compute theta limits with 1.2x safety margin
+  G4double margin = 1.2 * fThetaHalfAngle;
+  fThetaMin = fCachedDetectorAngle - margin;
+  fThetaMax = fCachedDetectorAngle + margin;
+
+  // Clamp to valid range [0, pi]
+  if (fThetaMin < 0.) fThetaMin = 0.;
+  if (fThetaMax > CLHEP::pi) fThetaMax = CLHEP::pi;
+
+  G4cout << "Detector-focused generation limits updated:" << G4endl;
+  G4cout << "  Detector angle (theta_d): " << fCachedDetectorAngle / CLHEP::degree << " deg" << G4endl;
+  G4cout << "  Detector distance: " << fCachedDetectorDistance / CLHEP::cm << " cm" << G4endl;
+  G4cout << "  Detector half-angle: " << fThetaHalfAngle / CLHEP::degree << " deg" << G4endl;
+  G4cout << "  Theta range: [" << fThetaMin / CLHEP::degree << ", "
+         << fThetaMax / CLHEP::degree << "] deg" << G4endl;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Generate phi angle with optional detector focusing
+//------------------------------------------------------------------------//
+G4double PrimaryGeneratorAction::GeneratePhiForTheta(G4double theta) const
+{
+  // If not limiting to detector, or detector is along z-axis, use full range
+  // Small angle threshold: if theta_d < 1 degree, skip phi restriction
+  const G4double smallAngleThreshold = 1.0 * CLHEP::degree;
+
+  if (!fCachedLimitToDetector || std::abs(fCachedDetectorAngle) < smallAngleThreshold) {
+    return CLHEP::twopi * G4UniformRand();
+  }
+
+  // Compute phi restriction
+  // cos(phi) >= X = [cos(theta_r/2) - cos(theta)*cos(theta_d)] / [sin(theta)*sin(theta_d)]
+  G4double sinTheta = std::sin(theta);
+  G4double cosTheta = std::cos(theta);
+  G4double sinThetaD = std::sin(fCachedDetectorAngle);
+  G4double cosThetaD = std::cos(fCachedDetectorAngle);
+  G4double cosThetaR2 = std::cos(fThetaHalfAngle);
+
+  // Avoid division by near-zero
+  if (sinTheta < 1e-10 || std::abs(sinThetaD) < 1e-10) {
+    return CLHEP::twopi * G4UniformRand();
+  }
+
+  G4double X = (cosThetaR2 - cosTheta * cosThetaD) / (sinTheta * sinThetaD);
+
+  if (X >= 1.0) {
+    // No valid phi at this theta - use random and let caller handle
+    return CLHEP::twopi * G4UniformRand();
+  }
+  else if (X <= -1.0) {
+    // All phi values valid
+    return CLHEP::twopi * G4UniformRand();
+  }
+  else {
+    // Restricted phi range: [-phiMax, phiMax]
+    G4double phiMax = std::acos(X);
+    return phiMax * (2.0 * G4UniformRand() - 1.0);
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -222,34 +340,57 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     //====================================================================//
     // SimLiT mode: Generate neutron from 7Li(p,n)7Be reaction
     //====================================================================//
-    
+
     double energy_keV;  // neutron energy in keV
     double theta_rad;   // neutron angle in radians (from beam axis)
-    
-    // Generate neutron energy and angle from SimLiT
-    // GenerateNeutron stores energy and theta to reference parameters (energy_keV, theta_rad)
-    fSimLiTSource->GenerateNeutron(energy_keV, theta_rad);
-    
+    G4double phi;       // azimuthal angle
+
+    if (fCachedLimitToDetector) {
+      //------------------------------------------------------------------//
+      // Detector-focused generation: rejection sampling on theta
+      //------------------------------------------------------------------//
+      G4int maxAttempts = 10000;
+      G4int attempts = 0;
+
+      do {
+        fSimLiTSource->GenerateNeutron(energy_keV, theta_rad);
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          G4cerr << "PrimaryGeneratorAction: Warning - max rejection sampling "
+                 << "attempts reached. Theta range may be too restrictive." << G4endl;
+          break;
+        }
+      } while (theta_rad < fThetaMin || theta_rad > fThetaMax);
+
+      // Generate phi with detector focusing
+      phi = GeneratePhiForTheta(theta_rad);
+    }
+    else {
+      //------------------------------------------------------------------//
+      // Standard generation: full angular range
+      //------------------------------------------------------------------//
+      fSimLiTSource->GenerateNeutron(energy_keV, theta_rad);
+      phi = twopi * G4UniformRand();
+    }
+
     // Store for analysis access
     fNeutronEnergy = energy_keV;
     fNeutronTheta = theta_rad;
-    
+
     // Convert SimLiT energy (keV) to Geant4 internal units
     G4double energy = energy_keV * keV;
-    
-    // Generate random azimuthal angle (phi)
-    G4double phi = twopi * G4UniformRand();
-    
+
     // Calculate momentum direction from theta and phi
     G4double sinTheta = std::sin(theta_rad);
     G4double cosTheta = std::cos(theta_rad);
-    
+
     G4ThreeVector direction(
       sinTheta * std::cos(phi),
       sinTheta * std::sin(phi),
       cosTheta
     );
-    
+
     // Configure particle gun and generate vertex
     fParticleGun->SetParticleEnergy(energy);
     fParticleGun->SetParticleMomentumDirection(direction);

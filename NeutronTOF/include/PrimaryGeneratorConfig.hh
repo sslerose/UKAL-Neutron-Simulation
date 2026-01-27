@@ -98,6 +98,12 @@ class PrimaryGeneratorConfig
     G4double GetGunEnergy() const;
 
     //========================================================================//
+    // Detector-focused generation mode
+    //========================================================================//
+    void SetLimitToDetector(G4bool limit);
+    G4bool GetLimitToDetector() const;
+
+    //========================================================================//
     // Information methods - safe to call from any thread
     //========================================================================//
     void PrintParameters() const;
@@ -127,7 +133,8 @@ class PrimaryGeneratorConfig
     G4String fTargetMaterial;
     G4double fTargetThickness; // micrometers
     G4double fGunEnergy;       // Geant4 internal units (MeV)
-    
+    G4bool fLimitToDetector;   // If true, only generate neutrons toward detector
+
     //========================================================================//
     // Output filename (set by master, read by workers)
     //========================================================================//

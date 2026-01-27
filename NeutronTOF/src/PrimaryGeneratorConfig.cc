@@ -77,6 +77,7 @@ PrimaryGeneratorConfig::PrimaryGeneratorConfig()
     fTargetMaterial("LiF"),
     fTargetThickness(10.0),      // micrometers
     fGunEnergy(50.0*keV),        // Default gun energy
+    fLimitToDetector(false),     // Default: generate neutrons in all directions
     fOutputFileName(""),
     fHasOutputFileName(false),
     fMutex(G4MUTEX_INITIALIZER)
@@ -190,6 +191,31 @@ G4double PrimaryGeneratorConfig::GetGunEnergy() const
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set/Get detector-focused generation mode
+//------------------------------------------------------------------------//
+void PrimaryGeneratorConfig::SetLimitToDetector(G4bool limit)
+{
+  G4AutoLock lock(&fMutex);
+  fLimitToDetector = limit;
+
+  if (limit) {
+    G4cout << "Detector-focused neutron generation ENABLED" << G4endl;
+    G4cout << "  Neutrons will only be generated toward the detector" << G4endl;
+  } else {
+    G4cout << "Detector-focused neutron generation DISABLED" << G4endl;
+    G4cout << "  Neutrons will be generated in all directions" << G4endl;
+  }
+}
+
+G4bool PrimaryGeneratorConfig::GetLimitToDetector() const
+{
+  G4AutoLock lock(&fMutex);
+  return fLimitToDetector;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 void PrimaryGeneratorConfig::PrintParameters() const
 {
   G4AutoLock lock(&fMutex);
@@ -208,6 +234,11 @@ void PrimaryGeneratorConfig::PrintParameters() const
     G4cout << "    Material:       " << fTargetMaterial << G4endl;
     G4cout << "    Thickness:      " << fTargetThickness << " um" << G4endl;
     G4cout << "  Reaction threshold: 1880.4 keV" << G4endl;
+    if (fLimitToDetector) {
+      G4cout << "  Angular limit:    Detector-focused (limited theta/phi)" << G4endl;
+    } else {
+      G4cout << "  Angular limit:    Full hemisphere (unrestricted)" << G4endl;
+    }
   }
   else {
     G4cout << "  Source mode:      Simple particle gun" << G4endl;
