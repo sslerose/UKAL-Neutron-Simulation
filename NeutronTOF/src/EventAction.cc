@@ -54,6 +54,7 @@
 #include "PrimaryGeneratorAction.hh"
 #include "HistoManager.hh"
 #include "Constants.hh"
+#include "Run.hh"
 
 #include "G4AnalysisManager.hh"
 #include "G4Event.hh"
@@ -72,11 +73,7 @@ EventAction::EventAction(DetectorConstruction* det, PrimaryGeneratorAction* prim
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void EventAction::BeginOfEventAction(const G4Event*)
-{
-  // Called at the beginning of each event
-  // Currently empty - could be used for initialization if needed
-}
+void EventAction::BeginOfEventAction(const G4Event* event) {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -202,13 +199,19 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Analyze hits collection at the end of each event
+//------------------------------------------------------------------------//
 void EventAction::EndOfEventAction(const G4Event* event)
 {
+  // Track progress across all threads
+  Run::RecordEvent(event->GetEventID());
+
   //========================================================================//
   // Get and analyze hits collection from sensitive detector
   // Called at end of each event
   //========================================================================//
-  
+
   // Get sensitive detector hits collection ID (cached after first event)
   if (fDetectorHCID == -1) {
     fDetectorHCID = G4SDManager::GetSDMpointer()->GetCollectionID(kDetectorHCName);
@@ -240,7 +243,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
 void EventAction::PrintEventStatistics(G4double tof, G4int nHits) const
 {
   // Print event summary for periodic monitoring
-  G4cout 
+  G4cout
     << "Event Statistics:"
     << "\n  Time of Flight: " << std::setw(7) << G4BestUnit(tof, "Time")
     << "\n  Number of Hits: " << nHits

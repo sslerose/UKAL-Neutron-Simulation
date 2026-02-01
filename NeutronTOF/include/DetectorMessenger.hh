@@ -57,6 +57,7 @@ class DetectorConstruction;
 class G4UIdirectory;
 class G4UIcmdWithoutParameter;
 class G4UIcmdWithADoubleAndUnit;
+class G4UIcmdWithAString;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -78,7 +79,8 @@ class DetectorMessenger : public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fDetectorAngleCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fDetectorSpanningStartAngleCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fDetectorSpanningEndAngleCmd = nullptr;
-    G4UIcmdWithoutParameter* fPrintCmd = nullptr;
+    G4UIcmdWithAString*        fWorldMaterialCmd = nullptr;
+    G4UIcmdWithoutParameter*   fPrintCmd = nullptr;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

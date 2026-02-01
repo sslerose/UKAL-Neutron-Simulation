@@ -39,6 +39,15 @@
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
 
+#include <cmath>
+#include <ctime>
+
+// Static member definitions for progress tracking
+std::atomic<G4int> Run::fGlobalEventCount{0};
+std::atomic<G4int> Run::fNextGlobalMilestone{0};
+G4int Run::fTotalEventsInRun = 0;
+G4int Run::fCurrentMilestonePercent = 0;
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Run::Run(DetectorConstruction* det) : fDetector(det) {}
@@ -97,6 +106,72 @@ void Run::SumTrackLength(G4int nstep1, G4int nstep2, G4double trackl1, G4double 
   fTrackLen2 += trackl2;
   fTime1 += time1;
   fTime2 += time2;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Initialize progress tracking at the start of the run
+//------------------------------------------------------------------------//
+void Run::InitProgressTracking(G4int totalEvents)
+{
+  fTotalEventsInRun = totalEvents;
+  fGlobalEventCount.store(0);
+  fCurrentMilestonePercent = 10;
+  if (totalEvents > 0) {
+    fNextGlobalMilestone.store(static_cast<G4int>(std::round(0.1 * totalEvents)));
+  } else {
+    fNextGlobalMilestone.store(0);
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Reset progress tracking (e.g. between runs in the same job)
+//------------------------------------------------------------------------//
+void Run::ResetProgressTracking()
+{
+  fGlobalEventCount.store(0);
+  fNextGlobalMilestone.store(0);
+  fTotalEventsInRun = 0;
+  fCurrentMilestonePercent = 0;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Check event count and print progress if milestone reached
+//------------------------------------------------------------------------//
+void Run::RecordEvent(G4int /*eventID*/)
+{
+  if (fTotalEventsInRun <= 0) return;
+
+  G4int count = fGlobalEventCount.fetch_add(1) + 1;
+
+  G4int milestone = fNextGlobalMilestone.load();
+  if (milestone > 0 && count >= milestone) {
+    // Try to claim this milestone via CAS
+    if (fNextGlobalMilestone.compare_exchange_strong(milestone, 0)) {
+      // Get system wall-clock time
+      std::time_t now = std::time(nullptr);
+      std::tm* localTime = std::localtime(&now);
+      char timeStr[64];
+      std::strftime(timeStr, sizeof(timeStr), "%H:%M:%S", localTime);
+
+      G4cout << ">>> Event " << milestone << " starts at time " << timeStr << G4endl;
+
+      // Compute next milestone
+      G4int nextPercent = fCurrentMilestonePercent + 10;
+      if (nextPercent < 100) {
+        fCurrentMilestonePercent = nextPercent;
+        G4int nextMilestone = static_cast<G4int>(
+          std::round(static_cast<double>(nextPercent) / 100.0 * fTotalEventsInRun));
+        fNextGlobalMilestone.store(nextMilestone);
+      }
+      // If nextPercent >= 100, leave fNextGlobalMilestone at 0 (no more milestones)
+    }
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -168,8 +243,7 @@ void Run::EndOfRun()
   G4double density = material->GetDensity();
 
   G4String Particle = fParticle->GetParticleName();
-  G4cout << "\n The run is " << numberOfEvent << " " << Particle << " of "
-         << G4BestUnit(fEkin, "Energy") << " through "
+  G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
          << G4BestUnit(kDetectorLength, "Length") << " of " << material->GetName()
          << " (density: " << G4BestUnit(density, "Volumic Mass") << ")" << G4endl;
 
@@ -241,11 +315,6 @@ void Run::EndOfRun()
            << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy") << "\t( "
            << G4BestUnit(eMin, "Energy") << " --> " << G4BestUnit(eMax, "Energy") << ")" << G4endl;
   }
-
-  // normalize histograms
-  ////G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
-  ////G4double factor = 1./numberOfEvent;
-  ////analysisManager->ScaleH1(3,factor);
 
   // remove all contents in fProcCounter, fCount
   fProcCounter.clear();

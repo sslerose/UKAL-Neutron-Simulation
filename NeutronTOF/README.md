@@ -140,9 +140,9 @@ Within the build directory, there are three key macro files:
 
 - `run_test.mac` : Generate 500,000 neutrons at 50 keV along the z-axis using a simple gun source towards the detector placed 50 cm away.
 
-- `run_angle.mac` and `angles.mac` : Together, generate 1,000,000 neutrons each using SimLiT for detector configurations at a radial distance of 50 cm and angles about the y-axis between 0 and 90 degrees in 5 degree increments.
+- `run_angles.mac` and `angles.mac` : Together, generate 1,000,000 neutrons each using SimLiT for detector configurations at a radial distance of 50 cm and angles about the y-axis between 0 and 90 degrees in 5 degree increments.
 
-It is recommended to use the `run_angle.mac` and `angles.mac` set of macros only on the MCC (assuming you have access) or some other high-performance cluster due to their computational intensity and large file outputs.
+It is recommended to use the `run_angles.mac` and `angles.mac` set of macros only on the MCC (assuming you have access) or some other high-performance cluster due to their computational intensity and large file outputs.
 
 
 ### Test Run
@@ -156,7 +156,7 @@ then load the analysis file and run its main analysis function:
 .L AnalyzeData.C
 analyzeData()
 ```
-In the future, it will be useful to place the multiple ROOT files from a single macro (as will be the case for `run_angle.mac`) into their own folder. In such a case, add the file path to the function call:
+In the future, it will be useful to place the multiple ROOT files from a single macro (as will be the case for `run_angles.mac`) into their own folder. In such a case, add the file path to the function call:
 ```bash
 analyzeData("path/to/data")
 ```
@@ -195,4 +195,4 @@ Most of the data from the test run is not insightful, but the captures histogram
 
 ### Full Run
 
-Run the full TOF simulation using `run_angle.mac` . If using the cluster, change the macro file in `run_nTOF.sh` and increase the time limit (roughly 30 minutes for every 100 million neutrons generated).
+Run the full TOF simulation using `run_angles.mac` . If using the cluster, change the macro file in `run_nTOF.sh` and increase the time limit (roughly 30 minutes for every 100 million neutrons generated).

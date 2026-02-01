@@ -41,9 +41,10 @@ target_link_libraries(NeutronTimeOfFlight ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 #
 set(NeutronTimeOfFlight_SCRIPTS
   init_vis.mac
-  vis.mac
+  vis_export.mac
+  vis_preview.mac
   run_test.mac
-  run_angle.mac
+  run_angles.mac
   angles.mac
   run_nTOF.sh
   AnalyzeData.C

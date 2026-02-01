@@ -3,8 +3,7 @@
 /event/verbose 0
 /tracking/verbose 0
 
-# Set print progress
-/run/printProgress 100000
+# Print progress handled automatically
 
 # Initialize
 /run/initialize

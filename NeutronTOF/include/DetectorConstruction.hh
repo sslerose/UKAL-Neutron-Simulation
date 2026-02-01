@@ -52,6 +52,7 @@
 
 #include "G4VUserDetectorConstruction.hh"
 
+#include "G4Tubs.hh"
 #include "G4RotationMatrix.hh"
 #include "globals.hh"
 #include "Constants.hh"
@@ -78,6 +79,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     void SetDetectorAngle(G4double);
     void SetSpanningStartAngle(G4double);
     void SetSpanningEndAngle(G4double);
+    void SetWorldMaterial(G4String);
 
     // Getters
     const G4VPhysicalVolume* GetWorld() const { return fWorldPV; }
@@ -95,6 +97,15 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     // Detector assembly volumes
     //========================================================================//
 
+    // Solids
+    G4Tubs* fHolderTube = nullptr;
+    G4Tubs* fCanTube = nullptr;
+    G4Tubs* fCanCapTube = nullptr;
+    G4Tubs* fRubberTube = nullptr;
+    G4Tubs* fTeflonTube = nullptr;
+    G4Tubs* fDetectorTube = nullptr;
+    G4Tubs* fPMTTube = nullptr;
+    
     // Physical volumes
     G4VPhysicalVolume* fWorldPV = nullptr;
     G4VPhysicalVolume* fAssemblyPV = nullptr;
@@ -131,9 +142,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double fAssemblyLength = 0.;
     G4double fAssemblyWidth = 0.;
     G4double fAssemblyDistance = 0.;
-    G4double fAssemblyAngle = 0.;
-    G4double fStartAngle = 0.;
-    G4double fEndAngle = 0.;
+    G4double fAssemblyDisplacement = 0.;
+    G4double fAssemblyAngle = 0. * deg;
+    G4double fStartAngle = 0.0 * deg;
+    G4double fEndAngle = 360.0 * deg;
 
     // Inner assembly volume (for positioning can and detector inside holder)
     G4double fInnerAssemblyLength = 0.;
@@ -141,25 +153,21 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Aluminum can volume
     G4double fCanLength = 0.;
-    // G4double fCanInnerRadius = 0.;
     G4double fCanOuterRadius = 0.;
-    // G4double fCanCapThickness = 0.;
     G4double fCanCapRadius = 0.;
     G4double fCanCapOffset = 0.;
 
     // Silicon rubber volume
-    // G4double fRubberThickness = 0.;
     G4double fRubberRadius = 0.;
     G4double fRubberOffset = 0.;
 
     // Teflon volume
-    // G4double fTeflonThickness = 0.;
     G4double fTeflonRadius = 0.;
     G4double fTeflonOffset = 0.;
 
     // Detector glass volume
     G4double fDetectorOffset = 0.;
-    G4double fDetectorDistance = 0.;
+    G4double fDetectorDistance = 50.0 * cm;
 
     // Tape volume (irrelevant for current simulations)
     // G4double fTapeThickness = 0.;

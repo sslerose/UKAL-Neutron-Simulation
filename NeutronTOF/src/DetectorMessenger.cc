@@ -52,10 +52,14 @@
 
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWithoutParameter.hh"
+#include "G4UIcmdWithAString.hh"
 #include "G4UIdirectory.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Create detector commands and directories
+//------------------------------------------------------------------------//
 DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
 {
   fNeutronDetDir = new G4UIdirectory("/neutronTOF/");
@@ -69,7 +73,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setDetectorDistance", this);
   fDetectorDistanceCmd->SetGuidance("Set distance from origin (neutron source) to detector face");
   fDetectorDistanceCmd->SetParameterName("DetectorDistance", false);
-  fDetectorDistanceCmd->SetRange("DetectorDistance>0.");
+  fDetectorDistanceCmd->SetRange("DetectorDistance > 0.");
   fDetectorDistanceCmd->SetUnitCategory("Length");
   fDetectorDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
@@ -85,14 +89,23 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of detector");
   fDetectorSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
   fDetectorSpanningStartAngleCmd->SetUnitCategory("Angle");
-  fDetectorSpanningStartAngleCmd->AvailableForStates(G4State_PreInit);
+  fDetectorSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // Final spanning angle of detector
   fDetectorSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setSpanningEndAngle", this);
   fDetectorSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of detector");
   fDetectorSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
   fDetectorSpanningEndAngleCmd->SetUnitCategory("Angle");
-  fDetectorSpanningEndAngleCmd->AvailableForStates(G4State_PreInit);
+  fDetectorSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  // World material
+  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronTOF/det/setWorldMaterial", this);
+  fWorldMaterialCmd->SetGuidance("Set material of the world volume");
+  fWorldMaterialCmd->SetGuidance("  Available Materials:");
+  fWorldMaterialCmd->SetGuidance("    air    - G4_AIR");
+  fWorldMaterialCmd->SetGuidance("    vacuum - G4_Galactic");
+  fWorldMaterialCmd->SetParameterName("WorldMaterial", false);
+  fWorldMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   // Print current parameters
   fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/det/printParameters", this);
@@ -104,12 +117,13 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
 
 DetectorMessenger::~DetectorMessenger()
 {
+  delete fNeutronDetDir;
+  delete fDetDir;
   delete fDetectorDistanceCmd;
   delete fDetectorAngleCmd;
   delete fDetectorSpanningStartAngleCmd;
   delete fDetectorSpanningEndAngleCmd;
-  delete fDetDir;
-  delete fNeutronDetDir;
+  delete fWorldMaterialCmd;
   delete fPrintCmd;
 }
 
@@ -134,6 +148,10 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 
   if (command == fDetectorSpanningEndAngleCmd) {
     fDetector->SetSpanningEndAngle(fDetectorSpanningEndAngleCmd->GetNewDoubleValue(newValue));
+  }
+
+  if (command == fWorldMaterialCmd) {
+    fDetector->SetWorldMaterial(newValue);
   }
 
   if (command == fPrintCmd) {

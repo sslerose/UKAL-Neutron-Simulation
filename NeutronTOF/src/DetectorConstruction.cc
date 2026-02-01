@@ -110,15 +110,10 @@ DetectorConstruction::DetectorConstruction()
   fAssemblyWidth = kHolderOuterRadius * 2;
 
   // Detector placement
-  fDetectorDistance = 50.0 * cm;  // Dist. from target to detector face
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Dist. from target to assembly face
-
-  fAssemblyAngle = 0.0 * deg;
+  fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
   fRotationMatrix = new G4RotationMatrix();
-  fRotationMatrix->rotateY(fAssemblyAngle);
-
-  fStartAngle = 0.0 * deg;
-  fEndAngle = 360.0 * deg;
+  fRotationMatrix->rotateY(fAssemblyAngle); // Rotation of assembly around Y axis
   
   // Initialize materials and detector messenger
   DefineMaterials();
@@ -345,9 +340,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                                     "AssemblyMother");
 
   // Calculate assembly position components
-  G4double assemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
-  G4double assemblyX = -assemblyDisplacement * std::sin(fAssemblyAngle);
-  G4double assemblyZ = assemblyDisplacement * std::cos(fAssemblyAngle);
+  G4double assemblyX = -fAssemblyDisplacement * std::sin(fAssemblyAngle);
+  G4double assemblyZ = fAssemblyDisplacement * std::cos(fAssemblyAngle);
 
   fAssemblyPV = new G4PVPlacement(fRotationMatrix,                // rotation matrix
                                   G4ThreeVector(assemblyX, 0, assemblyZ), // position at assemblyZ
@@ -361,14 +355,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create detector holder (mu metal)
   // Position holder inside assembly volume
   // Front end at fHolderDistance from assembly volume front face
-  G4Tubs* holderTube = new G4Tubs("Holder",
-                                   kHolderInnerRadius,       // inner radius
-                                   kHolderOuterRadius,       // outer radius
-                                   kHolderLength / 2,        // half length
-                                   fStartAngle,              // initial spanning angle
-                                   fEndAngle);               // final spanning angle
+  fHolderTube = new G4Tubs("Holder",
+                            kHolderInnerRadius,       // inner radius
+                            kHolderOuterRadius,       // outer radius
+                            kHolderLength / 2,        // half length
+                            fStartAngle,              // initial spanning angle
+                            fEndAngle);               // final spanning angle
 
-  fHolderLV = new G4LogicalVolume(holderTube,
+  fHolderLV = new G4LogicalVolume(fHolderTube,
                                   fMuMetalMaterial,
                                   "Holder");
 
@@ -409,14 +403,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create aluminum can
   // Position can inside inner assembly volume
   // Front end flush with inner assembly volume front face
-  G4Tubs* canTube = new G4Tubs("Can",
-                                kCanInnerRadius,  // inner radius
-                                fCanOuterRadius,  // outer radius
-                                fCanLength / 2,   // half length
-                                fStartAngle,      // initial spanning angle
-                                fEndAngle);       // final spanning angle
+  fCanTube = new G4Tubs("Can",
+                        kCanInnerRadius,  // inner radius
+                        fCanOuterRadius,  // outer radius
+                        fCanLength / 2,   // half length
+                        fStartAngle,      // initial spanning angle
+                        fEndAngle);       // final spanning angle
                               
-  fCanLV = new G4LogicalVolume(canTube,
+  fCanLV = new G4LogicalVolume(fCanTube,
                                fAluminumAlloyMaterial,
                                "Can");
 
@@ -432,14 +426,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create can end cap
   // Position inside can volume
   // Cap-off front end of can (flush with inner assembly volume front face)
-  G4Tubs* canCap = new G4Tubs("CanCap",
-                              0.0,                  // inner radius (solid cylinder)
-                              fCanCapRadius,        // outer radius
-                              kCanCapThickness / 2, // half length
-                              fStartAngle,          // initial spanning angle
-                              fEndAngle);           // final spanning angle
+  fCanCapTube = new G4Tubs("CanCap",
+                            0.0,                  // inner radius (solid cylinder)
+                            fCanCapRadius,        // outer radius
+                            kCanCapThickness / 2, // half length
+                            fStartAngle,          // initial spanning angle
+                            fEndAngle);           // final spanning angle
 
-  fCanCapLV = new G4LogicalVolume(canCap,
+  fCanCapLV = new G4LogicalVolume(fCanCapTube,
                                   fAluminumAlloyMaterial,
                                   "CanCap");
 
@@ -455,14 +449,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create silicon rubber layer
   // Position rubber inside aluminum can
   // Front end flush with inside face of can cap
-  G4Tubs* rubberTube = new G4Tubs("Rubber",
-                                   0.0,                   // inner radius (solid cylinder)
-                                   fRubberRadius,         // outer radius
-                                   kRubberThickness / 2,  // half length
-                                   fStartAngle,           // initial spanning angle
-                                   fEndAngle);            // spanning angle
+  fRubberTube = new G4Tubs("Rubber",
+                            0.0,                   // inner radius (solid cylinder)
+                            fRubberRadius,         // outer radius
+                            kRubberThickness / 2,  // half length
+                            fStartAngle,           // initial spanning angle
+                            fEndAngle);            // final spanning angle
 
-  fRubberLV = new G4LogicalVolume(rubberTube,
+  fRubberLV = new G4LogicalVolume(fRubberTube,
                                   fSiliconRubberMaterial,
                                   "Rubber");
 
@@ -478,14 +472,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create Teflon layer
   // Position Teflon inside aluminum can
   // Front end flush with inside face of rubber layer
-  G4Tubs* teflonTube = new G4Tubs("Teflon",
-                                  0.0,                    // inner radius (solid cylinder)
-                                  fTeflonRadius,          // outer radius
-                                  kTeflonThickness / 2,   // half length
-                                  fStartAngle,            // initial spanning angle
-                                  fEndAngle);             // finalspanning angle
+  fTeflonTube = new G4Tubs("Teflon",
+                            0.0,                    // inner radius (solid cylinder)
+                            fTeflonRadius,          // outer radius
+                            kTeflonThickness / 2,   // half length
+                            fStartAngle,            // initial spanning angle
+                            fEndAngle);             // final spanning angle
 
-  fTeflonLV = new G4LogicalVolume(teflonTube,
+  fTeflonLV = new G4LogicalVolume(fTeflonTube,
                                   fTeflonMaterial,
                                   "Teflon");
 
@@ -501,14 +495,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create Li-6 glass detector
   // Position detector inside aluminum can
   // Front end flush with inside face of Teflon layer
-  G4Tubs* detectorTube = new G4Tubs("Detector",
-                                    0.0,                  // inner radius (solid cylinder)
-                                    kDetectorRadius,      // outer radius
-                                    kDetectorLength / 2,  // half length
-                                    fStartAngle,          // initial spanning angle
-                                    fEndAngle);           // final spanning angle
+  fDetectorTube = new G4Tubs("Detector",
+                              0.0,                  // inner radius (solid cylinder)
+                              kDetectorRadius,      // outer radius
+                              kDetectorLength / 2,  // half length
+                              fStartAngle,          // initial spanning angle
+                              fEndAngle);           // final spanning angle
 
-  fDetectorLV = new G4LogicalVolume(detectorTube,
+  fDetectorLV = new G4LogicalVolume(fDetectorTube,
                                     fLi6GlassMaterial,
                                     "Detector");
   
@@ -524,14 +518,14 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Create photomultiplier tube (PMT) layer
   // Position PMT inside aluminum can
   // Front end flush with inside face of detector
-  G4Tubs* pmtTube = new G4Tubs("PMT",
-                               0.0,                 // inner radius (solid cylinder)
-                               fPMTRadius,          // outer radius
-                               kPMTThickness / 2,   // half length
-                               fStartAngle,         // initial spanning angle
-                               fEndAngle);          // final spanning angle
+  fPMTTube = new G4Tubs("PMT",
+                        0.0,                 // inner radius (solid cylinder)
+                        fPMTRadius,          // outer radius
+                        kPMTThickness / 2,   // half length
+                        fStartAngle,         // initial spanning angle
+                        fEndAngle);          // final spanning angle
 
-  fPMTLV = new G4LogicalVolume(pmtTube,
+  fPMTLV = new G4LogicalVolume(fPMTTube,
                                fBorosilicateMaterial,
                                "PMT");
 
@@ -598,12 +592,11 @@ void DetectorConstruction::SetDetectorDistance(G4double value)
 
   // Calculate new assembly coordinates accounting for assembly angle
   fDetectorDistance = value;  // Distance from target to detector face
-  // G4double newAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Dist. from target to assembly face
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Distance from target to assembly face
 
-  G4double assemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
-  G4double assemblyX = -assemblyDisplacement * std::sin(fAssemblyAngle);
-  G4double assemblyZ = assemblyDisplacement * std::cos(fAssemblyAngle);
+  fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
+  G4double assemblyX = -fAssemblyDisplacement * fRotationMatrix->xz();
+  G4double assemblyZ = fAssemblyDisplacement * fRotationMatrix->xx();
 
   // Update assembly position
   fAssemblyPV->SetTranslation(G4ThreeVector(assemblyX, 0, assemblyZ));
@@ -639,11 +632,10 @@ void DetectorConstruction::SetDetectorAngle(G4double value)
   // Create rotation matrix and calculate new assembly position
   fAssemblyAngle = -value;  // Negative to restore right-handed rotation about y-axis
   *fRotationMatrix = G4RotationMatrix();
-  fRotationMatrix->rotateY(fAssemblyAngle); // Rotate assembly by specified angle about y-axis
+  fRotationMatrix->rotateY(fAssemblyAngle);
 
-  G4double assemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
-  G4double assemblyX = -assemblyDisplacement * std::sin(fAssemblyAngle);
-  G4double assemblyZ = assemblyDisplacement * std::cos(fAssemblyAngle);
+  G4double assemblyX = -fAssemblyDisplacement * fRotationMatrix->xz();
+  G4double assemblyZ = fAssemblyDisplacement * fRotationMatrix->xx();
 
   // Update assembly rotation and position
   fAssemblyPV->SetRotation(fRotationMatrix);
@@ -665,9 +657,76 @@ void DetectorConstruction::SetDetectorAngle(G4double value)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set detector assembly angle about y-axis
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetWorldMaterial(G4String value)
+{
+  // Check that geometry has been constructed
+  if (!fAssemblyPV) {
+    G4cerr << "Detector has not yet been constructed." << G4endl;
+    return;
+  }
+
+  // Obtain NIST material manager
+  G4NistManager* nist = G4NistManager::Instance();
+  
+  // Material holder
+  G4Material* material = nullptr;
+
+  if (value == "vacuum") {
+    material = nist->FindOrBuildMaterial("G4_Galactic");
+  }
+  else if (value == "air") {
+    material = nist->FindOrBuildMaterial("G4_AIR");
+  }
+  else {
+    G4cerr << "Invalid world material selection." << G4endl;
+    return;
+  }
+
+  fWorldLV->SetMaterial(material);
+  fAssemblyLV->SetMaterial(material);
+  fInnerAssemblyLV->SetMaterial(material);
+
+  // Create rotation matrix and calculate new assembly position
+  fWorldMaterial = material;
+
+  G4cout << "New world material: " << fWorldMaterial->GetName() << G4endl;
+
+  // Notify run manager of geometry modification
+  G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+
+  // Update visualization (if it is active)
+  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
+  if (visManager) {
+    // Visualization is active - trigger an update
+    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set detector assembly spanning angle (phi) start
+//------------------------------------------------------------------------//
 void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 {
+  // Check that geometry has been constructed
+  if (!fAssemblyPV) {
+    G4cerr << "Detector has not yet been constructed." << G4endl;
+    return;
+  }
+
   fStartAngle = startAngle;
+
+  fHolderTube->SetStartPhiAngle(fStartAngle);
+  fCanTube->SetStartPhiAngle(fStartAngle);
+  fCanCapTube->SetStartPhiAngle(fStartAngle);
+  fRubberTube->SetStartPhiAngle(fStartAngle);
+  fTeflonTube->SetStartPhiAngle(fStartAngle);
+  fDetectorTube->SetStartPhiAngle(fStartAngle);
+  fPMTTube->SetStartPhiAngle(fStartAngle);
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -681,9 +740,26 @@ void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set detector assembly spanning angle (phi) end
+//------------------------------------------------------------------------//
 void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 {
+  // Check that geometry has been constructed
+  if (!fAssemblyPV) {
+    G4cerr << "Detector has not yet been constructed." << G4endl;
+    return;
+  }
+
   fEndAngle = endAngle;
+
+  fHolderTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fCanTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fCanCapTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fRubberTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fTeflonTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fDetectorTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fPMTTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -697,12 +773,16 @@ void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Print detector construction parameters
+//------------------------------------------------------------------------//
 void DetectorConstruction::PrintParameters()
 {
   G4cout << "\n========================================" << G4endl;
   G4cout << "Detector Configuration:" << G4endl;
   G4cout << "========================================" << G4endl;
   G4cout << "World size: " << G4BestUnit(kWorldSize, "Length") << G4endl;
+  G4cout << "World material: " << fWorldMaterial->GetName() << G4endl;
   
   G4cout << "\nLi-6 Glass Detector (Cylindrical):" << G4endl;
   G4cout << "  Diameter: " << G4BestUnit(2*kDetectorRadius, "Length") << G4endl;

@@ -81,13 +81,12 @@ RunAction::~RunAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Generate output filename based on current configuration
+// Format: nTOF<source>_<energy>keV_<angle>deg
+//------------------------------------------------------------------------//
 G4String RunAction::GenerateFileName() const
-{
-  //========================================================================//
-  // Generate output filename based on current configuration
-  // Format: nTOF<source>_<energy>keV_<angle>deg
-  //========================================================================//
-  
+{  
   PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
   
   // Get source type
@@ -101,6 +100,7 @@ G4String RunAction::GenerateFileName() const
     energy = config->GetGunEnergy() / keV;  // Convert from internal units to keV
   }
 
+  // Split energy into integer and decimal parts for filename
   G4int energyInt = static_cast<G4int>(std::round(energy));
   G4int energyDecimal = static_cast<G4int>(std::round((energy - energyInt) * 100));
   
@@ -112,6 +112,7 @@ G4String RunAction::GenerateFileName() const
     detectorDistance = fDetector->GetDetectorDistance() / cm;
   }
 
+  // Split angle and distance into integer and decimal parts for filename
   G4int angleInt = static_cast<G4int>(std::round(detectorAngle));
   G4int angleDecimal = static_cast<G4int>(std::round((detectorAngle - angleInt) * 100));
 
@@ -132,20 +133,21 @@ G4String RunAction::GenerateFileName() const
 
 G4Run* RunAction::GenerateRun()
 {
-  // Create custom Run object (from Hadr04)
-  // This accumulates neutron transport statistics
   fRun = new Run(fDetector);
   return fRun;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void RunAction::BeginOfRunAction(const G4Run*)
+//------------------------------------------------------------------------//
+// Actions to perform at the beginning of each run
+//------------------------------------------------------------------------//
+void RunAction::BeginOfRunAction(const G4Run* run)
 {
   // Show random number engine status
   if (isMaster) {
     G4Random::showEngineStatus();
-    G4cout << "\n===== Hello" << G4endl;
+    Run::InitProgressTracking(run->GetNumberOfEventToBeProcessed());
   }
 
   // Store primary particle info in Run object
@@ -202,6 +204,9 @@ void RunAction::BeginOfRunAction(const G4Run*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Actions to perform at the end of each run
+//------------------------------------------------------------------------//
 void RunAction::EndOfRunAction(const G4Run*)
 {
   // Print neutron transport statistics (from Hadr04 Run class)
@@ -211,38 +216,40 @@ void RunAction::EndOfRunAction(const G4Run*)
   auto analysisManager = G4AnalysisManager::Instance();
   if (analysisManager->IsActive()) {
 
-    G4cout << G4endl;
-    G4cout << "============================================================" << G4endl;
-    G4cout << "                    Analysis Summary                        " << G4endl;
-    G4cout << "============================================================" << G4endl;
-    
-    // SimLiT source statistics
-    G4cout << G4endl << "SimLiT Neutron Source:" << G4endl;
-    if (analysisManager->GetH1(0)->entries() > 0) {
-      G4cout << "  Energy: mean = " << analysisManager->GetH1(0)->mean() 
-             << " keV, RMS = " << analysisManager->GetH1(0)->rms() << " keV" << G4endl;
+    if (isMaster) {
+      G4cout << G4endl;
+      G4cout << "============================================================" << G4endl;
+      G4cout << "                    Analysis Summary                        " << G4endl;
+      G4cout << "============================================================" << G4endl;
+      
+      // Source statistics
+      G4cout << G4endl << "Neutron Source:" << G4endl;
+      G4cout << "  Mode: " 
+             << (PrimaryGeneratorConfig::Instance()->GetUseSimLiT() ? "SimLiT" : "Particle Gun") 
+             << G4endl;
+      G4cout << "  Total neutrons generated: " << analysisManager->GetH1(0)->entries() << G4endl;
+      if (analysisManager->GetH1(0)->entries() > 0) {
+        G4cout << "  Energy: mean = " << analysisManager->GetH1(0)->mean()
+              << " keV, RMS = " << analysisManager->GetH1(0)->rms() << " keV" << G4endl;
+      }
+      if (analysisManager->GetH1(1)->entries() > 0) {
+        G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
+              << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
+      }
+      
+      // TOF statistics (capture events)
+      G4cout << G4endl << "TOF Measurement:" << G4endl;
+      if (analysisManager->GetH1(3)->entries() > 0) {
+        G4cout << "  Capture events: " << analysisManager->GetH1(3)->entries() << G4endl;
+        G4cout << "  Mean TOF: " << analysisManager->GetH1(3)->mean() << " ns" << G4endl;
+        G4cout << "  TOF RMS:  " << analysisManager->GetH1(3)->rms() << " ns" << G4endl;
+      } else {
+        G4cout << "  No capture events recorded." << G4endl;
+      }
+      
+      G4cout << "============================================================" << G4endl;
     }
-    if (analysisManager->GetH1(1)->entries() > 0) {
-      G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
-             << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
-    }
     
-    // Detector response statistics
-    G4cout << G4endl << "Detector Response:" << G4endl;
-    if (analysisManager->GetH1(2)->entries() > 0) {
-      G4cout << "  Events with Edep > 0: " << analysisManager->GetH1(2)->entries() << G4endl;
-      G4cout << "  Mean Edep: " << analysisManager->GetH1(2)->mean() << " MeV" << G4endl;
-    }
-    
-    // TOF statistics (capture events)
-    G4cout << G4endl << "TOF Measurement:" << G4endl;
-    if (analysisManager->GetH1(3)->entries() > 0) {
-      G4cout << "  Capture events: " << analysisManager->GetH1(3)->entries() << G4endl;
-      G4cout << "  Mean TOF: " << analysisManager->GetH1(3)->mean() << " ns" << G4endl;
-      G4cout << "  TOF RMS:  " << analysisManager->GetH1(3)->rms() << " ns" << G4endl;
-    }
-    
-    G4cout << "============================================================" << G4endl;
 
     // Save histograms and ntuple
     analysisManager->Write();
@@ -254,8 +261,11 @@ void RunAction::EndOfRunAction(const G4Run*)
     }
   }
 
-  // Show random number engine status
-  if (isMaster) G4Random::showEngineStatus();
+  // Reset progress tracking and show random number engine status
+  if (isMaster) {
+    Run::ResetProgressTracking();
+    G4Random::showEngineStatus();
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

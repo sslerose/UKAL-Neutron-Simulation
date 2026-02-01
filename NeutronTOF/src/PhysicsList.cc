@@ -55,7 +55,8 @@
 
 PhysicsList::PhysicsList()
 {
-  SetVerboseLevel(1);
+  G4int verb = 1;
+  SetVerboseLevel(verb);
 
   // Add new units
 
@@ -63,25 +64,24 @@ PhysicsList::PhysicsList()
   new G4UnitDefinition("um2/mg", "um2/mg", "Surface/Mass", um * um / mg);
 
   //========================================================================//
-  // Electromagnetic physics - triton and alpha energy loss
-  // The Li-6(n,alpha)triton reaction products must ionize to deposit energy
+  // Electromagnetic physics
   //========================================================================//
-  RegisterPhysics(new G4EmStandardPhysics());
+  RegisterPhysics(new G4EmStandardPhysics(verb));
   
   //========================================================================//
   // Decay physics - for unstable particles
   //========================================================================//
-  RegisterPhysics(new G4DecayPhysics());
+  RegisterPhysics(new G4DecayPhysics(verb));
   
   //========================================================================//
   // Hadron elastic physics with HP for low-energy neutrons
   //========================================================================//
-  RegisterPhysics(new G4HadronElasticPhysicsHP());
+  RegisterPhysics(new G4HadronElasticPhysicsHP(verb));
   
   //========================================================================//
   // Ion physics - for alpha and triton nuclear interactions
   //========================================================================//
-  RegisterPhysics(new G4IonPhysics());
+  RegisterPhysics(new G4IonPhysics(verb));
   
   //========================================================================//
   // Neutron HP Physics - high precision neutron transport

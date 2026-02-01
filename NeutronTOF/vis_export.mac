@@ -1,5 +1,9 @@
-# Export macro for TSG_OFFSCREEN
-# STEP 2: Run this AFTER confirming the view in vis_preview_corrected.mac
+# --------------------------------------------
+# Visualization export macro
+#
+# Execute this macro to create an image of
+# the simulated detector model
+# --------------------------------------------
 
 # Set verbose mode for confirmation
 /vis/verbose confirmations
@@ -7,12 +11,13 @@
 # Open TSG_OFFSCREEN viewer with high resolution
 # Format: /vis/open TSG_OFFSCREEN [width]x[height]
 /vis/open TSG_OFFSCREEN 1200x900
+/vis/viewer/reset
 
-# Draw the geometry (this creates the scene)
+# Draw the geometry
 /vis/drawVolume
 
 # ============================================
-# CAMERA POSITIONING (match preview settings)
+# CAMERA POSITIONING
 # ============================================
 
 /vis/viewer/set/viewpointVector 1.2 -0.8 0.6
@@ -30,8 +35,9 @@
 # SCENE ELEMENTS
 # ============================================
 
-# Add coordinate axes (optional - comment out if not needed)
-#/vis/scene/add/axes 0 0 0 20 mm
+# Set spanning angle of the detector
+/neutronTOF/det/setSpanningStartAngle 0 deg
+/neutronTOF/det/setSpanningEndAngle 270 deg
 
 # Make container volumes invisible
 /vis/geometry/set/visibility World 0 false

@@ -1,34 +1,24 @@
-# Visualization macro for publication-quality detector cross-section
-# STEP 1: Preview with interactive Qt viewer
+# --------------------------------------------
+# Visualization preview macro
+#
+# Execute this macro to preview the export png
+# created with vis_export.mac
+# --------------------------------------------
 
-# Initialize kernel
-/run/initialize
-
-# Start with interactive Qt viewer for preview
-/vis/open TSGQt
-
-# Disable auto refresh for setup
-/vis/viewer/set/autoRefresh false
-/vis/verbose errors
-
-# Draw geometry
+/vis/open
 /vis/drawVolume
 
 # ============================================
 # CAMERA POSITIONING
 # ============================================
 
-# View from positive x, positive y, positive z (looks into the cut)
 /vis/viewer/set/viewpointVector 1.2 -0.8 0.6
 
 # ============================================
 # LIGHTING AND RENDERING
 # ============================================
 
-# Set lighting to match viewpoint for best contrast
-/vis/viewer/set/lightsVector 1 1 -1
-
-# Surface rendering with edges for clarity
+/vis/viewer/set/lightsVector 1 1 1
 /vis/viewer/set/style surface
 /vis/viewer/set/auxiliaryEdge true
 /vis/viewer/set/lineSegmentsPerCircle 100
@@ -37,8 +27,9 @@
 # SCENE ELEMENTS
 # ============================================
 
-# Add coordinate axes at origin (optional - comment out if not needed)
-#/vis/scene/add/axes 0 0 0 20 mm
+# Set spanning angle of the detector
+/neutronTOF/det/setSpanningStartAngle 0 deg
+/neutronTOF/det/setSpanningEndAngle 270 deg
 
 # Make container volumes invisible
 /vis/geometry/set/visibility World 0 false
@@ -46,7 +37,7 @@
 /vis/geometry/set/visibility InnerAssembly 0 false
 
 # ============================================
-# COLOR SCHEME - Publication friendly
+# COLOR SCHEME
 # ============================================
 
 # Aluminum holder - bronze/tan
@@ -72,19 +63,5 @@
 # VIEWPORT AND ZOOM
 # ============================================
 
-# Zoom to fit detector nicely in frame
-/vis/viewer/zoom 1.5
-
-# Set background to white for publication
+/vis/viewer/zoom 1.2
 /vis/viewer/set/background 1 1 1
-
-# Re-enable auto refresh to see the result
-/vis/viewer/set/autoRefresh true
-/vis/verbose warnings
-
-# ============================================
-# At this point:
-# 1. Check the view in the Qt window
-# 2. Manually adjust with mouse if needed
-# 3. When satisfied, run vis_export.mac
-# ============================================

@@ -4,10 +4,10 @@
 # Initialize kernel
 /run/initialize
 
-# Use OpenGL viewer (change to "VRML" or "HepRep" if preferred)
+# Open viewer
 /vis/open
 
-# Disable auto refresh for better performance
+# Disable auto refresh
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
 
@@ -23,7 +23,7 @@
 /vis/viewer/set/auxiliaryEdge true
 /vis/viewer/set/lineSegmentsPerCircle 100
 
-# Draw coordinate axes (10 cm length)
+# Draw coordinate axes (5 cm length)
 /vis/scene/add/axes 0 0 0 5 cm
 
 # To draw particle trajectories (when you run events)

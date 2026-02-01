@@ -37,7 +37,6 @@
 #include "G4ProcessTable.hh"
 
 // Processes
-
 #include "G4HadronElasticProcess.hh"
 #include "G4HadronInelasticProcess.hh"
 #include "G4NeutronCaptureProcess.hh"
@@ -53,6 +52,11 @@
 #include "G4ParticleHPThermalScattering.hh"
 #include "G4ParticleHPThermalScatteringData.hh"
 #include "G4SystemOfUnits.hh"
+
+// Cross sections
+#include "G4NeutronElasticXS.hh"
+#include "G4NeutronInelasticXS.hh"
+#include "G4NeutronCaptureXS.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -91,63 +95,144 @@ void NeutronHPphysics::ConstructProcess()
   process = pManager->GetProcess("nFission");
   if (process) pManager->RemoveProcess(process);
 
-  // (re) create process: elastic
-  //
-  G4HadronElasticProcess* process1 = new G4HadronElasticProcess();
-  pManager->AddDiscreteProcess(process1);
-  //
-  // model1a
-  G4ParticleHPElastic* model1a = new G4ParticleHPElastic();
-  process1->RegisterMe(model1a);
-  process1->AddDataSet(new G4ParticleHPElasticData());
-  //
-  // model1b - thermal scattering
+
+  //========================================================================//
+  // NEUTRON ELASTIC SCATTERING (with thermal scattering)
+  //========================================================================//
+  // Primary transport mechanism through air
+  // Includes both regular elastic scattering (> 4 eV) and 
+  // thermal scattering (< 4 eV) for thermalized neutrons
+
+  // Process
+  G4HadronElasticProcess* theElasticProcess = new G4HadronElasticProcess();
+  pManager->AddDiscreteProcess(theElasticProcess);
+
+  // Cross section data set
+  theElasticProcess->AddDataSet(new G4ParticleHPElasticData());
+  theElasticProcess->AddDataSet(new G4NeutronElasticXS());
+
+  // Model
+  G4ParticleHPElastic* theElasticModel = new G4ParticleHPElastic();
+  theElasticProcess->RegisterMe(theElasticModel);
+
+  // Thermal scattering (if enabled)
   if (fThermal) {
-    model1a->SetMinEnergy(4 * eV);
-    G4ParticleHPThermalScattering* model1b = new G4ParticleHPThermalScattering();
-    process1->RegisterMe(model1b);
-    process1->AddDataSet(new G4ParticleHPThermalScatteringData());
+    // Set minimum energy for regular elastic model
+    theElasticModel->SetMinEnergy(4 * eV);
+
+    // Cross section data set
+    theElasticProcess->AddDataSet(new G4ParticleHPThermalScatteringData());
+
+    // Model
+    theElasticProcess->RegisterMe(new G4ParticleHPThermalScattering());
   }
+
+  // // (re) create process: elastic
+  // //
+  // G4HadronElasticProcess* process1 = new G4HadronElasticProcess();
+  // pManager->AddDiscreteProcess(process1);
+  // //
+  // // model1a
+  // G4ParticleHPElastic* model1a = new G4ParticleHPElastic();
+  // process1->RegisterMe(model1a);
+  // process1->AddDataSet(new G4ParticleHPElasticData());
+  // //
+  // // model1b - thermal scattering
+  // if (fThermal) {
+  //   model1a->SetMinEnergy(4 * eV);
+  //   G4ParticleHPThermalScattering* model1b = new G4ParticleHPThermalScattering();
+  //   process1->RegisterMe(model1b);
+  //   process1->AddDataSet(new G4ParticleHPThermalScatteringData());
+  // }
+
+
+  //========================================================================//
+  // NEUTRON INELASTIC SCATTERING
+  //========================================================================//
+
+  // Process
+  G4HadronInelasticProcess* theInelasticProcess =
+    new G4HadronInelasticProcess("neutronInelastic", G4Neutron::Definition());
+  pManager->AddDiscreteProcess(theInelasticProcess);
+  
+  // Cross section data set
+  theInelasticProcess->AddDataSet(new G4ParticleHPInelasticData());
+  
+  // Model
+  theInelasticProcess->RegisterMe(new G4ParticleHPInelastic());
 
   // (re) create process: inelastic
   //
-  G4HadronInelasticProcess* process2 =
-    new G4HadronInelasticProcess("neutronInelastic", G4Neutron::Definition());
-  pManager->AddDiscreteProcess(process2);
-  //
-  // cross section data set
-  G4ParticleHPInelasticData* dataSet2 = new G4ParticleHPInelasticData();
-  process2->AddDataSet(dataSet2);
-  //
-  // models
-  G4ParticleHPInelastic* model2 = new G4ParticleHPInelastic();
-  process2->RegisterMe(model2);
+  // G4HadronInelasticProcess* process2 =
+  //   new G4HadronInelasticProcess("neutronInelastic", G4Neutron::Definition());
+  // pManager->AddDiscreteProcess(process2);
+  // //
+  // // cross section data set
+  // G4ParticleHPInelasticData* dataSet2 = new G4ParticleHPInelasticData();
+  // process2->AddDataSet(dataSet2);
+  // //
+  // // models
+  // G4ParticleHPInelastic* model2 = new G4ParticleHPInelastic();
+  // process2->RegisterMe(model2);
 
-  // (re) create process: nCapture
-  //
-  G4NeutronCaptureProcess* process3 = new G4NeutronCaptureProcess();
-  pManager->AddDiscreteProcess(process3);
-  //
-  // cross section data set
-  G4ParticleHPCaptureData* dataSet3 = new G4ParticleHPCaptureData();
-  process3->AddDataSet(dataSet3);
-  //
-  // models
-  G4ParticleHPCapture* model3 = new G4ParticleHPCapture();
-  process3->RegisterMe(model3);
 
-  // (re) create process: nFission
-  //
-  G4NeutronFissionProcess* process4 = new G4NeutronFissionProcess();
-  pManager->AddDiscreteProcess(process4);
-  //
-  // cross section data set
-  G4ParticleHPFissionData* dataSet4 = new G4ParticleHPFissionData();
-  process4->AddDataSet(dataSet4);
-  //
-  // models
-  G4ParticleHPFission* model4 = new G4ParticleHPFission();
-  process4->RegisterMe(model4);
+
+  //========================================================================//
+  // NEUTRON CAPTURE
+  //========================================================================//
+  // Primary detection mechanism
+  // Also captures (n,gamma) reactions in air (N, O)
+
+  // Process
+  G4NeutronCaptureProcess* theCaptureProcess = new G4NeutronCaptureProcess();
+  pManager->AddDiscreteProcess(theCaptureProcess);
+  
+  // Cross section data sets
+  theCaptureProcess->AddDataSet(new G4ParticleHPCaptureData());
+  // theCaptureProcess->AddDataSet(new G4NeutronCaptureXS());
+  
+  // Model
+  theCaptureProcess->RegisterMe(new G4ParticleHPCapture());
+
+  // // (re) create process: nCapture
+  // //
+  // G4NeutronCaptureProcess* process3 = new G4NeutronCaptureProcess();
+  // pManager->AddDiscreteProcess(process3);
+  // //
+  // // cross section data set
+  // G4ParticleHPCaptureData* dataSet3 = new G4ParticleHPCaptureData();
+  // process3->AddDataSet(dataSet3);
+  // //
+  // // models
+  // G4ParticleHPCapture* model3 = new G4ParticleHPCapture();
+  // process3->RegisterMe(model3);
+
+
+  //========================================================================//
+  // NEUTRON FISSION
+  //========================================================================//
+
+  // Process
+  G4NeutronFissionProcess* theFissionProcess = new G4NeutronFissionProcess();
+  pManager->AddDiscreteProcess(theFissionProcess);
+  
+  // Cross section data set
+  theFissionProcess->AddDataSet(new G4ParticleHPFissionData());
+  
+  // Model
+  theFissionProcess->RegisterMe(new G4ParticleHPFission());
+
+  // // Process
+  // G4NeutronFissionProcess* process4 = new G4NeutronFissionProcess();
+  // pManager->AddDiscreteProcess(process4);
+  
+  // // Cross section data set
+  // G4ParticleHPFissionData* dataSet4 = new G4ParticleHPFissionData();
+  // process4->AddDataSet(dataSet4);
+  
+  // // Model
+  // G4ParticleHPFission* model4 = new G4ParticleHPFission();
+  // process4->RegisterMe(model4);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

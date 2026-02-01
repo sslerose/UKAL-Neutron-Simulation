@@ -36,6 +36,7 @@
 #include "G4VProcess.hh"
 #include "globals.hh"
 
+#include <atomic>
 #include <map>
 
 class DetectorConstruction;
@@ -56,6 +57,10 @@ class Run : public G4Run
 
     void SetPrimary(G4ParticleDefinition* particle, G4double energy);
     void EndOfRun();
+
+    static void InitProgressTracking(G4int totalEvents);
+    static void ResetProgressTracking();
+    static void RecordEvent(G4int eventID);
 
     void Merge(const G4Run*) override;
 
@@ -83,6 +88,12 @@ class Run : public G4Run
     G4int fNbStep1 = 0, fNbStep2 = 0;
     G4double fTrackLen1 = 0., fTrackLen2 = 0.;
     G4double fTime1 = 0., fTime2 = 0.;
+
+    // Progress tracking (shared across threads via statics)
+    static std::atomic<G4int> fGlobalEventCount;
+    static std::atomic<G4int> fNextGlobalMilestone;
+    static G4int fTotalEventsInRun;
+    static G4int fCurrentMilestonePercent;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -60,6 +60,7 @@
 #include "G4ParticleDefinition.hh"
 #include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4UnitsTable.hh"
 #include "G4PhysicalConstants.hh"
 #include "Randomize.hh"
 
@@ -248,14 +249,14 @@ void PrimaryGeneratorAction::ComputeDetectorAngleLimits()
 
   // Clamp to valid range [0, pi]
   if (fThetaMin < 0.) fThetaMin = 0.;
-  if (fThetaMax > CLHEP::pi) fThetaMax = CLHEP::pi;
+  if (fThetaMax > pi) fThetaMax = pi;
 
   G4cout << "Detector-focused generation limits updated:" << G4endl;
-  G4cout << "  Detector angle (theta_d): " << fCachedDetectorAngle / CLHEP::degree << " deg" << G4endl;
-  G4cout << "  Detector distance: " << fCachedDetectorDistance / CLHEP::cm << " cm" << G4endl;
-  G4cout << "  Detector half-angle: " << fThetaHalfAngle / CLHEP::degree << " deg" << G4endl;
-  G4cout << "  Theta range: [" << fThetaMin / CLHEP::degree << ", "
-         << fThetaMax / CLHEP::degree << "] deg" << G4endl;
+  G4cout << "  Detector angle (theta_d): " << fCachedDetectorAngle / degree << " deg" << G4endl;
+  G4cout << "  Detector distance: " << fCachedDetectorDistance / cm << " cm" << G4endl;
+  G4cout << "  Detector half-angle: " << fThetaHalfAngle / degree << " deg" << G4endl;
+  G4cout << "  Theta range: [" << fThetaMin / degree << ", "
+        << fThetaMax / degree << "] deg" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -267,10 +268,10 @@ G4double PrimaryGeneratorAction::GeneratePhiForTheta(G4double theta) const
 {
   // If not limiting to detector, or detector is along z-axis, use full range
   // Small angle threshold: if theta_d < 1 degree, skip phi restriction
-  const G4double smallAngleThreshold = 1.0 * CLHEP::degree;
+  const G4double smallAngleThreshold = 1.0 * degree;
 
   if (!fCachedLimitToDetector || std::abs(fCachedDetectorAngle) < smallAngleThreshold) {
-    return CLHEP::twopi * G4UniformRand();
+    return twopi * G4UniformRand();
   }
 
   // Compute phi restriction
@@ -283,18 +284,18 @@ G4double PrimaryGeneratorAction::GeneratePhiForTheta(G4double theta) const
 
   // Avoid division by near-zero
   if (sinTheta < 1e-10 || std::abs(sinThetaD) < 1e-10) {
-    return CLHEP::twopi * G4UniformRand();
+    return twopi * G4UniformRand();
   }
 
   G4double X = (cosThetaR2 - cosTheta * cosThetaD) / (sinTheta * sinThetaD);
 
   if (X >= 1.0) {
     // No valid phi at this theta - use random and let caller handle
-    return CLHEP::twopi * G4UniformRand();
+    return twopi * G4UniformRand();
   }
   else if (X <= -1.0) {
     // All phi values valid
-    return CLHEP::twopi * G4UniformRand();
+    return twopi * G4UniformRand();
   }
   else {
     // Restricted phi range: [-phiMax, phiMax]

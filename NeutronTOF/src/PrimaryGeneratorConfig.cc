@@ -71,7 +71,7 @@ PrimaryGeneratorConfig* PrimaryGeneratorConfig::Instance()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorConfig::PrimaryGeneratorConfig()
-  : fUseSimLiT(false),           // Default: SimLiT disabled (matches your current code)
+  : fUseSimLiT(true),           // Default: SimLiT disabled (matches your current code)
     fBeamEnergy(1912.0),         // keV
     fBeamSigma(10.0),            // keV
     fTargetMaterial("LiF"),
@@ -86,6 +86,9 @@ PrimaryGeneratorConfig::PrimaryGeneratorConfig()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set/Get use of SimLiT neutron source
+//------------------------------------------------------------------------//
 void PrimaryGeneratorConfig::SetUseSimLiT(G4bool use)
 {
   G4AutoLock lock(&fMutex);
@@ -107,6 +110,9 @@ G4bool PrimaryGeneratorConfig::GetUseSimLiT() const
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set/Get SimLiT proton beam energy (in keV)
+//------------------------------------------------------------------------//
 void PrimaryGeneratorConfig::SetBeamEnergy(G4double energy)
 {
   G4AutoLock lock(&fMutex);
@@ -122,6 +128,9 @@ G4double PrimaryGeneratorConfig::GetBeamEnergy() const
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Set/Get SimLiT proton beam sigma (in keV)
+//------------------------------------------------------------------------//
 void PrimaryGeneratorConfig::SetBeamSigma(G4double sigma)
 {
   G4AutoLock lock(&fMutex);
@@ -216,6 +225,40 @@ G4bool PrimaryGeneratorConfig::GetLimitToDetector() const
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Output filename management
+//------------------------------------------------------------------------//
+void PrimaryGeneratorConfig::SetOutputFileName(const G4String& name)
+{
+  G4AutoLock lock(&fMutex);
+  fOutputFileName = name;
+  fHasOutputFileName = true;
+}
+
+G4String PrimaryGeneratorConfig::GetOutputFileName() const
+{
+  G4AutoLock lock(&fMutex);
+  return fOutputFileName;
+}
+
+G4bool PrimaryGeneratorConfig::HasOutputFileName() const
+{
+  G4AutoLock lock(&fMutex);
+  return fHasOutputFileName;
+}
+
+void PrimaryGeneratorConfig::ClearOutputFileName()
+{
+  G4AutoLock lock(&fMutex);
+  fOutputFileName = "";
+  fHasOutputFileName = false;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Print current primary generator configuration
+//------------------------------------------------------------------------//
 void PrimaryGeneratorConfig::PrintParameters() const
 {
   G4AutoLock lock(&fMutex);
@@ -249,40 +292,6 @@ void PrimaryGeneratorConfig::PrintParameters() const
   
   G4cout << "========================================" << G4endl;
   G4cout << G4endl;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void PrimaryGeneratorConfig::SetOutputFileName(const G4String& name)
-{
-  G4AutoLock lock(&fMutex);
-  fOutputFileName = name;
-  fHasOutputFileName = true;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-G4String PrimaryGeneratorConfig::GetOutputFileName() const
-{
-  G4AutoLock lock(&fMutex);
-  return fOutputFileName;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-G4bool PrimaryGeneratorConfig::HasOutputFileName() const
-{
-  G4AutoLock lock(&fMutex);
-  return fHasOutputFileName;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void PrimaryGeneratorConfig::ClearOutputFileName()
-{
-  G4AutoLock lock(&fMutex);
-  fOutputFileName = "";
-  fHasOutputFileName = false;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
