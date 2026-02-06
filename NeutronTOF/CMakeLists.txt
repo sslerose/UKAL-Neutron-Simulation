@@ -46,8 +46,11 @@ set(NeutronTimeOfFlight_SCRIPTS
   run_test.mac
   run_angles.mac
   angles.mac
+  run_efficiency.mac
+  efficiency.mac
   run_nTOF.sh
-  AnalyzeData.C
+  AnalyzeTOF.C
+  AnalyzeEff.C
   )
 
 foreach(_script ${NeutronTimeOfFlight_SCRIPTS})

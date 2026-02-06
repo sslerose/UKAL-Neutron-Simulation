@@ -1,0 +1,30 @@
+# ---------------------------------------- #
+# Macro file for efficiency measurements
+#
+# Places detector at 0 degrees and runs
+#   simple gun from 1 to 150 keV for
+#   detector efficiency measurements
+#
+# Beam energy and event gen handled by
+#   efficiency.mac
+# ---------------------------------------- #
+
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Print progress handled automatically
+
+# Initialize
+/run/initialize
+
+# Set parameters
+/neutronTOF/gun/useSimLiT false
+/neutronTOF/gun/limitToDetector false
+/neutronTOF/det/setWorldMaterial vacuum
+/neutronTOF/det/setDetectorDistance 25 cm
+/neutronTOF/det/setDetectorAngle 0 degree
+
+# Run events
+/control/loop efficiency.mac energy 1 150 1

@@ -175,7 +175,7 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   // TOF and TOF energy for capture events
   if (captureOccurred) {
     // Calculate neutron energy from time-of-flight
-    G4double n_velocity = (fDetector->GetDetectorDistance() / m) / (captureTime / s); // in m/s
+    G4double n_velocity = (((kDetectorLength / 2) + fDetector->GetDetectorDistance()) / m) / (captureTime / s); // in m/s
     // KE = (1/2)mv^2 ; m_neutron = 939.57 MeV/c^2
     TOF_Energy = 0.5 * (939.57 / (3e8 * 3e8)) * (n_velocity * n_velocity) * 1000; // (1/2)mv^2 in keV
 
