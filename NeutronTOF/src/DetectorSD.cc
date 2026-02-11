@@ -51,11 +51,15 @@
 #include "DetectorSD.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Step.hh"
+#include "G4Track.hh"
+#include "G4TrackVector.hh"
 #include "G4VProcess.hh"
 #include "G4ThreeVector.hh"
 #include "G4SDManager.hh"
 #include "G4ios.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4Triton.hh"
+#include "G4Alpha.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -167,7 +171,48 @@ G4bool DetectorSD::ProcessHits(G4Step* step, G4TouchableHistory*)
   interactionHit->SetPos(postStepPoint->GetPosition());
   interactionHit->SetTime(postStepPoint->GetGlobalTime());
   interactionHit->SetParticleType(particleName);
-  interactionHit->SetProcessName(processName);
+
+  G4String hitProcessName = processName;
+
+  // Check if neutronInelastic is 6Li(n,t)4He by inspecting secondaries
+  if (processName == "neutronInelastic") {
+    // Pointer to vector of all secondaries produced by current neutron
+    // G4Step* step contains a pointer to the secondary manager owned by the G4SteppingManager
+    G4TrackVector* secondaries = step->GetfSecondary();
+
+    if (secondaries != nullptr) {
+      // Get total number of secondaries produced so far and number produced in this step
+      size_t numSecondaries = secondaries->size();
+      size_t numCurrentSecondaries = step->GetNumberOfSecondariesInCurrentStep();
+
+      G4bool hasTriton = false;
+      G4bool hasAlpha = false;
+
+      // Loop over the secondaries produced in this step
+      for (size_t i = numSecondaries - numCurrentSecondaries; i < numSecondaries; i++) {
+        const G4ParticleDefinition* particleDef = (*secondaries)[i]->GetDefinition();
+
+        if (particleDef == G4Triton::Definition()) hasTriton = true;    // Current step produced a triton
+        else if (particleDef == G4Alpha::Definition()) hasAlpha = true; // Current step produced an alpha
+      }
+
+      // Check for triton and alpha secondaries to identify 6Li(n,t)alpha
+      if (hasTriton && hasAlpha) {
+        hitProcessName = "Li6ntalpha";
+
+        // Kill triton and alpha tracks after indentification
+        for (size_t i = numSecondaries - numCurrentSecondaries; i < numSecondaries; i++) {
+          const G4ParticleDefinition* particleDef = (*secondaries)[i]->GetDefinition();
+          if (particleDef == G4Triton::Definition() || particleDef == G4Alpha::Definition()) {
+            (*secondaries)[i]->SetTrackStatus(fStopAndKill);  // Stop triton and alpha tracks to save resources
+          }
+        }
+      }
+    }
+  }
+
+  // Fill remaining hit information
+  interactionHit->SetProcessName(hitProcessName);
   interactionHit->SetNeutronEntered(false);  // This is an interaction, not entry
 
   // Add hit to the collection

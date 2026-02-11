@@ -151,8 +151,8 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
         neutronEntered = true;
       }
       
-      // Check for neutron capture event - marks where scintillation occurs
-      if (hit->GetProcessName() == "nCapture") {
+      // Check for 6Li(n,t)4He reaction - marks where scintillation occurs
+      if (hit->GetProcessName() == "Li6ntalpha") {
         captureTime = hit->GetTime(); // Global time (since event start)
         captureOccurred = true;
         break;  // Exit loop after first capture marker (defensive for edge cases)

@@ -40,15 +40,16 @@ target_link_libraries(NeutronTimeOfFlight ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 # relies on these scripts being in the current working directory.
 #
 set(NeutronTimeOfFlight_SCRIPTS
-  init_vis.mac
+  vis.mac
   vis_export.mac
   vis_preview.mac
   run_test.mac
   run_angles.mac
   angles.mac
-  run_efficiency.mac
-  efficiency.mac
+  Data_Efficiency/run_efficiency.mac
+  Data_Efficiency/efficiency.mac
   run_nTOF.sh
+  Data_Efficiency/run_dEff.sh
   AnalyzeTOF.C
   AnalyzeEff.C
   )

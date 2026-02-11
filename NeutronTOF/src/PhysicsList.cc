@@ -38,7 +38,8 @@
 #include "G4EmStandardPhysics.hh"
 #include "G4EmExtraPhysics.hh"
 #include "G4DecayPhysics.hh"
-#include "G4HadronElasticPhysicsHP.hh"
+#include "G4HadronElasticPhysics.hh"
+#include "G4HadronPhysicsFTFP_BERT.hh"
 #include "G4StoppingPhysics.hh"
 #include "G4IonPhysics.hh"
 
@@ -74,18 +75,23 @@ PhysicsList::PhysicsList()
   RegisterPhysics(new G4DecayPhysics(verb));
   
   //========================================================================//
-  // Hadron elastic physics with HP for low-energy neutrons
+  // Hadron elastic physics
   //========================================================================//
-  RegisterPhysics(new G4HadronElasticPhysicsHP(verb));
+  RegisterPhysics(new G4HadronElasticPhysics(verb));
+
+  //========================================================================//
+  // Hadron inelastic physics
+  //========================================================================//
+  RegisterPhysics(new G4HadronPhysicsFTFP_BERT(verb));
   
   //========================================================================//
-  // Ion physics - for alpha and triton nuclear interactions
+  // Ion physics
   //========================================================================//
   RegisterPhysics(new G4IonPhysics(verb));
   
   //========================================================================//
-  // Neutron HP Physics - high precision neutron transport
-  // Handles elastic, inelastic, capture (including Li-6), and fission
+  // Neutron HP Physics - high-precision neutron transport
+  // Handles elastic, inelastic, capture, and fission of neutrons
   //========================================================================//
   RegisterPhysics(new NeutronHPphysics("neutronHP"));
 }

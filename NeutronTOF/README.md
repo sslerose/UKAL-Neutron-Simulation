@@ -64,6 +64,7 @@ There are several commands to change the properties of the detector and particle
 `/neutronTOF/det/setDetectorAngle` : set the angle of the detector about the y-axis.
 `/neutronTOF/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the initial spanning angle of the cylindrical detector assembly.  
 `/neutronTOF/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the final spanning angle of the cylindrical detector assembly.  
+`/neutronTOF/det/setWorldMaterial` : set the world material of the simulation.  
 `/neutronTOF/det/printParameters` : print the current detector parameters including materials and geometry.
 
 **Particle Generator:**  
@@ -73,6 +74,7 @@ There are several commands to change the properties of the detector and particle
 `/neutronTOF/gun/targetMaterial` : set the target lithium compound for the SimLiT source.  
 `/neutronTOF/gun/targetThickness` : set the target thickness for the SimLiT source.  
 `/neutronTOF/gun/energy` : set the neutron beam energy for the simple gun source.  
+`/neutronTOF/gun/limitToDetector` : limit the generation of neutrons by SimLiT to a region around the detector (use only in a vacuum).  
 `/neutronTOF/gun/printParameters` : print the current particle generator parameters.  
 `/run/beamOn ###` : generate ### neutron events.
 

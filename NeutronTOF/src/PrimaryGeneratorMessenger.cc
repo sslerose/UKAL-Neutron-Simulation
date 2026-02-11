@@ -149,13 +149,6 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fGunEnergyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Print current parameters
-  //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
-  fPrintCmd->SetGuidance("Print current neutron source configuration.");
-  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
-
-  //========================================================================//
   // Detector-focused generation
   //========================================================================//
   fLimitToDetectorCmd = new G4UIcmdWithABool("/neutronTOF/gun/limitToDetector", this);
@@ -166,6 +159,13 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fLimitToDetectorCmd->SetParameterName("limitToDetector", false);
   fLimitToDetectorCmd->SetDefaultValue(false);
   fLimitToDetectorCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Print current parameters
+  //========================================================================//
+  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
+  fPrintCmd->SetGuidance("Print current neutron source configuration.");
+  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -177,9 +177,9 @@ PrimaryGeneratorMessenger::~PrimaryGeneratorMessenger()
   delete fBeamSigmaCmd;
   delete fTargetMaterialCmd;
   delete fTargetThicknessCmd;
-  delete fPrintCmd;
   delete fGunEnergyCmd;
   delete fLimitToDetectorCmd;
+  delete fPrintCmd;
   delete fGunDir;
 }
 

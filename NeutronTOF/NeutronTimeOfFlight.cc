@@ -93,7 +93,7 @@ int main(int argc, char** argv)
   G4VisManager* visManager = nullptr;
 
   // Replaced HP environmental variables with C++ calls
-  G4ParticleHPManager::GetInstance()->SetSkipMissingIsotopes(false);
+  G4ParticleHPManager::GetInstance()->SetSkipMissingIsotopes(true);
   G4ParticleHPManager::GetInstance()->SetDoNotAdjustFinalState(true);
   G4ParticleHPManager::GetInstance()->SetUseOnlyPhotoEvaporation(true);
   G4ParticleHPManager::GetInstance()->SetNeglectDoppler(false);
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     // interactive mode
     visManager = new G4VisExecutive;
     visManager->Initialize();
-    UImanager->ApplyCommand("/control/execute init_vis.mac");
+    UImanager->ApplyCommand("/control/execute vis.mac");
     ui->SessionStart();
     delete ui;
   }
