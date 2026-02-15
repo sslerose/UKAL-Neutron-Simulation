@@ -25,7 +25,6 @@
 #include "TGraphErrors.h"
 #include "TCanvas.h"
 #include "TLegend.h"
-#include "TF1.h"
 #include "TStyle.h"
 #include "TSystem.h"
 #include "TSystemDirectory.h"
@@ -356,7 +355,7 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
         return;
     }
 
-    printBoth("Found " + std::to_string(rootFiles.size()) + " matching files.\n\n");
+    std::cout << "Found " << rootFiles.size() << " matching files.\n\n";
 
     //========================================================================//
     // Group files by energy and track angle/distance
@@ -387,7 +386,7 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
     //========================================================================//
     std::vector<EnergyResults> results;
 
-    printBoth("Analyzing " + std::to_string(filesByEnergy.size()) + " energy points...\n");
+    std::cout << "Analyzing " << filesByEnergy.size() << " energy points...\n";
 
     for (const auto& [energy, energyFiles] : filesByEnergy) {
         Double_t angle = angleByEnergy[energy];
@@ -395,15 +394,13 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
         EnergyResults res = analyzeEnergyPoint(energy, angle, distance, energyFiles);
         results.push_back(res);
 
-        std::ostringstream oss;
-        oss << "  Energy " << std::setw(6) << std::fixed << std::setprecision(1)
-            << energy << " keV @ " << std::setprecision(1) << distance << " cm: "
-            << energyFiles.size() << " file(s), " << res.totalEvents << " events, "
-            << res.entries << " entries, " << res.captures << " captures\n";
-        printBoth(oss.str());
+        std::cout << "  Energy " << std::setw(6) << std::fixed << std::setprecision(1)
+                  << energy << " keV @ " << std::setprecision(1) << distance << " cm: "
+                  << energyFiles.size() << " file(s), " << res.totalEvents << " events, "
+                  << res.entries << " entries, " << res.captures << " captures\n";
     }
 
-    printBoth("\n");
+    std::cout << "\n";
 
     // Sort results by energy
     std::sort(results.begin(), results.end(),
@@ -489,6 +486,8 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
         "Detection Efficiency vs Neutron Energy", 800, 600);
     c1->SetGrid();
     c1->SetLeftMargin(0.12);
+    c1->SetLogx();
+    c1->SetLogy();
 
     TGraphErrors* gEff = new TGraphErrors(nPoints, energies.data(), efficiencies.data(),
                                            energyErrors.data(), effErrors.data());
@@ -499,70 +498,8 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
     gEff->SetLineColor(kBlue);
     gEff->Draw("AP");
 
-    //========================================================================//
-    // Auto-select best polynomial fit (try pol3 through pol6)
-    //========================================================================//
-    printBoth("--- Polynomial Fit Selection ---\n\n");
-
-    Int_t bestDegree = -1;
-    Double_t bestChi2Ndf = 1e10;
-    TF1* bestFit = nullptr;
-
-    Double_t fitRangeLow = energies.front();
-    Double_t fitRangeHigh = energies.back();
-
-    for (Int_t deg = 3; deg <= 6; deg++) {
-        TString fitName = Form("effFit_pol%d", deg);
-        TString fitFormula = Form("pol%d", deg);
-        TF1* fitFunc = new TF1(fitName, fitFormula, fitRangeLow, fitRangeHigh);
-
-        gEff->Fit(fitFunc, "RQN");  // R=range, Q=quiet, N=no draw
-
-        Double_t chi2 = fitFunc->GetChisquare();
-        Int_t ndf = fitFunc->GetNDF();
-        Double_t chi2Ndf = (ndf > 0) ? chi2 / ndf : 1e10;
-
-        std::ostringstream fitMsg;
-        fitMsg << "  pol" << deg << ": Chi2/NDF = "
-               << std::fixed << std::setprecision(2) << chi2 << " / " << ndf
-               << " = " << std::setprecision(4) << chi2Ndf << "\n";
-        printBoth(fitMsg.str());
-
-        // Select fit with chi2/ndf closest to 1.0
-        if (std::abs(chi2Ndf - 1.0) < std::abs(bestChi2Ndf - 1.0)) {
-            bestChi2Ndf = chi2Ndf;
-            bestDegree = deg;
-            if (bestFit) delete bestFit;
-            bestFit = fitFunc;
-        } else {
-            delete fitFunc;
-        }
-    }
-
-    std::ostringstream selMsg;
-    selMsg << "\n  Selected: pol" << bestDegree
-           << " (Chi2/NDF = " << std::fixed << std::setprecision(4) << bestChi2Ndf << ")\n\n";
-    printBoth(selMsg.str());
-
-    // Print fit parameters
-    printBoth("--- Fit Parameters ---\n\n");
-    std::ostringstream paramMsg;
-    paramMsg << "  epsilon(E) = p0 + p1*E + p2*E^2 + ... + p" << bestDegree << "*E^" << bestDegree << "\n";
-    for (Int_t i = 0; i <= bestDegree; i++) {
-        paramMsg << "  p" << i << " = " << std::scientific << std::setprecision(8)
-                 << bestFit->GetParameter(i) << " +/- " << bestFit->GetParError(i) << "\n";
-    }
-    paramMsg << "\n";
-    printBoth(paramMsg.str());
-
-    // Draw the selected fit on the plot
-    bestFit->SetLineColor(kRed);
-    bestFit->SetLineWidth(2);
-    bestFit->Draw("SAME");
-
     TLegend* leg = new TLegend(0.50, 0.75, 0.88, 0.88);
     leg->AddEntry(gEff, "Measured efficiency", "lep");
-    leg->AddEntry(bestFit, Form("Polynomial fit (pol%d)", bestDegree), "l");
     leg->SetBorderSize(0);
     leg->Draw();
 
@@ -570,25 +507,30 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
     c1->SaveAs("efficiency_vs_energy.png");
 
     //========================================================================//
-    // Write efficiency fit parameters to file
+    // Write tabulated efficiency data (for AnalyzeTOF.C interpolation)
     //========================================================================//
-    std::ofstream fitFile("efficiency_fit.txt");
-    if (fitFile.is_open()) {
-        fitFile << "# Efficiency polynomial fit parameters\n";
-        fitFile << "# epsilon(E) = p0 + p1*E + p2*E^2 + ... + pN*E^N\n";
-        fitFile << "# E in keV, epsilon dimensionless (0 to 1)\n";
-        fitFile << "# Chi2/NDF = " << std::fixed << std::setprecision(4) << bestChi2Ndf << "\n";
-        fitFile << "# Fit range: " << std::setprecision(1) << fitRangeLow
-                << " - " << fitRangeHigh << " keV\n";
-        fitFile << "DEGREE " << bestDegree << "\n";
-        for (Int_t i = 0; i <= bestDegree; i++) {
-            fitFile << "p" << i << " " << std::scientific << std::setprecision(12)
-                    << bestFit->GetParameter(i) << "\n";
+    std::ofstream tableFile("efficiency_table.txt");
+    if (tableFile.is_open()) {
+        tableFile << "# Tabulated neutron detection efficiency vs energy\n";
+        tableFile << "# Generated by AnalyzeEff.C\n";
+        tableFile << "# Interpolation scheme: log-log linear (ENDF scheme 5)\n";
+        tableFile << "# Columns: Energy[keV]  Efficiency  EfficiencyError\n";
+        tableFile << "#\n";
+        for (Int_t i = 0; i < nPoints; i++) {
+            if (efficiencies[i] <= 0.0) {
+                tableFile << "# SKIPPED (zero efficiency): " << std::fixed
+                          << std::setprecision(1) << energies[i] << " keV\n";
+                continue;
+            }
+            tableFile << std::fixed << std::setprecision(1) << energies[i]
+                      << "  " << std::scientific << std::setprecision(8) << efficiencies[i]
+                      << "  " << std::scientific << std::setprecision(8) << effErrors[i]
+                      << "\n";
         }
-        fitFile.close();
-        printBoth("Efficiency fit parameters saved to: efficiency_fit.txt\n");
+        tableFile.close();
+        printBoth("Efficiency table saved to: efficiency_table.txt\n");
     } else {
-        std::cerr << "Warning: Could not write efficiency_fit.txt\n";
+        std::cerr << "Warning: Could not write efficiency_table.txt\n";
     }
 
     //========================================================================//
@@ -596,13 +538,13 @@ void analyzeEfficiency(const char* directory = ".", const char* pattern = "nTOF_
     //========================================================================//
     std::ostringstream plotList;
     plotList << "\nPlots saved:\n"
-             << "  efficiency_vs_energy.png (efficiency data + polynomial fit)\n\n";
+             << "  efficiency_vs_energy.png (efficiency data)\n\n";
     printBoth(plotList.str());
 
     printBoth("============================================================\n");
     printBoth("Efficiency analysis complete!\n");
     printBoth("Results saved to: eff_analysis_results.txt\n");
-    printBoth("Fit parameters saved to: efficiency_fit.txt\n");
+    printBoth("Efficiency table saved to: efficiency_table.txt\n");
     printBoth("============================================================\n");
 
     // Close output file

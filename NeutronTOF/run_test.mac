@@ -10,8 +10,9 @@
 
 # Set simple gun parameters
 /neutronTOF/gun/useSimLiT false
-/neutronTOF/det/setDetectorDistance 50 cm
+/neutronTOF/det/setWorldMaterial vacuum
+/neutronTOF/det/setDetectorDistance 25 cm
 /neutronTOF/det/setDetectorAngle 0 degree
 
 # Run beam
-/run/beamOn 500000
+/run/beamOn 100000

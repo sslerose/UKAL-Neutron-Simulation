@@ -76,7 +76,7 @@ There are several commands to change the properties of the detector and particle
 `/neutronTOF/gun/energy` : set the neutron beam energy for the simple gun source.  
 `/neutronTOF/gun/limitToDetector` : limit the generation of neutrons by SimLiT to a region around the detector (use only in a vacuum).  
 `/neutronTOF/gun/printParameters` : print the current particle generator parameters.  
-`/run/beamOn ###` : generate ### neutron events.
+`/run/beamOn ###` : generate ### events, one neutron per event.
 
 
 ### Interactive Mode
@@ -89,9 +89,9 @@ or from the MCC using
 ```bash
 $BUILD_RUN ./NeutronTimeOfFlight
 ```
-In either session, try some of the available commands either by typing them in console or using the command dropdowns on the left-hand side. If using the dropdown, selecting a command will open a guidance box for its use and acceptable inputs.
+In either session, try some of the available commands either by typing them in the console or using the command dropdowns on the left-hand side. If using the dropdown, selecting a command will open a guidance box for its use and acceptable inputs.
 
-When generating events in interactive mode, limit the number of events to only a few hundred, though 10 or 20 will do just as well. Neutron paths will be displayed in green, while interactions with the Li6 detector (collisions, fission, etc.) will show as blue dots. Any instance of neutron capture will show as a red dot, but the likelihood of capture is so low (less than 1 in 10,000) that you will almost never see a capture within just a few hundred events.
+When generating events in interactive mode, limit the number of events to only a few hundred, though 10 or 20 will do just as well to see the effect of commands. Neutron paths will be displayed in green, while interactions with the Li6 detector (collisions, fission, etc.) will show as blue dots. Any instance of a $^6\text{Li}(n,t)\alpha$ process will show as a red dot, though only about 5% of neutrons that enter the detector will produce a reaction.
 
 
 ### Batch Mode
@@ -105,7 +105,7 @@ To run batch mode locally, just add the desired macro file after the execution c
 ```
 
 **MCC:**  
-Running batch mode on the MCC requires using Slurm (Simple Linux Utility for Resource Management) via a shell script. The `run_nTOF.sh` script provides an outline for Slurm jobs with the following structure:  
+Running batch mode on the MCC requires using Slurm (Simple Linux Utility for Resource Management) via a shell script. Any of the `run_nXXX.sh` scripts provides an outline for Slurm jobs with the following structure:  
 ```bash
 #!/bin/bash
 #SBATCH --time 00:30:00         # Time limit for the job (REQUIRED)
@@ -118,7 +118,7 @@ Running batch mode on the MCC requires using Slurm (Simple Linux Utility for Res
 #SBATCH --mail-type ALL         # Send email when job starts/ends
 #SBATCH --mail-user EMAIL_ADDRESS  # Email address to send notifications to
 
-singularity run --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf ./NeutronTimeOfFlight your_macro.mac
+singularity run --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf ../NeutronTimeOfFlight your_macro.mac
 ```
 Each of the hashed lines provide instructions to Slurm. There are four of primary importance that you will need to change:
 
@@ -134,6 +134,10 @@ Anything after the hashed lines will be executed as if it were in a terminal. On
 ```bash
 sbatch your_slurm.sh
 ```
+
+Note that the execution call `../NeutronTimeOfFlight` in the shell scripts have two leading periods, which directs the terminal to look in the parent directory for the executable. These batch scripts will write large data sets from the simulation and intended to be called within a folder that will hold the generated ROOT files. This keeps your different data sets organized within your build directory and removes potential analysis error (as discussed below). The macro file called by the shell script (and any dependent macro files) must be placed in the same folder as the shell script to execute properly.
+
+As an example, the `run_efficiency.mac`, `efficiency.mac`, and `run_dEff.sh` files are copied into `build/Data_Efficiency` when the project is built. Running `run_dEff.sh` will use the macros from the same directory, but the executable from the parent `build/`.
 
 
 ## Output and Analysis

@@ -62,14 +62,22 @@
 //------------------------------------------------------------------------//
 DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
 {
+  //========================================================================//
+  // Create UI directory for all simulation commands
+  //========================================================================//
   fNeutronDetDir = new G4UIdirectory("/neutronTOF/");
   fNeutronDetDir->SetGuidance("Commands specific to neutron detection simulation");
 
+  //========================================================================//
+  // Create UI directory for detector and world commands
+  //========================================================================//
   G4bool broadcast = false;
   fDetDir = new G4UIdirectory("/neutronTOF/det/", broadcast);
   fDetDir->SetGuidance("Detector construction commands");
 
+  //========================================================================//
   // Detector distance from origin
+  //========================================================================//
   fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setDetectorDistance", this);
   fDetectorDistanceCmd->SetGuidance("Set distance from origin (neutron source) to detector face");
   fDetectorDistanceCmd->SetParameterName("DetectorDistance", false);
@@ -77,28 +85,36 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorDistanceCmd->SetUnitCategory("Length");
   fDetectorDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  //========================================================================//
   // Detector angle around y-axis
+  //========================================================================//
   fDetectorAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setDetectorAngle", this);
   fDetectorAngleCmd->SetGuidance("Set angle of detector around y-axis (neutron source)");
   fDetectorAngleCmd->SetParameterName("DetectorAngle", false);
   fDetectorAngleCmd->SetUnitCategory("Angle");
   fDetectorAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  //========================================================================//
   // Initial spanning angle of detector
+  //========================================================================//
   fDetectorSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setSpanningStartAngle", this);
   fDetectorSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of detector");
   fDetectorSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
   fDetectorSpanningStartAngleCmd->SetUnitCategory("Angle");
   fDetectorSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  //========================================================================//
   // Final spanning angle of detector
+  //========================================================================//
   fDetectorSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setSpanningEndAngle", this);
   fDetectorSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of detector");
   fDetectorSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
   fDetectorSpanningEndAngleCmd->SetUnitCategory("Angle");
   fDetectorSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  //========================================================================//
   // World material
+  //========================================================================//
   fWorldMaterialCmd = new G4UIcmdWithAString("/neutronTOF/det/setWorldMaterial", this);
   fWorldMaterialCmd->SetGuidance("Set material of the world volume");
   fWorldMaterialCmd->SetGuidance("  Available Materials:");
@@ -107,7 +123,9 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fWorldMaterialCmd->SetParameterName("WorldMaterial", false);
   fWorldMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+  //========================================================================//
   // Print current parameters
+  //========================================================================//
   fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/det/printParameters", this);
   fPrintCmd->SetGuidance("Print current neutron source configuration.");
   fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);

@@ -101,7 +101,7 @@ G4String RunAction::GenerateFileName() const
   }
 
   // Split energy into integer and decimal parts for filename
-  G4int energyInt = static_cast<G4int>(std::round(energy));
+  G4int energyInt = static_cast<G4int>(std::round(energy - 0.01)); // Round down to nearest integer
   G4int energyDecimal = static_cast<G4int>(std::round((energy - energyInt) * 100));
   
   // Get detector angle and distance from DetectorConstruction

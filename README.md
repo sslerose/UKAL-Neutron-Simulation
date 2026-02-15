@@ -194,7 +194,7 @@ alias geant4make="setup_geant4"
 ```
 where the four exports after the if statement have been added.
 
-To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name can be found the project folder via a file explorer or calling `ls` in the terminal.
+To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name can be found in the project folder via a file explorer or calling `ls` in the terminal.
 
 
 ## Running Projects on the Morgan Compute Cluster (UKY Users Only)
@@ -244,6 +244,7 @@ If you're using the remote desktop, open a terminal in that instance. If you're 
    ```
 2. At the end of the bash file, create a setup function and alias:
    ```bash
+   # <<< geant4 scripts >>>
    setup_geant4() {
       # Set environment variables
       export XDG_RUNTIME_DIR=/tmp/$UID
@@ -263,6 +264,7 @@ If you're using the remote desktop, open a terminal in that instance. If you're 
       export BUILD_RUN="singularity run -B /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY,XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR,QT_X11_NO_MITSHM=$QT_X11_NO_MITSHM,LIBGL_ALWAYS_INDIRECT=$LIBGL_ALWAYS_INDIRECT,LIBGL_DIR3_DISABLE=$LIBGL_DIR3_DISABLE --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf"
    }
    alias geant4make="setup_geant4"
+   # <<< geant4 scripts >>>
    ```
 3. Source the bash file:
    ```bash

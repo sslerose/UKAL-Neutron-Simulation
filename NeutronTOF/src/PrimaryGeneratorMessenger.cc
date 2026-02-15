@@ -91,11 +91,6 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   fBeamEnergyCmd->SetGuidance("Set proton beam energy for SimLiT source (in keV).");
   fBeamEnergyCmd->SetGuidance("  Threshold: 1880.4 keV");
   fBeamEnergyCmd->SetGuidance("  Typical values: 1912-2500 keV");
-  // fBeamEnergyCmd->SetGuidance("  Reference neutron energies at 0 degrees:");
-  // fBeamEnergyCmd->SetGuidance("    1912 keV -> ~30 keV neutrons");
-  // fBeamEnergyCmd->SetGuidance("    1950 keV -> ~70 keV neutrons");
-  // fBeamEnergyCmd->SetGuidance("    2000 keV -> ~120 keV neutrons");
-  // fBeamEnergyCmd->SetGuidance("    2500 keV -> ~600 keV neutrons");
   fBeamEnergyCmd->SetParameterName("beamEnergy", false);
   fBeamEnergyCmd->SetRange("beamEnergy >= 1880.4");
   fBeamEnergyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
