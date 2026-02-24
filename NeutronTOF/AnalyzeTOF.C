@@ -20,10 +20,21 @@
 // Usage:
 //   root -l
 //   .L AnalyzeTOF.C
+//   analyzeTOF()
+//
+//   Specify path to data directory:
 //   analyzeTOF("path/to/data/directory")
 //
-//   // Or with default current directory:
-//   analyzeTOF()
+//   Choose individual anglular spectra to plot
+//   analyzeTOF("path/to/data/directory", {10.0, 30.0, 50.0, 60.0})
+//
+//   To generate diagnostic plots:
+//   analyzeTOF("path/to/data/directory", includeDiagnostic = true)
+//
+//   To specify the number of threads for multi-threading:
+//   analyzeTOF("path/to/data/directory", nThreads = 4)
+//
+// Note: efficiency table must be placed in the same directory as the data files, named "efficiency_table.txt".
 //
 
 #include "TFile.h"
