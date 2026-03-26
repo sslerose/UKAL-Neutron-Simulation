@@ -140,31 +140,18 @@ Note that the execution call `../NeutronTimeOfFlight` in the shell scripts have 
 As an example, the `run_efficiency.mac`, `efficiency.mac`, and `run_dEff.sh` files are copied into `build/Data_Efficiency` when the project is built. Running `run_dEff.sh` will use the macros from the same directory, but the executable from the parent `build/`.
 
 
-## Output and Analysis
+## Test Run
 
-Within the build directory, there are three key macro files:
+Before doing more intensive simulations, we will want to make sure everything is working as expected by running the project using a test macro in batch mode either locally with `run_test.mac` or on the cluster with `run_nTest.sh` (see above for batch mode instructions). Both can be found in `build/Data_test`.
 
-- `run_test.mac` : Generate 500,000 neutrons at 50 keV along the z-axis using a simple gun source towards the detector placed 50 cm away.
-
-- `run_angles.mac` and `angles.mac` : Together, generate 1,000,000 neutrons each using SimLiT for detector configurations at a radial distance of 50 cm and angles about the y-axis between 0 and 90 degrees in 5 degree increments.
-
-It is recommended to use the `run_angles.mac` and `angles.mac` set of macros only on the MCC (assuming you have access) or some other high-performance cluster due to their computational intensity and large file outputs.
-
-
-### Test Run
-
-Before doing more intensive simulations, run the project in batch mode with the `run_test.mac` macro either locally or on the cluster. Once complete, the simulation will output a ROOT file named `nTOF_Gun_50_0keV_0_0deg.root` with a TTree containing the recorded data which can be analyzed using ROOT. Open ROOT using
+The macro generates 500,000 neutrons at 50 keV along the z-axis using a simple gun source towards the detector placed 50 cm away. Once complete, the simulation will output a ROOT file named `nTOF_Gun_50_0keV_0_0deg.root` with a TTree containing the recorded data which can be analyzed using ROOT. Open ROOT using
 ```bash
 root -l
 ```
 then load the analysis file and run its main analysis function:
 ```bash
-.L AnalyzeData.C
-analyzeData()
-```
-In the future, it will be useful to place the multiple ROOT files from a single macro (as will be the case for `run_angles.mac`) into their own folder. In such a case, add the file path to the function call:
-```bash
-analyzeData("path/to/data")
+.L AnalyzeTOF.C
+analyzeTOF()
 ```
 **NOTE:** On the MCC, you need to load ROOT before using it. To find the proper command, run
 ```bash
@@ -186,19 +173,65 @@ The analysis program will produce several histograms and plots of the given ROOT
 
 - `neutron_theta_distribution` : The distribution of generated neutron planar angle.
 
-- `neutron_energy_vs_theta` : A scatterplot of a systematic sample of generated neutron energy vs planar angle.
-
-- `tof_energy_spectrum` : The distribution of captured neutron energy as calculated by TOF.
+- `neutron_energy_vs_theta` : A density plot of a systematic sample of generated neutron energy vs planar angle.
 
 - `tof_energy_per_angle` : The distribution of captured neutron energy as calculated by TOF, separated by detector angle.
 
+- `tof_energy_spectrum` : The distribution of captured neutron energy as calculated by TOF.
+
 - `tof_energy_vs_angle` : The mean TOF energy over detector angles.
 
-The program will also create a txt file of the results, providing numerical results to supplement the histograms and plots.
+The program will also create a text file of the results, providing numerical results to supplement the histograms and plots.
 
-Most of the data from the test run is not insightful, but the captures histogram and TOF energy spectrum, along with the corresponding results in the analysis text file, provide simulation results under optimal conditions (direct beam, moderate neutron energy with no variance).
+Most of the data from the test run is not insightful, but if the captures histogram and TOF energy spectrum are populated, then we know that everything is likely working correctly.
 
 
-### Full Run
+## Full TOF Simulation
 
-Run the full TOF simulation using `run_angles.mac` . If using the cluster, change the macro file in `run_nTOF.sh` and increase the time limit (roughly 30 minutes for every 100 million neutrons generated).
+*It is recommended that full simulation runs only be implemented on the MCC (assuming you have access) or some other high-performance cluster due to their computational intensity and large file outputs. As such, all implementation in this section is done with the MCC in mind.*
+
+### Efficiency Profile
+
+To create accurate TOF spectra, an efficiency profile of the implemented detector over the energy range of interest is required. From the `build/Data_Efficiency` directory, run the efficiency script with
+```bash
+sbatch run_dEff.sh
+```
+By default, this will generate 5 million mono-energetic neutrons at each energy from 1 to 150 keV in 1 keV increments. The detector is placed at 0 degrees in a vacuum to prevent scattering before reaching the detector. Once complete, open ROOT in the `build` directory with
+```bash
+root -l
+```
+and analyze the efficiency data:
+```bash
+.L AnalyzeEff.C
+AnalyzeEff("Data_Efficiency")
+```
+The analysis program will produce a log-log plot of the measured detector efficiency over the generated neutron energies, a results text file that gives you information on the efficiency analysis, and a text file of a table of values that we will use when analyzing the TOF data.
+
+
+### TOF Run
+
+To run the TOF simulation, enter the `build/Data_TOF` directory and run the TOF script:
+```bash
+sbatch run_nTOF.sh
+```
+By default, this will generate 500 million neutrons at each detector angle from 0 to 70 degrees in 5 degree increments. Detector placement can be changed in the `run_angles.mac` macro file, and neutron count in the `angles.mac` macro file. If the number of neutrons generated is increased, also increase the time limit of the simulation (roughly 30 minutes for every 100 million neutrons generated).
+
+**NOTE:** It is recommended to initiate separate runs from within a dedicated folder to keep generated ROOT files separated and organized. To do this yourself, copy the relevant script and its dependent macro files into your new folder and run the simulation from there. All ROOT files generated will remain in that folder.
+
+
+### Analysis
+
+With the TOF run complete, copy the `efficiency_table.txt` file from the efficiency data folder into the TOF data folder. Open ROOT in the build directory and then analyze the TOF data:
+```bash
+.L AnalyzeTOF.C
+AnalyzeTOF("Data_TOF")
+```
+
+If you created a new folder for your data, change the file path in the function call. There are also a few optional variables for the analysis, such that you can specify individual angular spectra to plot, include diagnostic plots for your TOF data, or change the number of threads used during the analysis:
+```bash
+analyzeTOF("path/to/data/directory", targetAngles = {10.0, 30.0, 50.0, 60.0}, includeDiagnostic = true, nThreads = 4)
+```
+
+*If the target angles do not exist in your data, the plots for these angles will be skipped in the analysis.*
+
+This analysis will produce the same plots and results text file as seen during the test run, but the statistics now have meaning. You will also see normalized double-differential spectra of the expected and TOF-calculated neutron energy distributions for those target angles specified, as well as the total integral spectrum across all simulated angles.

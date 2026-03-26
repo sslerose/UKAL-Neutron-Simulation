@@ -1,3 +1,3 @@
 # Set simple gun energy and run events
 /neutronTOF/gun/energy {energy} keV
-/run/beamOn 1000000
+/run/beamOn 5000000

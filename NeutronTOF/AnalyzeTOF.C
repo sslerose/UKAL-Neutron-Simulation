@@ -26,7 +26,7 @@
 //   analyzeTOF("path/to/data/directory")
 //
 //   Choose individual anglular spectra to plot
-//   analyzeTOF("path/to/data/directory", {10.0, 30.0, 50.0, 60.0})
+//   analyzeTOF("path/to/data/directory", targetAngles = {10.0, 30.0, 50.0, 60.0})
 //
 //   To generate diagnostic plots:
 //   analyzeTOF("path/to/data/directory", includeDiagnostic = true)

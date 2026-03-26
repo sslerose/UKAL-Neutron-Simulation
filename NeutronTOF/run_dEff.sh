@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time 00:30:00         # Time limit for the job (REQUIRED)
+#SBATCH --time 24:00:00         # Time limit for the job (REQUIRED)
 #SBATCH --job-name=NeutronTOF_Eff        # Job name
 #SBATCH --ntasks=8              # Number of cores to allocate. Same as SBATCH -n
 #SBATCH --partition=normal      # Partition/queue to run the job in. (REQUIRED)

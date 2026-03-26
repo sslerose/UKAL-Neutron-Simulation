@@ -10,8 +10,15 @@ Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight
 2. Extract the repository to your desired location.
 
 **Linux:**
-1. Install Git using `sudo apt install git`.
-2. Within your desired install directory, run `git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git`.
+1. Install Git:
+
+   ```bash
+   sudo apt install git
+   ```
+2. Within your desired install directory, clone the repository:
+   ```bash
+   git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
+   ```
 
 
 ## Installing Geant4
@@ -19,20 +26,22 @@ Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight
 **Windows Users:**
 
 **Linux:**  
-A shell file for easy installation is included in the [Scripts](Scripts) directory. You can source (i.e., execute) the script as
+A shell file for easy installation of version 11.4.0 is included in the [Scripts](Scripts) directory. You can source (i.e., execute) the script as
 ```bash
 cd /path/to/UKAL-Neutron-Simulation
 source geant4_install_script.sh
 ```
-where `/path/to` is the directory you cloned this repository to. It will prompt you for the current install version of Geant4, so you should have this handy. Find it by clicking "Download" at the top of the [Geant4 webpage](https://geant4.web.cern.ch/) to open the download page (it will be a number like 11.3.2).
+where `/path/to` is the directory you cloned this repository to.
 
-If you would prefer to install manually, follow these steps (adapted from Physics Matters [YouTube tutorial](https://youtu.be/4DTumUo3IKw?si=EoMsXBIljGOl0YsK)):
+If you would prefer to install manually or want a different version, follow these steps (adapted from Physics Matters [YouTube tutorial](https://youtu.be/4DTumUo3IKw?si=EoMsXBIljGOl0YsK)):
 1. Open a terminal and install relevent dependencies:  
-    ```bash
-    sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev \
-    libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-de \
-    libxerces-c-dev qtbase5-dev qtbase5-dev-tools qtchooser qt5-qmake
-    ```
+   ```bash
+   sudo apt install -y wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libxmu-dev libxerces-c-dev libgl1-mesa-dev mesa-utils libxkbcommon-dev qt6-base-dev qt6-base-private-dev qtchooser
+   ```  
+   **Note:** For versions pre-11.4.0, the default is Qt5 (instead of Qt6). In this case, install the following modified dependencies:  
+   ```bash
+   sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-de libxerces-c-dev qtbase5-dev qtbase5-dev-tools qt5-qmake qtchooser
+   ```
 2. In the home user directory (~), create the file structure for the installation:  
 	```bash
  	cd
@@ -41,27 +50,27 @@ If you would prefer to install manually, follow these steps (adapted from Physic
 3. Get the Geant4 installer:
     1. Go to the [Geant4 webpage](https://geant4.web.cern.ch/) and click "Download" at the top.
     2. Right-click "Download tar.gz" under "Source code" and copy the link.
-    3. In your terminal, type `wget` followed by a space, then paste the download link and execute. It will look like the example below. (If you do not have `wget`, install it with `sudo apt install wget`).
+    3. In your terminal, type `wget` followed by a space, then paste the download link and execute. It will look like the example below.
 	
 	   ```bash
-	   wget https://gitlab.cern.ch/geant4/geant4/-/archive/v11.3.2/geant4-v11.3.2.tar.gz
+	   wget https://gitlab.cern.ch/geant4/geant4/-/archive/v11.4.1/Geant4-v11.4.1.tar.gz
 	   ```
 4. Extract the installation:
 
 	```bash
-	tar xzfv geant4-v11.3.2.tar.gz
+	tar xzfv geant4-v11.4.1.tar.gz
 	```
 5. Make and enter the build directory:  
 	```bash
-	mkdir geant4-v11.3.2-build && cd geant4-v11.3.2-build
+	mkdir geant4-v11.4.1-build && cd geant4-v11.4.1-build
 	```
 6. Configure the build:  
 	```bash
-	ccmake ../geant4-v11.3.2
+	ccmake ../geant4-v11.4.1
 	```
     1. When the CMake GUI pops up, type <kbd>C</kbd> to Configure.
     2. Once finished, type <kbd>E</kbd> to enter the build selections.
-    3. Change CMAKE_INSTALL_PREFIX to `/home/username/Software/Geant4/geant4-v11.3.2-install` (remember to change the version number if yours is different).
+    3. Change CMAKE_INSTALL_PREFIX to `/home/username/Software/Geant4/geant4-v11.4.1-install` (remember to change the version number if yours is different).
     4. Enable the following:
 		  * BUILD_MULTITHREADED
         * INSTALL_DATA
@@ -77,7 +86,7 @@ If you would prefer to install manually, follow these steps (adapted from Physic
        make -j#
        ```
        where the hash in `-j#` corresponds to the number of cores on your computer (run `lscpu | grep 'Core'` to check).
-    2. Once the build is complete, run  
+    2. Once the build is complete,  
        ```bash
        make install
        ```
@@ -95,35 +104,35 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
    sudo nano ~/.bashrc
    ```
 
-2. At the end of the bash file, insert the alias and a header:  
+2. At the end of the bash file, insert the alias and a header (remember to change the version number if you installed one other than 11.4.0):  
    ```bash
    # Geant4 source alias
-   alias geant4make="source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh"
+   alias geant4make="source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh"
    ```
    Press <kbd>Ctrl</kbd> + <kbd>X</kbd> to exit the file, press <kbd>Y</kbd> to accept changes, and press <kbd>Enter</kbd> to write to the file.
    
    (Optional)
    If you want some feedback as to whether your file has been sourced properly, insert the following, more detailed function and alias:
    ```bash
-    # <<< geant4 initialize >>>
-	setup_geant4() {
-    	# Check if Geant4 is already set up
-    	if [[ "$GEANT4_ACTIVE" == "true" ]]; then
-        	echo "Geant4 environment already active"
-        	return 0
-    	fi
+   # <<< geant4 initialize >>>
+   setup_geant4() {
+      # Check if Geant4 is already set up
+      if [[ "$GEANT4_ACTIVE" == "true" ]]; then
+         echo "Geant4 environment already active"
+         return 0
+      fi
     
-    	# Source Geant4 environment
-    	source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
+      # Source Geant4 environment
+      source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh
     
-    	# Mark Geant4 as active
-    	export GEANT4_ACTIVE=true
+      # Mark Geant4 as active
+      export GEANT4_ACTIVE=true
     
-    	echo "Geant4 environment activated with system Qt (if available)"
-    	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-	}
-	alias geant4make="setup_geant4"
-	# <<< geant4 initialize >>>
+      echo "Geant4 environment activated"
+      echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+   }
+   alias geant4make="setup_geant4"
+   # <<< geant4 initialize >>>
    ```
 3. Before building or running any Geant4 program, call the alias:  
    ```bash
@@ -141,7 +150,7 @@ I could offer a script for this section, but this particular set of actions must
 1. Navigate to the B1 project in the basic examples directory:  
 
    ```bash
-   cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/examples/basic/B1
+   cd ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/examples/basic/B1
    ```
 2. Create a build directory:  
    ```bash
@@ -163,36 +172,35 @@ I could offer a script for this section, but this particular set of actions must
 After a few moments, Geant4 will open in a new window. The largest section is the visualizer and is our main concern. You should see the following:  
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
 
-If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Return to [Sourcing the Geant4 Shell Script](#sourcing-the-geant4-shell-script) and use the "Optional" sourcing method with
+If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Open your `.bashrc` file and change the environment script to the following:
 ```bash
 # <<< geant4 initialize >>>
 setup_geant4() {
-	# Check if Geant4 is already set up
-	if [[ "$GEANT4_ACTIVE" == "true" ]]; then
-		echo "Geant4 environment already active"
-		return 0
-	fi
+   # Check if Geant4 is already set up
+   if [[ "$GEANT4_ACTIVE" == "true" ]]; then
+      echo "Geant4 environment already active"
+      return 0
+   fi
 	
-    export QT_QPA_PLATFORM=xcb
-    export GDK_BACKEND=x11\
-    export WAYLAND_DISPLAY=""
-	export G4VIS_DEFAULT_DRIVER=TSGQt
+   export QT_QPA_PLATFORM=xcb
+   export GDK_BACKEND=x11\
+   export WAYLAND_DISPLAY=""
+   export G4VIS_DEFAULT_DRIVER=TSGQt
 	
-	# Source Geant4 environment
-	source ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4/geant4make/geant4make.sh
+   # Source Geant4 environment
+   source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh
 	
-	# Mark Geant4 as active
-	export GEANT4_ACTIVE=true
+   # Mark Geant4 as active
+   export GEANT4_ACTIVE=true
 	
-	echo "Geant4 environment activated with system Qt (if available)"
-	echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-
-	cd ~/Software/Geant4/geant4-v11.3.2-install/share/Geant4
+   echo "Geant4 environment activated"
+   echo "Default visualizer: $G4VIS_DEFAULT_DRIVER"
+   echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 }
 alias geant4make="setup_geant4"
 # <<< geant4 initialize >>>
 ```
-where the four exports after the if statement have been added.
+Return to [Sourcing the Geant4 Shell Script](#sourcing-the-geant4-shell-script) for more detail.
 
 To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name can be found in the project folder via a file explorer or calling `ls` in the terminal.
 
@@ -270,7 +278,7 @@ If you're using the remote desktop, open a terminal in that instance. If you're 
    ```bash
    source ~/.bashrc
    ```
-   **NOTE:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session, just like when running projects locally.  
+   **NOTE:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session.  
    **NOTE 2:** If `setup_geant4` already exists, change that command (and the corresponding alias) to `geant4_singularity` .
 
 
@@ -297,11 +305,11 @@ Before importing any Neutron Simulation project, you should test that the basic 
 	```
 4. Make the example:
 	```bash
-	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.3.2/cmake
+	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.4.0/cmake
 	$SING_RUN make
 	```
 5. Run the example:
 	```bash
 	$BUILD_RUN ./exampleB1
 	```
-The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in an interactive session or `nano` in the terminal) and verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (6).
+The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in an interactive session or `nano` in the terminal) and verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (5).
