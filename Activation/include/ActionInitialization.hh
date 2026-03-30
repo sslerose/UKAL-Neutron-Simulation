@@ -43,57 +43,32 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file ActionInitialization.hh
+/// \brief Definition of the ActionInitialization class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#ifndef ActionInitialization_h
+#define ActionInitialization_h 1
 
-#include "globals.hh"
-#include "G4SystemOfUnits.hh"
+#include "G4VUserActionInitialization.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+class DetectorConstruction;
+class PrimaryGeneratorMessenger;
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+class ActionInitialization : public G4VUserActionInitialization
+{
+  public:
+    ActionInitialization(DetectorConstruction* detector);
+    ~ActionInitialization() override;
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+    void BuildForMaster() const override;
+    void Build() const override;
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+  private:
+    DetectorConstruction* fDetector = nullptr;
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
-
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
-
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
-
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
+    // Messenger created on master thread (mutable because Build() is const)
+    mutable PrimaryGeneratorMessenger* fGeneratorMessenger = nullptr;
+};
 
 #endif

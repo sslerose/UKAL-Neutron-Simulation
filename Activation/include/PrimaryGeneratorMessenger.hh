@@ -43,57 +43,51 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file PrimaryGeneratorMessenger.hh
+/// \brief Definition of the PrimaryGeneratorMessenger class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#ifndef PrimaryGeneratorMessenger_h
+#define PrimaryGeneratorMessenger_h 1
 
+#include "G4UImessenger.hh"
 #include "globals.hh"
-#include "G4SystemOfUnits.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+class PrimaryGeneratorAction;
+class G4UIdirectory;
+class G4UIcmdWithABool;
+class G4UIcmdWithADouble;
+class G4UIcmdWithADoubleAndUnit;
+class G4UIcmdWithAString;
+class G4UIcmdWithoutParameter;
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+class PrimaryGeneratorMessenger : public G4UImessenger
+{
+  public:
+    PrimaryGeneratorMessenger();
+    ~PrimaryGeneratorMessenger() override;
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+    void SetNewValue(G4UIcommand*, G4String) override;
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+  private:
+    // UI directories
+    G4UIdirectory* fGunDir = nullptr;
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+    // UI commands
+    G4UIcmdWithABool*          fUseSimLiTCmd = nullptr;
+    G4UIcmdWithADouble*        fBeamEnergyCmd = nullptr;
+    G4UIcmdWithADouble*        fBeamSigmaCmd = nullptr;
+    G4UIcmdWithAString*        fTargetMaterialCmd = nullptr;
+    G4UIcmdWithADouble*        fTargetThicknessCmd = nullptr;
+    G4UIcmdWithoutParameter*   fPrintCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fExposureTimeCmd = nullptr;
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
+    // Simple gun energy command (when SimLiT disabled)
+    G4UIcmdWithADoubleAndUnit* fGunEnergyCmd = nullptr;
+};
 
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif

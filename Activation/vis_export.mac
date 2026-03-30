@@ -1,0 +1,111 @@
+# --------------------------------------------
+# Visualization export macro
+#
+# Execute this macro to create an image of
+# the simulated detector model
+# --------------------------------------------
+
+# Set verbose mode for confirmation
+/vis/verbose confirmations
+
+# Open TSG_OFFSCREEN viewer with high resolution
+# Format: /vis/open TSG_OFFSCREEN [width]x[height]
+/vis/open TSG_OFFSCREEN 1200x900
+/vis/viewer/reset
+
+# Draw the geometry
+/vis/drawVolume
+
+# ============================================
+# CAMERA POSITIONING
+# ============================================
+
+/vis/viewer/set/viewpointVector 1.2 -0.8 0.6
+
+# ============================================
+# LIGHTING AND RENDERING
+# ============================================
+
+/vis/viewer/set/lightsVector 1 1 1
+/vis/viewer/set/style surface
+/vis/viewer/set/auxiliaryEdge true
+/vis/viewer/set/lineSegmentsPerCircle 100
+
+# ============================================
+# SCENE ELEMENTS
+# ============================================
+
+# Set spanning angle of the detector
+/neutronTOF/det/setSpanningStartAngle 0 deg
+/neutronTOF/det/setSpanningEndAngle 270 deg
+
+# Make container volumes invisible
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility AssemblyMother 0 false
+/vis/geometry/set/visibility InnerAssembly 0 false
+
+# ============================================
+# COLOR SCHEME - Publication friendly
+# ============================================
+
+# Aluminum holder - bronze/tan
+/vis/geometry/set/colour Holder 0 0.70 0.55 0.30 1.0
+
+# Stainless steel can - dark gray
+/vis/geometry/set/colour Can 0 0.40 0.40 0.40 1.0
+/vis/geometry/set/colour CanCap 0 0.40 0.40 0.40 1.0
+
+# Rubber - yellow-orange with transparency
+/vis/geometry/set/colour Rubber 0 1.0 0.65 0.0 0.6
+
+# Teflon - white/light gray with transparency
+/vis/geometry/set/colour Teflon 0 0.95 0.95 0.95 0.7
+
+# Detector (scintillator) - cyan/light blue with transparency
+/vis/geometry/set/colour Detector 0 0.4 0.8 1.0 0.7
+
+# PMT - blue with transparency
+/vis/geometry/set/colour PMT 0 0.2 0.4 0.8 0.6
+
+# ============================================
+# VIEWPORT AND ZOOM
+# ============================================
+
+/vis/viewer/zoom 1.2
+/vis/viewer/set/background 1 1 1
+
+# ============================================
+# EXPORT SETTINGS AND PRODUCTION
+# ============================================
+
+# Option 1: High-quality PNG with zbuffer (recommended for complex geometry)
+#/vis/tsg/offscreen/set/format zb_png
+#/vis/tsg/offscreen/set/file detector_cross_section_2.png
+#/vis/viewer/rebuild
+
+# Option 2: PDF via gl2ps (vector format, but no transparency)
+# Uncomment if you prefer PDF output:
+#/vis/tsg/offscreen/set/transparency false
+#/vis/tsg/offscreen/set/format gl2ps_pdf
+#/vis/tsg/offscreen/set/file detector_cross_section.pdf
+#/vis/viewer/rebuild
+#/vis/tsg/offscreen/set/transparency true
+
+# Option 3: EPS for LaTeX (vector format, but no transparency)
+# Uncomment if you prefer EPS output:
+#/vis/tsg/offscreen/set/transparency false
+#/vis/tsg/offscreen/set/format gl2ps_eps
+#/vis/tsg/offscreen/set/file detector_cross_section.eps
+#/vis/viewer/rebuild
+#/vis/tsg/offscreen/set/transparency true
+
+# Option 4: High-resolution PNG (2400x1800)
+# Uncomment for even higher resolution:
+/vis/tsg/offscreen/set/size 2400 1800
+/vis/tsg/offscreen/set/format zb_png
+/vis/tsg/offscreen/set/file detector_cross_section_hires.png
+/vis/viewer/rebuild
+/vis/tsg/offscreen/set/size 0 0  # Return to default size
+
+# Return to normal verbose mode
+/vis/verbose warnings

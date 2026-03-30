@@ -43,57 +43,50 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file HistoManager.hh
+/// \brief Definition of the HistoManager class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#ifndef HistoManager_h
+#define HistoManager_h 1
 
+#include "G4AnalysisManager.hh"
 #include "globals.hh"
-#include "G4SystemOfUnits.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+class HistoManager
+{
+  public:
+    HistoManager();
+    ~HistoManager() = default;
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+    //========================================================================//
+    // Histogram ID constants for TOF analysis
+    // These are public so EventAction can reference them
+    //========================================================================//
+    static constexpr G4int kH_NeutronEnergy = 0;  // Neutron energy from primary generator (keV)
+    static constexpr G4int kH_NeutronTheta = 1;   // Neutron angle from primary generator (deg)
+    static constexpr G4int kH_nHits = 2;          // Number of neutrons hits per event
+    // static constexpr G4int kH_TOF = 3;            // Time of flight (i.e., capture time) (ns)
+    // static constexpr G4int kH_TOFEnergy = 4;      // Neutron energy from TOF (keV)
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+    //========================================================================//
+    // Ntuple column ID constants
+    //========================================================================//
+    static constexpr G4int kNT_NeutronEnergy = 0; // Neutron energy from primary generator (keV)
+    static constexpr G4int kNT_NeutronTheta = 1;  // Neutron angle from primary generator (deg)
+    static constexpr G4int kNT_EntryFlag = 2;   // Entry occurred flag (1=entered, 0=not entered)
+    static constexpr G4int kNT_CaptureFlag = 3;   // Capture occurred flag (1=capture, 0=no capture)
+    // static constexpr G4int kNT_TOF = 4;           // Time of flight (i.e., capture time) (ns)
+    // static constexpr G4int kNT_TOFEnergy = 5;     // Neutron energy from TOF (keV)
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+    // Number of species population histograms
+    static constexpr G4int nID = 20;
+  private:
+    void Book();
+};
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
-
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
-
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif

@@ -43,57 +43,58 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file EventAction.hh
+/// \brief Definition of the EventAction class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#ifndef EventAction_h
+#define EventAction_h 1
 
+#include "G4UserEventAction.hh"
+#include "DetectorHit.hh"
 #include "globals.hh"
-#include "G4SystemOfUnits.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+class G4Event;
+class DetectorConstruction;
+class PrimaryGeneratorAction;
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+/// Event action class
+///
+/// Processes hits at the end of each event to extract physics information:
+/// - Total energy deposited (should be ~4.78 MeV for neutron captures)
+/// - Time-of-flight from neutron generation to first detector hit
+/// - Particle contributions to energy deposition
+/// - Process identification (to count neutron captures)
+///
+/// This class bridges between the sensitive detector (which records hits)
+/// and the analysis manager (which creates histograms)
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+class EventAction : public G4UserEventAction
+{
+  public:
+    // Constructor requires PrimaryGeneratorAction pointer to access
+    // SimLiT neutron energy and angle for each event
+    EventAction(DetectorConstruction*, PrimaryGeneratorAction*);
+    ~EventAction() override = default;
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+    void BeginOfEventAction(const G4Event*) override;
+    void EndOfEventAction(const G4Event*) override;
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+  private:
+    // Helper methods
+    DetectorHitsCollection* GetHitsCollection(G4int, const G4Event*) const;
+    void AnalyzeHits(DetectorHitsCollection*);
+    void PrintEventStatistics(G4double, G4int) const;
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
+    // Data members
+    G4int fDetectorHCID = -1;  // Hits collection ID
+    DetectorConstruction* fDetector = nullptr; // Pointer to detector construction
+    PrimaryGeneratorAction* fPrimaryGenerator = nullptr; // Pointer to primary generator
+    G4double fDetDist = 0.; // Distance from target to detector
+};
 
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif

@@ -43,57 +43,27 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file StackingAction.cc
+/// \brief Implementation of the StackingAction class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#include "StackingAction.hh"
+#include "Run.hh"
 
-#include "globals.hh"
-#include "G4SystemOfUnits.hh"
+#include "G4RunManager.hh"
+#include "G4Track.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+G4ClassificationOfNewTrack StackingAction::ClassifyNewTrack(const G4Track* track)
+{
+  // Keep the primary particle (TrackID == 1)
+  if (track->GetTrackID() == 1) {
+    return fUrgent;
+  }
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+  // Kill all secondary particles
+  return fKill;
+}
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
-
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
-
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
-
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
-
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
-
-#endif
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

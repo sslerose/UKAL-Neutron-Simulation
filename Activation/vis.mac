@@ -50,6 +50,7 @@
 /vis/geometry/set/colour Teflon 0 1 0 0 0.25
 /vis/geometry/set/colour Detector 0 0 1 1 0.5
 /vis/geometry/set/colour PMT 0 0 1 0 0.25
+/vis/geometry/set/colour GoldFoil 0 1 0.8 0 0.5
 
 # To superimpose all of the events from a given run:
 /vis/scene/endOfEventAction accumulate

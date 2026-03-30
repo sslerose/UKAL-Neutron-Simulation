@@ -43,57 +43,66 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file ActionInitialization.cc
+/// \brief Implementation of the ActionInitialization class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#include "ActionInitialization.hh"
+#include "PrimaryGeneratorAction.hh"
+#include "PrimaryGeneratorMessenger.hh"
+#include "PrimaryGeneratorConfig.hh"
+#include "EventAction.hh"
+#include "RunAction.hh"
+#include "StackingAction.hh"
 
-#include "globals.hh"
-#include "G4SystemOfUnits.hh"
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+ActionInitialization::ActionInitialization(DetectorConstruction* detector) 
+  : fDetector(detector), fGeneratorMessenger(nullptr)
+{
+  // Construct PrimaryGeneratorMessenger
+  // Permits config commands before run initialization and G4cout outputs to master thread
+  fGeneratorMessenger = new PrimaryGeneratorMessenger();
+  
+  // Initialize the config singleton with default values
+  PrimaryGeneratorConfig::Instance();
+}
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+ActionInitialization::~ActionInitialization()
+{
+  delete fGeneratorMessenger;
+} 
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+//------------------------------------------------------------------------//
+// Master thread initialization (for multi-threading)
+//------------------------------------------------------------------------//
+void ActionInitialization::BuildForMaster() const
+{
+  RunAction* runAction = new RunAction(fDetector, nullptr);
+  SetUserAction(runAction);
+  
+  // Print initial generator configuration from master thread
+  G4cout << "\n*** Primary Generator initialized on master thread ***" << G4endl;
+  PrimaryGeneratorConfig::Instance()->PrintParameters();
+}
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+void ActionInitialization::Build() const
+{
+  PrimaryGeneratorAction* primary = new PrimaryGeneratorAction();
+  SetUserAction(primary);
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
+  RunAction* runAction = new RunAction(fDetector, primary);
+  SetUserAction(runAction);
 
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
+  EventAction* eventAction = new EventAction(fDetector, primary);
+  SetUserAction(eventAction);
 
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
+  StackingAction* stackingAction = new StackingAction();
+  SetUserAction(stackingAction);
+}
 
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
-
-#endif
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

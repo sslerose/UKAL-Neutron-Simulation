@@ -43,57 +43,85 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file NeutronTimeOfFlight.cc
+/// \brief Main program of NeutronTimeOfFlight simulation
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#include "ActionInitialization.hh"
+#include "DetectorConstruction.hh"
+#include "PhysicsList.hh"
 
-#include "globals.hh"
-#include "G4SystemOfUnits.hh"
+#include "G4ParticleHPManager.hh"
+#include "G4RunManagerFactory.hh"
+#include "G4SteppingVerbose.hh"
+#include "G4Types.hh"
+#include "G4UIExecutive.hh"
+#include "G4UImanager.hh"
+#include "G4VisExecutive.hh"
+#include "Randomize.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+int main(int argc, char** argv)
+{
+  // detect interactive mode (if no arguments) and define UI session
+  G4UIExecutive* ui = nullptr;
+  if (argc == 1){
+    ui = new G4UIExecutive(argc, argv);
+  }
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+  // use G4SteppingVerboseWithUnits
+  G4int precision = 4;
+  G4SteppingVerbose::UseBestUnit(precision);
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+  // construct the run manager
+  auto runManager = G4RunManagerFactory::CreateRunManager();
+  if (argc == 3) {
+    G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
+    runManager->SetNumberOfThreads(nThreads);
+  }
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+  // set mandatory initialization classes
+  DetectorConstruction* det = new DetectorConstruction;
+  runManager->SetUserInitialization(det);
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+  PhysicsList* phys = new PhysicsList;
+  runManager->SetUserInitialization(phys);
+  runManager->SetUserInitialization(new ActionInitialization(det));
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
+  // initialize visualization
+  G4VisManager* visManager = nullptr;
 
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
+  // Replaced HP environmental variables with C++ calls
+  G4ParticleHPManager::GetInstance()->SetSkipMissingIsotopes(true);
+  G4ParticleHPManager::GetInstance()->SetDoNotAdjustFinalState(true);
+  G4ParticleHPManager::GetInstance()->SetUseOnlyPhotoEvaporation(true);
+  G4ParticleHPManager::GetInstance()->SetNeglectDoppler(false);
+  G4ParticleHPManager::GetInstance()->SetProduceFissionFragments(false);
+  G4ParticleHPManager::GetInstance()->SetUseWendtFissionModel(false);
+  G4ParticleHPManager::GetInstance()->SetUseNRESP71Model(false);
 
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
+  // get the pointer to the User Interface manager
+  G4UImanager* UImanager = G4UImanager::GetUIpointer();
 
+  if (ui) {
+    // interactive mode
+    visManager = new G4VisExecutive;
+    visManager->Initialize();
+    UImanager->ApplyCommand("/control/execute vis.mac");
+    ui->SessionStart();
+    delete ui;
+  }
+  else {
+    // batch mode
+    G4String command = "/control/execute ";
+    G4String fileName = argv[1];
+    UImanager->ApplyCommand(command + fileName);
+  }
 
-//========================================================================//
-// Naming conventions
-//========================================================================//
+  // job termination
+  delete visManager;
+  delete runManager;
+}
 
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
-
-#endif
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

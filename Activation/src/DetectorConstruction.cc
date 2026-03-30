@@ -79,17 +79,17 @@ DetectorConstruction::DetectorConstruction()
   //========================================================================//
 
   // Inner assembly volume (for positioning can and detector inside holder)
-  fInnerAssemblyRadius = kHolderInnerRadius;
+  //fInnerAssemblyRadius = kHolderInnerRadius;
 
   // Aluminum can volume
-  fCanLength = kInnerAssemblyLength;
-  fCanOuterRadius = fInnerAssemblyRadius;
+  // fCanLength = kInnerAssemblyLength;
+  // fCanOuterRadius = kHolderInnerRadius;
 
-  fCanCapRadius = kCanInnerRadius;
-  fCanCapOffset = -(fCanLength - kCanCapThickness) / 2;
+  // fCanCapRadius = kCanInnerRadius;
+  fCanCapOffset = -(kInnerAssemblyLength - kCanCapThickness) / 2;
 
   // Silicon rubber volume
-  fRubberRadius = fCanCapRadius;
+  // fRubberRadius = kCanInnerRadius;
   fRubberOffset = fCanCapOffset + (kCanCapThickness + kRubberThickness) / 2;
 
   // Teflon volume
@@ -99,14 +99,14 @@ DetectorConstruction::DetectorConstruction()
   fDetectorOffset = fTeflonOffset + (kTeflonThickness + kDetectorLength) / 2;
 
   // Teflon volume (cont.)
-  fTeflonRadius = kDetectorRadius;
+  // fTeflonRadius = kDetectorRadius;
 
   // Photomultiplier tube (PMT) volume
-  fPMTRadius = kDetectorRadius;
+  // fPMTRadius = kDetectorRadius;
   fPMTOffset = fDetectorOffset + (kDetectorLength + kPMTThickness) / 2;
 
   // Detector assembly volume
-  fAssemblyLength = kHolderLength + fCanLength / 2;
+  fAssemblyLength = kHolderLength + kInnerAssemblyLength / 2;
   fAssemblyWidth = kHolderOuterRadius * 2;
 
   // Detector placement
@@ -114,6 +114,14 @@ DetectorConstruction::DetectorConstruction()
   fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
   fRotationMatrix = new G4RotationMatrix();
   fRotationMatrix->rotateY(fAssemblyAngle); // Rotation of assembly around Y axis
+
+
+  //========================================================================//
+  // Absorber geometry
+  //========================================================================//
+
+  fGoldLength = 0.03 * mm;  // 30 micrometers
+  fGoldRadius = 5.0 * mm / 2;
   
   // Initialize materials and detector messenger
   DefineMaterials();
@@ -280,11 +288,19 @@ void DetectorConstruction::DefineMaterials()
   // Tape material
   // Composition: SiO2 50% and Si rubber 50%
   // Density: 0.9 g/cm³
-  //density = 0.9 * g / cm3;
-  //G4Material* tape = new G4Material("Tape", density, ncomponents = 2);
+  // density = 0.9 * g / cm3;
+  // G4Material* tape = new G4Material("Tape", density, ncomponents = 2);
 
-  //tape->AddMaterial(SiO2, 50.0 * perCent);
-  //tape->AddMaterial(fSiliconRubberMaterial, 50.0 * perCent);
+  // tape->AddMaterial(SiO2, 50.0 * perCent);
+  // tape->AddMaterial(fSiliconRubberMaterial, 50.0 * perCent);
+
+
+  //========================================================================//
+  // Create absorber components
+  //========================================================================//
+
+  // Gold foil material
+  fGoldMaterial = nist->FindOrBuildMaterial("G4_Au");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -359,8 +375,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                             kHolderInnerRadius,       // inner radius
                             kHolderOuterRadius,       // outer radius
                             kHolderLength / 2,        // half length
-                            fStartAngle,              // initial spanning angle
-                            fEndAngle);               // final spanning angle
+                            0. * deg,                 // initial spanning angle
+                            360. * deg);              // final spanning angle
 
   fHolderLV = new G4LogicalVolume(fHolderTube,
                                   fMuMetalMaterial,
@@ -379,11 +395,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position inside assembly volume
   // Front end flush with assembly volume front face
   G4Tubs* innerAssemblyTube = new G4Tubs("InnerAssembly",
-                                         0.0,                      // inner radius (solid cylinder)
-                                         fInnerAssemblyRadius,     // outer radius
-                                         kInnerAssemblyLength / 2, // half length
-                                         fStartAngle,              // initial spanning angle
-                                         fEndAngle);               // final spanning angle
+                                         0.0,                       // inner radius (solid cylinder)
+                                         kHolderInnerRadius,        // outer radius
+                                         kInnerAssemblyLength / 2,  // half length
+                                         0. * deg,                  // initial spanning angle
+                                         360. * deg);               // final spanning angle
 
   fInnerAssemblyLV = new G4LogicalVolume(innerAssemblyTube,
                                          fWorldMaterial,
@@ -404,11 +420,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position can inside inner assembly volume
   // Front end flush with inner assembly volume front face
   fCanTube = new G4Tubs("Can",
-                        kCanInnerRadius,  // inner radius
-                        fCanOuterRadius,  // outer radius
-                        fCanLength / 2,   // half length
-                        fStartAngle,      // initial spanning angle
-                        fEndAngle);       // final spanning angle
+                        kCanInnerRadius,          // inner radius
+                        kHolderInnerRadius,       // outer radius
+                        kInnerAssemblyLength / 2, // half length
+                        0. * deg,                 // initial spanning angle
+                        360. * deg);              // final spanning angle
                               
   fCanLV = new G4LogicalVolume(fCanTube,
                                fAluminumAlloyMaterial,
@@ -428,10 +444,10 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Cap-off front end of can (flush with inner assembly volume front face)
   fCanCapTube = new G4Tubs("CanCap",
                             0.0,                  // inner radius (solid cylinder)
-                            fCanCapRadius,        // outer radius
+                            kCanInnerRadius,      // outer radius
                             kCanCapThickness / 2, // half length
-                            fStartAngle,          // initial spanning angle
-                            fEndAngle);           // final spanning angle
+                            0. * deg,             // initial spanning angle
+                            360. * deg);          // final spanning angle
 
   fCanCapLV = new G4LogicalVolume(fCanCapTube,
                                   fAluminumAlloyMaterial,
@@ -450,11 +466,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position rubber inside aluminum can
   // Front end flush with inside face of can cap
   fRubberTube = new G4Tubs("Rubber",
-                            0.0,                   // inner radius (solid cylinder)
-                            fRubberRadius,         // outer radius
-                            kRubberThickness / 2,  // half length
-                            fStartAngle,           // initial spanning angle
-                            fEndAngle);            // final spanning angle
+                            0.0,                  // inner radius (solid cylinder)
+                            kCanInnerRadius,      // outer radius
+                            kRubberThickness / 2, // half length
+                            0. * deg,             // initial spanning angle
+                            360. * deg);          // final spanning angle
 
   fRubberLV = new G4LogicalVolume(fRubberTube,
                                   fSiliconRubberMaterial,
@@ -473,11 +489,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position Teflon inside aluminum can
   // Front end flush with inside face of rubber layer
   fTeflonTube = new G4Tubs("Teflon",
-                            0.0,                    // inner radius (solid cylinder)
-                            fTeflonRadius,          // outer radius
-                            kTeflonThickness / 2,   // half length
-                            fStartAngle,            // initial spanning angle
-                            fEndAngle);             // final spanning angle
+                            0.0,                  // inner radius (solid cylinder)
+                            kDetectorRadius,      // outer radius
+                            kTeflonThickness / 2, // half length
+                            0. * deg,             // initial spanning angle
+                            360. * deg);          // final spanning angle
 
   fTeflonLV = new G4LogicalVolume(fTeflonTube,
                                   fTeflonMaterial,
@@ -499,8 +515,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                               0.0,                  // inner radius (solid cylinder)
                               kDetectorRadius,      // outer radius
                               kDetectorLength / 2,  // half length
-                              fStartAngle,          // initial spanning angle
-                              fEndAngle);           // final spanning angle
+                              0. * deg,             // initial spanning angle
+                              360. * deg);          // final spanning angle
 
   fDetectorLV = new G4LogicalVolume(fDetectorTube,
                                     fLi6GlassMaterial,
@@ -519,11 +535,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position PMT inside aluminum can
   // Front end flush with inside face of detector
   fPMTTube = new G4Tubs("PMT",
-                        0.0,                 // inner radius (solid cylinder)
-                        fPMTRadius,          // outer radius
-                        kPMTThickness / 2,   // half length
-                        fStartAngle,         // initial spanning angle
-                        fEndAngle);          // final spanning angle
+                        0.0,                // inner radius (solid cylinder)
+                        kDetectorRadius,    // outer radius
+                        kPMTThickness / 2,  // half length
+                        0. * deg,           // initial spanning angle
+                        360. * deg);        // final spanning angle
 
   fPMTLV = new G4LogicalVolume(fPMTTube,
                                fBorosilicateMaterial,
@@ -536,6 +552,31 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                              fInnerAssemblyLV,                // mother volume
                              false,                           // no boolean operation
                              0);                              // copy number
+
+
+
+  //========================================================================//
+  // Absorber geometry (cylindrical)
+  //========================================================================//
+
+  fGoldTube = new G4Tubs("GoldFoil",
+                         0.0,             // inner radius (solid cylinder)
+                         fGoldRadius,     // outer radius
+                         fGoldLength / 2, // half length
+                         fStartAngle,     // initial spanning angle
+                         fEndAngle);      // final spanning angle
+
+  fGoldLV = new G4LogicalVolume(fGoldTube,
+                                fGoldMaterial,
+                                "GoldFoil");
+
+  fGoldPV = new G4PVPlacement(0,                                  // no rotation
+                              G4ThreeVector(0, 0, fGoldDistance), // position
+                              fGoldLV,                            // logical volume
+                              "GoldFoil",                         // name
+                              fWorldLV,                           // mother volume
+                              false,                              // no boolean operation
+                              0);                                 // copy number
 
   // Print parameters of detector construction
   PrintParameters();
@@ -708,25 +749,19 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
-// Set detector assembly spanning angle (phi) start
+// Set absorber spanning angle (phi) start
 //------------------------------------------------------------------------//
 void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 {
   // Check that geometry has been constructed
-  if (!fAssemblyPV) {
-    G4cerr << "Detector has not yet been constructed." << G4endl;
+  if (!fGoldPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
     return;
   }
 
   fStartAngle = startAngle;
 
-  fHolderTube->SetStartPhiAngle(fStartAngle);
-  fCanTube->SetStartPhiAngle(fStartAngle);
-  fCanCapTube->SetStartPhiAngle(fStartAngle);
-  fRubberTube->SetStartPhiAngle(fStartAngle);
-  fTeflonTube->SetStartPhiAngle(fStartAngle);
-  fDetectorTube->SetStartPhiAngle(fStartAngle);
-  fPMTTube->SetStartPhiAngle(fStartAngle);
+  fGoldTube->SetStartPhiAngle(fStartAngle);
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -741,25 +776,19 @@ void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
-// Set detector assembly spanning angle (phi) end
+// Set absorber assembly spanning angle (phi) end
 //------------------------------------------------------------------------//
 void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 {
   // Check that geometry has been constructed
-  if (!fAssemblyPV) {
-    G4cerr << "Detector has not yet been constructed." << G4endl;
+  if (!fGoldPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
     return;
   }
 
   fEndAngle = endAngle;
 
-  fHolderTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fCanTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fCanCapTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fRubberTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fTeflonTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fDetectorTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fPMTTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fGoldTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active

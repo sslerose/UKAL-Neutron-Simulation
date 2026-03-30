@@ -43,57 +43,79 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file DetectorHit.cc
+/// \brief Implementation of the DetectorHit class
 //
 
-#ifndef Constants_h
-#define Constants_h 1
-
-#include "globals.hh"
+#include "DetectorHit.hh"
+#include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4VVisManager.hh"
+#include "G4Circle.hh"
+#include "G4Colour.hh"
+#include "G4VisAttributes.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+#include <iomanip>
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+// Thread-local allocator initialization
+G4ThreadLocal G4Allocator<DetectorHit>* DetectorHitAllocator;
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+//------------------------------------------------------------------------//
+// Visualization of hits during event display
+//------------------------------------------------------------------------//
+void DetectorHit::Draw()
+{
+  //========================================================================//
+  // Color scheme:
+  //   - Blue:  General hits (neutron scattering, energy deposition, etc.)
+  //   - Red:   6Li(n,t)4He reaction events
+  //
+  // Allows visual identification of captures vs scattering events
+  // Also provides visual feedback on detector response during simulation
+  //========================================================================//
+  
+  // Get pointer to visualization manager
+  G4VVisManager* pVVisManager = G4VVisManager::GetConcreteInstance();
+  if (!pVVisManager) return;
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+  // Create a circle marker at the hit position
+  G4Circle circle(fPos);
+  circle.SetScreenSize(8.);        // Size in pixels
+  circle.SetFillStyle(G4Circle::filled);
+  
+  // Set color based on process type
+  G4Colour colour;
+  if (fProcessName == "Li6ntalpha") {
+    // Red for neutron capture events
+    colour = G4Colour::Red();
+  }
+  else {
+    // Blue for all other interactions (scattering, etc.)
+    colour = G4Colour::Blue();
+  }
+  
+  // Set visualization attributes and draw
+  G4VisAttributes attribs(colour);
+  circle.SetVisAttributes(attribs);
+  
+  pVVisManager->Draw(circle);
+}
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
+void DetectorHit::Print()
+{
+  // Print hit information in human-readable format
+  // Useful for debugging and verification
+  
+  G4cout 
+    << "  TrackID: " << std::setw(5) << fTrackID
+    << "  Particle: " << std::setw(10) << fParticleType
+    << "  Time: " << std::setw(7) << G4BestUnit(fTime, "Time")
+    << "  Process: " << fProcessName
+    << G4endl;
+}
 
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
-
-#endif
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

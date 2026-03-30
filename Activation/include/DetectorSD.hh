@@ -43,57 +43,52 @@
 //
 
 //
-/// \file Constants.hh
-/// \brief Definition of simulation Constants
+/// \file DetectorSD.hh
+/// \brief Sensitive detector class for Li-6 glass neutron detector
+/// Records all energy depositions in the detector volume
 //
 
-#ifndef Constants_h
-#define Constants_h 1
+#ifndef DetectorSD_h
+#define DetectorSD_h 1
 
+#include "G4VSensitiveDetector.hh"
+#include "DetectorHit.hh"
 #include "globals.hh"
-#include "G4SystemOfUnits.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
+class G4Step;
+class G4HCofThisEvent;
 
-// World volume
-constexpr G4double kWorldSize = 2.0 * m;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-// Detector assembly volume
-constexpr G4double kHolderLength = 10.0 * cm;
-constexpr G4double kHolderInnerRadius = 5.7 * cm / 2;
-constexpr G4double kHolderOuterRadius = 6.0 * cm / 2;
-constexpr G4double kHolderOffset = 1.63 * cm / 2;
+/// Sensitive detector class for neutron detector
+///
+/// This class is attached to the Li-6 glass logical volume in DetectorConstruction.
+/// It is called automatically by Geant4 for every step inside the sensitive volume.
+///
+/// Key responsibilities:
+/// - Create hits collection at start of event
+/// - Record energy depositions from all particles (neutron, triton, alpha, etc.)
+/// - Store time information for time-of-flight analysis
+/// - Identify processes causing energy deposition (for neutron capture identification)
+///
+/// The hits collection is accessed later by EventAction to fill histograms
 
-// Inner assembly volume
-constexpr G4double kInnerAssemblyLength = 3.26 * cm;
+class DetectorSD : public G4VSensitiveDetector
+{
+  public:
+    DetectorSD(const G4String& name, const G4String& hitsCollectionName);
+    ~DetectorSD() override = default;
 
-// Aluminum can volume
-constexpr G4double kCanInnerRadius = 5.58 * cm / 2;
-constexpr G4double kCanCapThickness = 0.07 * cm;
+    // Methods from base class
+    void Initialize(G4HCofThisEvent* hitCollection) override;
+    G4bool ProcessHits(G4Step* step, G4TouchableHistory* history) override;
+    void EndOfEvent(G4HCofThisEvent* hitCollection) override;
 
-// Silicon rubber volume
-constexpr G4double kRubberThickness = 0.1 * cm;
+  private:
+    DetectorHitsCollection* fHitsCollection = nullptr;  // Collection of hits in this event
+    G4int fHCID = -1;  // Hits collection ID
+};
 
-// Teflon volume
-constexpr G4double kTeflonThickness = 0.025 * cm;
-
-// 6Li glass volume
-constexpr G4double kDetectorLength = 2.54 * cm;
-constexpr G4double kDetectorRadius = 5.08 * cm / 2;
-
-// Photomultiplier tube (PMT) volume
-constexpr G4double kPMTThickness = 0.25 * cm;
-
-
-//========================================================================//
-// Naming conventions
-//========================================================================//
-
-// Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
-inline G4String kDetectorHCName = "DetectorHitsCollection";
-
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
