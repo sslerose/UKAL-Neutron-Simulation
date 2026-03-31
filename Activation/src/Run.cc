@@ -342,12 +342,12 @@ void Run::EndOfRun()
 
   // run condition
   //
-  G4Material* material = fDetector->GetDetectorMaterial();
+  G4Material* material = fDetector->GetAbsorberMaterial();
   G4double density = material->GetDensity();
 
   G4String Particle = fParticle->GetParticleName();
   G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
-         << G4BestUnit(kDetectorLength, "Length") << " of " << material->GetName()
+         << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
          << " (density: " << G4BestUnit(density, "Volumic Mass") << ")" << G4endl;
 
   if (numberOfEvent == 0) {
@@ -414,15 +414,15 @@ void Run::EndOfRun()
   G4cout << G4endl;
 
   // normalize histograms
-  G4int ih = 2;
-  G4double binWidth = analysisManager->GetH1Width(ih);
-  G4double fac = (1. / (numberOfEvent * binWidth)) * (mm / MeV);
-  analysisManager->ScaleH1(ih, fac);
+  // G4int ih = 2;
+  // G4double binWidth = analysisManager->GetH1Width(ih);
+  // G4double fac = (1. / (numberOfEvent * binWidth)) * (mm / MeV);
+  // analysisManager->ScaleH1(ih, fac);
 
-  for (ih = 14; ih < 24; ih++) {
-    binWidth = analysisManager->GetH1Width(ih);
+  for (G4int ih = HistoManager::kH_nHits + 1; ih < HistoManager::nID + HistoManager::kH_nHits; ih++) {
+    G4double binWidth = analysisManager->GetH1Width(ih);
     G4double unit = analysisManager->GetH1Unit(ih);
-    fac = (second / (binWidth * unit));
+    G4double fac = (second / (binWidth * unit));
     analysisManager->ScaleH1(ih, fac);
   }
 

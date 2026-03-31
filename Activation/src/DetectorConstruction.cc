@@ -120,8 +120,10 @@ DetectorConstruction::DetectorConstruction()
   // Absorber geometry
   //========================================================================//
 
-  fGoldLength = 0.03 * mm;  // 30 micrometers
-  fGoldRadius = 5.0 * mm / 2;
+  fAbsorberThickness = 0.03 * mm;  // 30 micrometers
+  fAbsorberRadius = 18.0 * mm / 2;
+
+  fAbsorberDistance = 5.0 * mm;  // Distance from target to gold foil
   
   // Initialize materials and detector messenger
   DefineMaterials();
@@ -300,7 +302,7 @@ void DetectorConstruction::DefineMaterials()
   //========================================================================//
 
   // Gold foil material
-  fGoldMaterial = nist->FindOrBuildMaterial("G4_Au");
+  fAbsorberMaterial = nist->FindOrBuildMaterial("G4_Au");
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -561,17 +563,17 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 
   fGoldTube = new G4Tubs("GoldFoil",
                          0.0,             // inner radius (solid cylinder)
-                         fGoldRadius,     // outer radius
-                         fGoldLength / 2, // half length
+                         fAbsorberRadius,     // outer radius
+                         fAbsorberThickness / 2, // half length
                          fStartAngle,     // initial spanning angle
                          fEndAngle);      // final spanning angle
 
   fGoldLV = new G4LogicalVolume(fGoldTube,
-                                fGoldMaterial,
+                                fAbsorberMaterial,
                                 "GoldFoil");
 
   fGoldPV = new G4PVPlacement(0,                                  // no rotation
-                              G4ThreeVector(0, 0, fGoldDistance), // position
+                              G4ThreeVector(0, 0, fAbsorberDistance), // position
                               fGoldLV,                            // logical volume
                               "GoldFoil",                         // name
                               fWorldLV,                           // mother volume
@@ -820,6 +822,12 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  Material: " << fLi6GlassMaterial->GetName() << G4endl;
   G4cout << "  Density: " << fLi6GlassMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
   G4cout << "\nNeutrons generated at origin (0,0,0)" << G4endl;
+
+  G4cout << "\nAbsorber (Cylindrical):" << G4endl;
+  G4cout << "  Radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
+  G4cout << "  Thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
+  G4cout << "  Material: " << fAbsorberMaterial->GetName() << G4endl;
+  G4cout << "  Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
   G4cout << "========================================\n" << G4endl;
 }
 

@@ -87,8 +87,14 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     
     G4double GetDetectorAngle() const { return fAssemblyAngle; }
     G4double GetDetectorDistance() const { return fDetectorDistance; }
+
+    G4double GetSpanningStartAngle() const { return fStartAngle; }
+    G4double GetSpanningEndAngle() const { return fEndAngle; }
+    G4double GetAbsorberDistance() const { return fAbsorberDistance; }
+    G4double GetAbsorberThickness() const { return fAbsorberThickness; }
     
     G4Material* GetDetectorMaterial() const { return fLi6GlassMaterial; }
+    G4Material* GetAbsorberMaterial() const { return fAbsorberMaterial; }
 
     void PrintParameters();
 
@@ -211,12 +217,12 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //========================================================================//
 
     // Gold absorber
-    G4double fGoldLength = 0.;
-    G4double fGoldRadius = 0.;
-    G4double fGoldDistance = 0.;
+    G4double fAbsorberThickness = 0.;
+    G4double fAbsorberRadius = 0.;
+    G4double fAbsorberDistance = 0.;
 
     // Materials
-    G4Material* fGoldMaterial = nullptr;
+    G4Material* fAbsorberMaterial = nullptr;
 
 
   private:

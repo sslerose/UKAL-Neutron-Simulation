@@ -105,25 +105,22 @@ G4String RunAction::GenerateFileName() const
   G4int energyDecimal = static_cast<G4int>(std::round((energy - energyInt) * 100));
   
   // Get detector angle and distance from DetectorConstruction
-  G4double detectorAngle = 0.0;
-  G4double detectorDistance = 0.0;
+  G4double absorberDistance = 0.0;
+  G4Material* absorberMaterial = nullptr;
   if (fDetector) {
-    detectorAngle = -(fDetector->GetDetectorAngle() / deg);
-    detectorDistance = fDetector->GetDetectorDistance() / cm;
+    absorberDistance = fDetector->GetAbsorberThickness() / cm;
+    absorberMaterial = fDetector->GetAbsorberMaterial();
   }
 
   // Split angle and distance into integer and decimal parts for filename
-  G4int angleInt = static_cast<G4int>(std::round(detectorAngle));
-  G4int angleDecimal = static_cast<G4int>(std::round((detectorAngle - angleInt) * 100));
-
-  G4int distanceInt = static_cast<G4int>(std::round(detectorDistance));
-  G4int distanceDecimal = static_cast<G4int>(std::round((detectorDistance - distanceInt) * 100));
+  G4int distanceInt = static_cast<G4int>(std::round(absorberDistance));
+  G4int distanceDecimal = static_cast<G4int>(std::round((absorberDistance - distanceInt) * 100));
   
   // Build filename string
   std::ostringstream oss;
-  oss << "nTOF_" << sourceType 
+  oss << "Activation_" << sourceType 
       << "_" << std::fixed << energyInt << "_" << energyDecimal << "keV"
-      << "_" << std::fixed << angleInt << "_" << angleDecimal << "deg"
+      << "_" << absorberMaterial->GetName()
       << "_" << std::fixed << distanceInt << "_" << distanceDecimal << "cm";
 
   return oss.str();
@@ -223,7 +220,7 @@ void RunAction::EndOfRunAction(const G4Run*)
       G4cout << "============================================================" << G4endl;
       
       // Source statistics
-      G4cout << G4endl << "Neutron Source:" << G4endl;
+      G4cout << "Neutron Source:" << G4endl;
       G4cout << "  Mode: " 
              << (PrimaryGeneratorConfig::Instance()->GetUseSimLiT() ? "SimLiT" : "Particle Gun") 
              << G4endl;
@@ -237,15 +234,15 @@ void RunAction::EndOfRunAction(const G4Run*)
               << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
       }
       
-      // TOF statistics (capture events)
-      G4cout << G4endl << "TOF Measurement:" << G4endl;
-      if (analysisManager->GetH1(3)->entries() > 0) {
-        G4cout << "  Capture events: " << analysisManager->GetH1(3)->entries() << G4endl;
-        G4cout << "  Mean TOF: " << analysisManager->GetH1(3)->mean() << " ns" << G4endl;
-        G4cout << "  TOF RMS:  " << analysisManager->GetH1(3)->rms() << " ns" << G4endl;
-      } else {
-        G4cout << "  No capture events recorded." << G4endl;
-      }
+      // // TOF statistics (capture events)
+      // G4cout << G4endl << "TOF Measurement:" << G4endl;
+      // if (analysisManager->GetH1(3)->entries() > 0) {
+      //   G4cout << "  Capture events: " << analysisManager->GetH1(3)->entries() << G4endl;
+      //   G4cout << "  Mean TOF: " << analysisManager->GetH1(3)->mean() << " ns" << G4endl;
+      //   G4cout << "  TOF RMS:  " << analysisManager->GetH1(3)->rms() << " ns" << G4endl;
+      // } else {
+      //   G4cout << "  No capture events recorded." << G4endl;
+      // }
       
       G4cout << "============================================================" << G4endl;
     }

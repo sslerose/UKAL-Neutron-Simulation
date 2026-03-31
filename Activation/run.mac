@@ -1,0 +1,29 @@
+# ---------------------------------------- #
+# Macro file for TOF measurements
+#
+# Places detector between an initial and
+#   and final angle in steps and creates
+#   individuals runs of SimLiT-generated
+#   neutrons for TOF measurements
+#
+# Detector angle and event gen handled by
+#   angles.mac
+# ---------------------------------------- #
+
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Print progress handled automatically
+
+# Initialize
+/run/initialize
+
+# Set parameters
+/neutronTOF/gun/useSimLiT true
+/neutronTOF/det/setWorldMaterial air
+/neutronTOF/det/setDetectorDistance 25 cm
+
+# Run events
+/run/beamOn 1000000
