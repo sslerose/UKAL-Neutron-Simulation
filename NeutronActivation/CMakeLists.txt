@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------#
 
 cmake_minimum_required(VERSION 3.16...4.1)
-project(Activation)
+project(NeutronActivation)
 
 
 #------------------------------------------------------------------------#
@@ -38,8 +38,8 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 # Add the executable, and link it to the Geant4 libraries
 #------------------------------------------------------------------------#
 
-add_executable(Activation Activation.cc ${sources} ${headers})
-target_link_libraries(Activation ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
+add_executable(NeutronActivation NeutronActivation.cc ${sources} ${headers})
+target_link_libraries(NeutronActivation ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 
 
 #------------------------------------------------------------------------#
@@ -47,13 +47,13 @@ target_link_libraries(Activation ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 #------------------------------------------------------------------------#
 
 # Copy visualization and analysis scripts into build/
-set(Activation_VIS_ANALYSIS_SCRIPTS
+set(NeutronActivation_VIS_ANALYSIS_SCRIPTS
   vis.mac
   vis_export.mac
   vis_preview.mac
   )
 
-foreach(_script ${Activation_VIS_ANALYSIS_SCRIPTS})
+foreach(_script ${NeutronActivation_VIS_ANALYSIS_SCRIPTS})
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}
@@ -63,13 +63,14 @@ endforeach()
 
 
 # Copy test scripts from source root into build/Data_Test/
-set(Activation_TEST_SCRIPTS
+set(NeutronActivation_RUN_SCRIPTS
+  run.mac
   )
 
-foreach(_script ${Activation_TEST_SCRIPTS})
+foreach(_script ${NeutronActivation_RUN_SCRIPTS})
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/Data_Test/${_script}
+    ${PROJECT_BINARY_DIR}/${_script}
     COPYONLY
     )
 endforeach()

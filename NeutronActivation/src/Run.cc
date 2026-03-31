@@ -328,7 +328,7 @@ void Run::Merge(const G4Run* run)
   Merge(fParticleDataMap1, localRun->fParticleDataMap1);
 
   // map: particles flux count
-  Merge(fParticleDataMap2, localRun->fParticleDataMap2);
+  // Merge(fParticleDataMap2, localRun->fParticleDataMap2);
 
   G4Run::Merge(run);
 }
@@ -481,7 +481,7 @@ void Run::EndOfRun()
   fProcCounter.clear();
   // fParticleDataMap.clear();
   fParticleDataMap1.clear();
-  fParticleDataMap2.clear();
+  // fParticleDataMap2.clear();
   fgIonMap.clear();
 
   // restore default format

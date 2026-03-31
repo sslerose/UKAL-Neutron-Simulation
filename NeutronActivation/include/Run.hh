@@ -107,7 +107,7 @@ class Run : public G4Run
     std::map<G4String, G4int> fProcCounter;
     // std::map<G4String, ParticleData> fParticleDataMap;
     std::map<G4String, ParticleData> fParticleDataMap1;
-    std::map<G4String, ParticleData> fParticleDataMap2;
+    // std::map<G4String, ParticleData> fParticleDataMap2;
 
     // G4int fNbStep1 = 0, fNbStep2 = 0;
     // G4double fTrackLen1 = 0., fTrackLen2 = 0.;

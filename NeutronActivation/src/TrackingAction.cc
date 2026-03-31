@@ -62,6 +62,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
 
   // count secondary particles (with meanLife > 0)
   if ((track->GetTrackID() > 1) && (meanLife != 0.)) run->ParticleCount(name, ekin, meanLife);
+  // if (track->GetTrackID() > 1) run->ParticleCount(name, ekin, meanLife);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -94,70 +95,70 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
       analysis->FillH1(id, time, weight);
   }
 
-  // keep only emerging particles
-  G4StepStatus status = track->GetStep()->GetPostStepPoint()->GetStepStatus();
-  if (status != fWorldBoundary) return;
+  // // keep only emerging particles
+  // G4StepStatus status = track->GetStep()->GetPostStepPoint()->GetStepStatus();
+  // if (status != fWorldBoundary) return;
 
-  // fEventAction->AddEflow(ekin);
-  // run->ParticleFlux(name, ekin);
+  // // fEventAction->AddEflow(ekin);
+  // // run->ParticleFlux(name, ekin);
 
-  // histograms: energy flow and activities of emerging particles
+  // // histograms: energy flow and activities of emerging particles
 
-  G4int ih1 = 0, ih2 = 0;
-  G4String type = particle->GetParticleType();
-  G4double charge = particle->GetPDGCharge();
-  G4double time = track->GetGlobalTime();
-  G4double weight = track->GetWeight();
-  if (charge > 3.) {
-    ih1 = 10;
-    ih2 = 20;
-  }
-  else if (particle == G4Gamma::Gamma()) {
-    ih1 = 4;
-    ih2 = 14;
-  }
-  else if (particle == G4Electron::Electron()) {
-    ih1 = 5;
-    ih2 = 15;
-  }
-  else if (particle == G4Positron::Positron()) {
-    ih1 = 5;
-    ih2 = 15;
-  }
-  else if (particle == G4Neutron::Neutron()) {
-    ih1 = 6;
-    ih2 = 16;
-  }
-  else if (particle == G4Proton::Proton()) {
-    ih1 = 7;
-    ih2 = 17;
-  }
-  else if (particle == G4Deuteron::Deuteron()) {
-    ih1 = 8;
-    ih2 = 18;
-  }
-  else if (particle == G4Alpha::Alpha()) {
-    ih1 = 9;
-    ih2 = 19;
-  }
-  else if (type == "nucleus") {
-    ih1 = 10;
-    ih2 = 20;
-  }
-  else if (type == "baryon") {
-    ih1 = 11;
-    ih2 = 21;
-  }
-  else if (type == "meson") {
-    ih1 = 12;
-    ih2 = 22;
-  }
-  else if (type == "lepton") {
-    ih1 = 13;
-    ih2 = 23;
-  };
-  if (ih1 > 0) analysis->FillH1(ih1, ekin, weight);
-  if (ih2 > 0) analysis->FillH1(ih2, time, weight);
+  // G4int ih1 = 0, ih2 = 0;
+  // G4String type = particle->GetParticleType();
+  // G4double charge = particle->GetPDGCharge();
+  // G4double time = track->GetGlobalTime();
+  // G4double weight = track->GetWeight();
+  // if (charge > 3.) {
+  //   ih1 = 10;
+  //   ih2 = 20;
+  // }
+  // else if (particle == G4Gamma::Gamma()) {
+  //   ih1 = 4;
+  //   ih2 = 14;
+  // }
+  // else if (particle == G4Electron::Electron()) {
+  //   ih1 = 5;
+  //   ih2 = 15;
+  // }
+  // else if (particle == G4Positron::Positron()) {
+  //   ih1 = 5;
+  //   ih2 = 15;
+  // }
+  // else if (particle == G4Neutron::Neutron()) {
+  //   ih1 = 6;
+  //   ih2 = 16;
+  // }
+  // else if (particle == G4Proton::Proton()) {
+  //   ih1 = 7;
+  //   ih2 = 17;
+  // }
+  // else if (particle == G4Deuteron::Deuteron()) {
+  //   ih1 = 8;
+  //   ih2 = 18;
+  // }
+  // else if (particle == G4Alpha::Alpha()) {
+  //   ih1 = 9;
+  //   ih2 = 19;
+  // }
+  // else if (type == "nucleus") {
+  //   ih1 = 10;
+  //   ih2 = 20;
+  // }
+  // else if (type == "baryon") {
+  //   ih1 = 11;
+  //   ih2 = 21;
+  // }
+  // else if (type == "meson") {
+  //   ih1 = 12;
+  //   ih2 = 22;
+  // }
+  // else if (type == "lepton") {
+  //   ih1 = 13;
+  //   ih2 = 23;
+  // };
+  // if (ih1 > 0) analysis->FillH1(ih1, ekin, weight);
+  // if (ih2 > 0) analysis->FillH1(ih2, time, weight);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

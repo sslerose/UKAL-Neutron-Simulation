@@ -54,6 +54,8 @@
 #include "EventAction.hh"
 #include "RunAction.hh"
 #include "StackingAction.hh"
+#include "SteppingAction.hh"
+#include "TrackingAction.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -98,11 +100,17 @@ void ActionInitialization::Build() const
   RunAction* runAction = new RunAction(fDetector, primary);
   SetUserAction(runAction);
 
-  EventAction* eventAction = new EventAction(fDetector, primary);
-  SetUserAction(eventAction);
+  EventAction* event = new EventAction(fDetector, primary);
+  SetUserAction(event);
 
   StackingAction* stackingAction = new StackingAction();
   SetUserAction(stackingAction);
+
+  SteppingAction* steppingAction = new SteppingAction(fDetector, event);
+  SetUserAction(steppingAction);
+
+  TrackingAction* trackingAction = new TrackingAction(event);
+  SetUserAction(trackingAction);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
