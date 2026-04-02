@@ -80,6 +80,7 @@ void HistoManager::Book()
   // Initialize analysis manager
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
   analysisManager->SetDefaultFileType("root");
+  analysisManager->SetFileName(fFileName);
   analysisManager->SetVerboseLevel(1);
   analysisManager->SetNtupleMerging(true);
   analysisManager->SetActivation(true);
@@ -119,49 +120,24 @@ void HistoManager::Book()
     analysisManager->SetH1Activation(ih, false);  // Set inactive by default
   }
 
-  // Time of flight (TOF) - all events (ns)
-
-  // Time of flight (TOF) - capture events only (ns)
-  // TOF: time from neutron production to capture
-  // analysisManager->CreateH1("TOF",
-  //   "Time of Flight (Capture Time);TOF [ns];Events",
-  //   300, 0., 300.);
-
-  // // Neutron energy from TOF (keV)
-  // analysisManager->CreateH1("TOFEnergy",
-  //   "Neutron Energy from TOF;Energy [keV];Events",
-  //   150, 0., 150.);
-
 
   //========================================================================//
   // Create ntuple for event-by-event analysis
-  //
-  // CreateNtuple() initializes a new ntuple
-  // CreateNtupleDColumn()/CreateNtupleIColumn() add columns
-  // FinishNtuple() must be called to finalize the structure
   //========================================================================//
+
+  // Detector data (id = 0)
   analysisManager->CreateNtuple("DetectorData", "Neutron Detection Event Data");
-  
-  // Column 0: Primary neutron energy (keV)
-  analysisManager->CreateNtupleDColumn("NeutronEnergy");
-  
-  // Column 1: Primary neutron angle (degrees)
-  analysisManager->CreateNtupleDColumn("NeutronTheta");
+  analysisManager->CreateNtupleIColumn("CaptureFlag");  // Capture flag (1 = capture occurred, 0 = no capture)
+  analysisManager->CreateNtupleDColumn("CaptureTime");  // Capture time (s), -1 if no capture
+  analysisManager->FinishNtuple();                      // Finalize DetectorData ntuple
 
-  // Column 2: Entry flag (1 = entered detector, 0 = did not enter)
-  analysisManager->CreateNtupleIColumn("EntryFlag");
-
-  // Column 3: Capture flag (1 = capture occurred, 0 = no capture)
-  analysisManager->CreateNtupleIColumn("CaptureFlag");
-  
-  // // Column 4: Time of flight = capture time (ns), -1 if no capture
-  // analysisManager->CreateNtupleDColumn("TOF");
-
-  // // Column 5: Neutron energy from TOF (keV), -1 if no capture
-  // analysisManager->CreateNtupleDColumn("TOFEnergy");
-  
-  
-  analysisManager->FinishNtuple();
+  // Ion population data (id = 1)
+  analysisManager->CreateNtuple("PopulationData", "Population of Each Species per Event");
+  analysisManager->CreateNtupleSColumn("IonName");     // Ion species name
+  analysisManager->CreateNtupleDColumn("TimeBirth");   // Birth time of ion
+  analysisManager->CreateNtupleDColumn("TimeDeath");   // Death time of ion
+  analysisManager->CreateNtupleDColumn("Weight");      // Weight of ion
+  analysisManager->FinishNtuple();                     // Finalize PopulationData ntuple
 
 }
 

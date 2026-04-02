@@ -25,8 +25,12 @@
 
 # Set parameters
 /neutronTOF/gun/useSimLiT true
+/neutronTOF/gun/exposureTime 900 s
 /neutronTOF/det/setWorldMaterial air
 /neutronTOF/det/setDetectorDistance 25 cm
+
+/analysis/h1/set 3 100 0 900 s
+/analysis/setFileName Activation_1
 
 # Run events
 /run/beamOn 1000000

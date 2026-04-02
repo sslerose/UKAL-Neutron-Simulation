@@ -57,13 +57,7 @@
 
 G4ClassificationOfNewTrack StackingAction::ClassifyNewTrack(const G4Track* track)
 {
-  // Keep the primary particle (TrackID == 1)
-  if (track->GetTrackID() == 1) {
-    return fUrgent;
-  }
-
-  // Kill all secondary particles
-  return fKill;
+  return fUrgent;  // Put all tracks in the urgent stack
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

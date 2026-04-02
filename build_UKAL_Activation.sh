@@ -5,12 +5,12 @@
 set -e
 
 # Build directory
-if [ -d Activation/build ]; then
+if [ -d NeutronActivation/build ]; then
 	echo "build directory exists, entering.."
-	cd Activation/build
+	cd NeutronActivation/build
 else
 	echo "Creating and entering build directory..."
-	cd Activation && mkdir build && cd build
+	cd NeutronActivation && mkdir build && cd build
 fi
 
 # Prepare build files

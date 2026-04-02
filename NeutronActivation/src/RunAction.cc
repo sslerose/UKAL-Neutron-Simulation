@@ -81,53 +81,6 @@ RunAction::~RunAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-//------------------------------------------------------------------------//
-// Generate output filename based on current configuration
-// Format: nTOF<source>_<energy>keV_<angle>deg
-//------------------------------------------------------------------------//
-G4String RunAction::GenerateFileName() const
-{  
-  PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-  
-  // Get source type
-  G4String sourceType = config->GetUseSimLiT() ? "SimLiT" : "Gun";
-  
-  // Get beam/gun energy
-  G4double energy;
-  if (config->GetUseSimLiT()) {
-    energy = config->GetBeamEnergy();  // Already in keV
-  } else {
-    energy = config->GetGunEnergy() / keV;  // Convert from internal units to keV
-  }
-
-  // Split energy into integer and decimal parts for filename
-  G4int energyInt = static_cast<G4int>(std::round(energy - 0.01)); // Round down to nearest integer
-  G4int energyDecimal = static_cast<G4int>(std::round((energy - energyInt) * 100));
-  
-  // Get detector angle and distance from DetectorConstruction
-  G4double absorberDistance = 0.0;
-  G4Material* absorberMaterial = nullptr;
-  if (fDetector) {
-    absorberDistance = fDetector->GetAbsorberThickness() / cm;
-    absorberMaterial = fDetector->GetAbsorberMaterial();
-  }
-
-  // Split angle and distance into integer and decimal parts for filename
-  G4int distanceInt = static_cast<G4int>(std::round(absorberDistance));
-  G4int distanceDecimal = static_cast<G4int>(std::round((absorberDistance - distanceInt) * 100));
-  
-  // Build filename string
-  std::ostringstream oss;
-  oss << "Activation_" << sourceType 
-      << "_" << std::fixed << energyInt << "_" << energyDecimal << "keV"
-      << "_" << absorberMaterial->GetName()
-      << "_" << std::fixed << distanceInt << "_" << distanceDecimal << "cm";
-
-  return oss.str();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
 G4Run* RunAction::GenerateRun()
 {
   fRun = new Run(fDetector);
@@ -162,39 +115,6 @@ void RunAction::BeginOfRunAction(const G4Run* run)
   auto analysisManager = G4AnalysisManager::Instance();
   
   if (analysisManager->IsActive()) {
-    PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-    G4String fileName;
-    
-    if (isMaster) {
-      // Master generates and stores the filename
-      fileName = GenerateFileName();
-      config->SetOutputFileName(fileName);
-      
-      G4cout << "\n=== Output file: " << fileName << ".root ===" << G4endl;
-      config->PrintParameters();
-    }
-    else {
-      // Workers wait for master to set the filename
-      // Spin-wait with small delay to avoid busy-waiting
-      G4int waitCount = 0;
-      const G4int maxWait = 1000;  // Maximum wait iterations (1000 * 1ms = 1 second max)
-      
-      while (!config->HasOutputFileName() && waitCount < maxWait) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        waitCount++;
-      }
-      
-      if (config->HasOutputFileName()) {
-        fileName = config->GetOutputFileName();
-      } else {
-        // Fallback: generate our own filename if master failed
-        G4cerr << "Warning: Worker thread timed out waiting for filename from master" << G4endl;
-        fileName = GenerateFileName();
-      }
-    }
-    
-    // All threads set the same filename
-    analysisManager->SetFileName(fileName);
     analysisManager->OpenFile();
   }
 }
@@ -232,18 +152,7 @@ void RunAction::EndOfRunAction(const G4Run*)
       if (analysisManager->GetH1(1)->entries() > 0) {
         G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
               << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
-      }
-      
-      // // TOF statistics (capture events)
-      // G4cout << G4endl << "TOF Measurement:" << G4endl;
-      // if (analysisManager->GetH1(3)->entries() > 0) {
-      //   G4cout << "  Capture events: " << analysisManager->GetH1(3)->entries() << G4endl;
-      //   G4cout << "  Mean TOF: " << analysisManager->GetH1(3)->mean() << " ns" << G4endl;
-      //   G4cout << "  TOF RMS:  " << analysisManager->GetH1(3)->rms() << " ns" << G4endl;
-      // } else {
-      //   G4cout << "  No capture events recorded." << G4endl;
-      // }
-      
+      }      
       G4cout << "============================================================" << G4endl;
     }
     

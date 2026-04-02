@@ -68,23 +68,23 @@ class HistoManager
     static constexpr G4int kH_NeutronEnergy = 0;  // Neutron energy from primary generator (keV)
     static constexpr G4int kH_NeutronTheta = 1;   // Neutron angle from primary generator (deg)
     static constexpr G4int kH_nHits = 2;          // Number of neutrons hits per event
-    // static constexpr G4int kH_TOF = 3;            // Time of flight (i.e., capture time) (ns)
-    // static constexpr G4int kH_TOFEnergy = 4;      // Neutron energy from TOF (keV)
 
     //========================================================================//
     // Ntuple column ID constants
     //========================================================================//
-    static constexpr G4int kNT_NeutronEnergy = 0; // Neutron energy from primary generator (keV)
-    static constexpr G4int kNT_NeutronTheta = 1;  // Neutron angle from primary generator (deg)
-    static constexpr G4int kNT_EntryFlag = 2;   // Entry occurred flag (1=entered, 0=not entered)
-    static constexpr G4int kNT_CaptureFlag = 3;   // Capture occurred flag (1=capture, 0=no capture)
-    // static constexpr G4int kNT_TOF = 4;           // Time of flight (i.e., capture time) (ns)
-    // static constexpr G4int kNT_TOFEnergy = 5;     // Neutron energy from TOF (keV)
+    static constexpr G4int kNT_CaptureFlag = 0;   // Capture occurred flag (1=capture, 0=no capture)
+    static constexpr G4int kNT_CaptureTime = 1;           // Time of flight (i.e., capture time) (ns)
+
+    static constexpr G4int kNT_IonName = 0;
+    static constexpr G4int kNT_TimeBirth = 1;
+    static constexpr G4int kNT_TimeDeath = 2;
+    static constexpr G4int kNT_Weight = 3;
 
     // Number of species population histograms
     static constexpr G4int nID = 20;
   private:
     void Book();
+    G4String fFileName = "Activation";  // Default filename
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -53,9 +53,7 @@ class Run : public G4Run
   public:
     void SetPrimary(G4ParticleDefinition* particle, G4double energy);
     void CountProcesses(const G4VProcess* process);
-    // void ParticleCount(G4String, G4double);
     void ParticleCount(G4String, G4double, G4double);
-    // void SumTrackLength(G4int, G4int, G4double, G4double, G4double, G4double);
 
     static void InitProgressTracking(G4int totalEvents);
     static void ResetProgressTracking();
@@ -67,17 +65,6 @@ class Run : public G4Run
     void EndOfRun();
 
   private:
-    // struct ParticleData
-    // {
-    //     ParticleData() : fCount(0), fEmean(0.), fEmin(0.), fEmax(0.) {}
-    //     ParticleData(G4int count, G4double ekin, G4double emin, G4double emax)
-    //       : fCount(count), fEmean(ekin), fEmin(emin), fEmax(emax)
-    //     {}
-    //     G4int fCount;
-    //     G4double fEmean;
-    //     G4double fEmin;
-    //     G4double fEmax;
-    // };
     struct ParticleData
     {
         ParticleData() : fCount(0), fEmean(0.), fEmin(0.), fEmax(0.), fTmean(-1.) {}
@@ -103,15 +90,8 @@ class Run : public G4Run
     G4ParticleDefinition* fParticle = nullptr;
     G4double fEkin = 0.;
 
-    // std::map<G4String, G4int> fProcCounter;
     std::map<G4String, G4int> fProcCounter;
-    // std::map<G4String, ParticleData> fParticleDataMap;
     std::map<G4String, ParticleData> fParticleDataMap1;
-    // std::map<G4String, ParticleData> fParticleDataMap2;
-
-    // G4int fNbStep1 = 0, fNbStep2 = 0;
-    // G4double fTrackLen1 = 0., fTrackLen2 = 0.;
-    // G4double fTime1 = 0., fTime2 = 0.;
 
     // Progress tracking (shared across threads via statics)
     static std::atomic<G4int> fGlobalEventCount;

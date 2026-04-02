@@ -127,7 +127,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     //========================================================================//
     // Detector geometry cache for focused generation
     //========================================================================//
-    G4bool fCachedLimitToDetector = false;
+    G4bool   fCachedLimitToDetector = false;
     G4double fCachedDetectorAngle = 0.;      // radians
     G4double fCachedDetectorDistance = 0.;   // Geant4 internal units
 

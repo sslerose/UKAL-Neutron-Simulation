@@ -110,7 +110,6 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   G4bool neutronEntered = false;    // track if neutron entered detector
   G4bool captureOccurred = false;   // track if neutron capture occurred
   G4double captureTime = -1.0;      // time of neutron capture (-1 = no capture)
-  G4double TOF_Energy = -1.0;       // neutron energy from TOF (keV)
 
   auto analysisManager = G4AnalysisManager::Instance();
 
@@ -177,10 +176,8 @@ void EventAction::AnalyzeHits(DetectorHitsCollection* hc)
   // Fill ntuple with event-by-event data
   //========================================================================//
 
-  analysisManager->FillNtupleDColumn(HistoManager::kNT_NeutronEnergy, neutronEnergy_keV);
-  analysisManager->FillNtupleDColumn(HistoManager::kNT_NeutronTheta, neutronTheta_deg);
-  analysisManager->FillNtupleIColumn(HistoManager::kNT_EntryFlag, neutronEntered ? 1 : 0);
-  analysisManager->FillNtupleIColumn(HistoManager::kNT_CaptureFlag, captureOccurred ? 1 : 0);
+  analysisManager->FillNtupleIColumn(0, HistoManager::kNT_CaptureFlag, captureOccurred ? 1 : 0);
+  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_CaptureTime, captureTime / ns);  // -1 if no capture
   analysisManager->AddNtupleRow();
 }
 
