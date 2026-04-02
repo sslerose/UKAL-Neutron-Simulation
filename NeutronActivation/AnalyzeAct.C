@@ -38,6 +38,7 @@
 /// Diagnostic:
 ///   printSpeciesInfo("path/to/data.root") - print a summary of all ion
 ///   species found in PopulationData (entry counts, birth/death time ranges)
+///   to both the terminal and species_info.txt
 //
 
 #include "TFile.h"
@@ -148,36 +149,52 @@ void printSpeciesInfo(const char* filePath)
         s.sumWeight += weight;
     }
 
-    std::cout << "\n=== printSpeciesInfo: " << filePath << " ===\n"
-              << "  Total PopulationData entries: " << nEntries << "\n"
-              << "  Unique species found        : " << stats.size() << "\n\n";
+    // Open output text file
+    std::ofstream outFile("species_info.txt");
+    using PrintFn = std::function<void(const std::string&)>;
+    PrintFn printBoth = [&outFile](const std::string& msg) {
+        std::cout << msg;
+        if (outFile.is_open()) outFile << msg;
+    };
 
-    // Header
-    std::cout << std::left
-              << std::setw(24) << "Ion Species"
-              << std::right
-              << std::setw(10) << "Entries"
-              << std::setw(16) << "Birth min (s)"
-              << std::setw(16) << "Birth max (s)"
-              << std::setw(16) << "Death min (s)"
-              << std::setw(16) << "Death max (s)"
-              << std::setw(14) << "Sum Weight"
-              << "\n";
-    std::cout << std::string(112, '-') << "\n";
+    {
+        std::ostringstream hdr;
+        hdr << "\n=== printSpeciesInfo: " << filePath << " ===\n"
+            << "  Total PopulationData entries: " << nEntries << "\n"
+            << "  Unique species found        : " << stats.size() << "\n\n";
+        hdr << std::left
+            << std::setw(24) << "Ion Species"
+            << std::right
+            << std::setw(10) << "Entries"
+            << std::setw(16) << "Birth min (s)"
+            << std::setw(16) << "Birth max (s)"
+            << std::setw(16) << "Death min (s)"
+            << std::setw(16) << "Death max (s)"
+            << std::setw(14) << "Sum Weight"
+            << "\n";
+        hdr << std::string(112, '-') << "\n";
+        printBoth(hdr.str());
+    }
 
     for (const auto& kv : stats) {
         const auto& s = kv.second;
-        std::cout << std::left  << std::setw(24) << kv.first
-                  << std::right << std::fixed << std::setprecision(4)
-                  << std::setw(10) << s.count
-                  << std::setw(16) << s.minBirth
-                  << std::setw(16) << s.maxBirth
-                  << std::setw(16) << s.minDeath
-                  << std::setw(16) << s.maxDeath
-                  << std::setw(14) << s.sumWeight
-                  << "\n";
+        std::ostringstream row;
+        row << std::left  << std::setw(24) << kv.first
+            << std::right << std::fixed << std::setprecision(4)
+            << std::setw(10) << s.count
+            << std::setw(16) << s.minBirth
+            << std::setw(16) << s.maxBirth
+            << std::setw(16) << s.minDeath
+            << std::setw(16) << s.maxDeath
+            << std::setw(14) << s.sumWeight
+            << "\n";
+        printBoth(row.str());
     }
-    std::cout << std::string(112, '-') << "\n\n";
+
+    printBoth(std::string(112, '-') + "\n\n");
+
+    if (outFile.is_open()) outFile.close();
+    std::cout << "Saved: species_info.txt\n\n";
 
     f->Close();
     delete f;
