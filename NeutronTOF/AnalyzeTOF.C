@@ -25,14 +25,14 @@
 //   Specify path to data directory:
 //   analyzeTOF("path/to/data/directory")
 //
-//   Choose individual anglular spectra to plot
-//   analyzeTOF("path/to/data/directory", targetAngles = {10.0, 30.0, 50.0, 60.0})
+//   Choose individual angular spectra to plot (positional arguments only - no named args in C++):
+//   analyzeTOF("path/to/data/directory", {10.0, 30.0, 50.0, 60.0})
 //
 //   To generate diagnostic plots:
-//   analyzeTOF("path/to/data/directory", includeDiagnostic = true)
+//   analyzeTOF("path/to/data/directory", {}, true)
 //
 //   To specify the number of threads for multi-threading:
-//   analyzeTOF("path/to/data/directory", nThreads = 4)
+//   analyzeTOF("path/to/data/directory", {}, false, 4)
 //
 // Note: efficiency table must be placed in the same directory as the data files, named "efficiency_table.txt".
 //
