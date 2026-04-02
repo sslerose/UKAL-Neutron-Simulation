@@ -51,6 +51,7 @@ set(NeutronActivation_VIS_ANALYSIS_SCRIPTS
   vis.mac
   vis_export.mac
   vis_preview.mac
+  AnalyzeAct.C
   )
 
 foreach(_script ${NeutronActivation_VIS_ANALYSIS_SCRIPTS})
@@ -65,6 +66,7 @@ endforeach()
 # Copy test scripts from source root into build/Data_Test/
 set(NeutronActivation_RUN_SCRIPTS
   run.mac
+  run_nAct.sh
   )
 
 foreach(_script ${NeutronActivation_RUN_SCRIPTS})
