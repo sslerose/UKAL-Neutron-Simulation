@@ -40,7 +40,7 @@ If you would prefer to install manually or want a different version, follow thes
    ```  
    **Note:** For versions pre-11.4.0, the default is Qt5 (instead of Qt6). In this case, install the following modified dependencies:  
    ```bash
-   sudo apt install wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-de libxerces-c-dev qtbase5-dev qtbase5-dev-tools qt5-qmake qtchooser
+   sudo apt install -y wget cmake cmake-curses-gui g++ binutils libx11-dev libxpm-dev libxft-dev libxext-dev libglew-dev libjpeg-dev libpng-dev libtiff-dev libgif-dev libxml2-dev libssl-dev libfftw3-dev libqt5core5a libxmu-de libxerces-c-dev qtbase5-dev qtbase5-dev-tools qt5-qmake qtchooser
    ```
 2. In the home user directory (~), create the file structure for the installation:  
 	```bash

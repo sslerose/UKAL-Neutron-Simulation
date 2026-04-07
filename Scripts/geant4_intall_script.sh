@@ -43,4 +43,4 @@ echo "Configuring install..."
 cmake -DCMAKE_INSTALL_PREFIX=/home/$USER/Software/Geant4/geant4-v$VERSION-install -DGEANT4_BUILD_MULTITHREADED=ON -DGEANT4_INSTALL_DATA=ON -DGEANT4_USE_OPENGL_X11=ON -DGEANT4_USE_QT=ON -DGEANT4_USE_SYSTEM_EXPAT=ON ../geant4-v$VERSION
 
 echo "Installing..."
-make -j && make install
+make && make install
