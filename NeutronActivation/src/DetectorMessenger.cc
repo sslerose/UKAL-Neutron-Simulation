@@ -65,20 +65,20 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Create UI directory for all simulation commands
   //========================================================================//
-  fNeutronDetDir = new G4UIdirectory("/neutronTOF/");
+  fNeutronDetDir = new G4UIdirectory("/neutronAct/");
   fNeutronDetDir->SetGuidance("Commands specific to neutron detection simulation");
 
   //========================================================================//
   // Create UI directory for detector and world commands
   //========================================================================//
   G4bool broadcast = false;
-  fDetDir = new G4UIdirectory("/neutronTOF/det/", broadcast);
+  fDetDir = new G4UIdirectory("/neutronAct/det/", broadcast);
   fDetDir->SetGuidance("Detector construction commands");
 
   //========================================================================//
   // Detector distance from origin
   //========================================================================//
-  fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setDetectorDistance", this);
+  fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setDetectorDistance", this);
   fDetectorDistanceCmd->SetGuidance("Set distance from origin (neutron source) to detector face");
   fDetectorDistanceCmd->SetParameterName("DetectorDistance", false);
   fDetectorDistanceCmd->SetRange("DetectorDistance > 0.");
@@ -88,34 +88,16 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Detector angle around y-axis
   //========================================================================//
-  fDetectorAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setDetectorAngle", this);
+  fDetectorAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setDetectorAngle", this);
   fDetectorAngleCmd->SetGuidance("Set angle of detector around y-axis (neutron source)");
   fDetectorAngleCmd->SetParameterName("DetectorAngle", false);
   fDetectorAngleCmd->SetUnitCategory("Angle");
   fDetectorAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Initial spanning angle of detector
-  //========================================================================//
-  fDetectorSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setSpanningStartAngle", this);
-  fDetectorSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of detector");
-  fDetectorSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
-  fDetectorSpanningStartAngleCmd->SetUnitCategory("Angle");
-  fDetectorSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
-  // Final spanning angle of detector
-  //========================================================================//
-  fDetectorSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/det/setSpanningEndAngle", this);
-  fDetectorSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of detector");
-  fDetectorSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
-  fDetectorSpanningEndAngleCmd->SetUnitCategory("Angle");
-  fDetectorSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
   // World material
   //========================================================================//
-  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronTOF/det/setWorldMaterial", this);
+  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronAct/det/setWorldMaterial", this);
   fWorldMaterialCmd->SetGuidance("Set material of the world volume");
   fWorldMaterialCmd->SetGuidance("  Available Materials:");
   fWorldMaterialCmd->SetGuidance("    air    - G4_AIR");
@@ -124,9 +106,93 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fWorldMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
+  // Absorber material
+  //========================================================================//
+  fAbsorberMaterialCmd = new G4UIcommand("/neutronAct/det/setAbsorberMaterial", this);
+  fAbsorberMaterialCmd->SetGuidance("Build and select a material with single isotope");
+  fAbsorberMaterialCmd->SetGuidance("  symbol of isotope, Z, A, density of material, unit of density");
+  
+  // Isotope symbol
+  G4UIparameter* symbPrm = new G4UIparameter("isotope", 's', false);
+  symbPrm->SetGuidance("isotope symbol");
+  fAbsorberMaterialCmd->SetParameter(symbPrm);
+  
+  // Isotope atomic number
+  G4UIparameter* ZPrm = new G4UIparameter("Z", 'i', false);
+  ZPrm->SetGuidance("Z (atomic number)");
+  ZPrm->SetParameterRange("Z>0");
+  fAbsorberMaterialCmd->SetParameter(ZPrm);
+  
+  // Isotope mass number
+  G4UIparameter* APrm = new G4UIparameter("A", 'i', false);
+  APrm->SetGuidance("A (mass number)");
+  APrm->SetParameterRange("A>0");
+  fAbsorberMaterialCmd->SetParameter(APrm);
+  
+  // Isotope density
+  G4UIparameter* densityPrm = new G4UIparameter("density", 'd', false);
+  densityPrm->SetGuidance("material density");
+  densityPrm->SetParameterRange("density>0.");
+  fAbsorberMaterialCmd->SetParameter(densityPrm);
+  
+  // Unit of density
+  G4UIparameter* unitPrm = new G4UIparameter("unit", 's', false);
+  unitPrm->SetGuidance("unit of density");
+  G4String unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("g/cm3"));
+  unitPrm->SetParameterCandidates(unitList);
+  fAbsorberMaterialCmd->SetParameter(unitPrm);
+  
+  fAbsorberMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Initial spanning angle of absorber
+  //========================================================================//
+  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setSpanningStartAngle", this);
+  fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
+  fSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
+  fSpanningStartAngleCmd->SetUnitCategory("Angle");
+  fSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Final spanning angle of absorber
+  //========================================================================//
+  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setSpanningEndAngle", this);
+  fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
+  fSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
+  fSpanningEndAngleCmd->SetUnitCategory("Angle");
+  fSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Absorber thickness
+  //========================================================================//
+  fAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberThickness", this);
+  fAbsorberThicknessCmd->SetGuidance("Set thickness of the absorber in micrometers.");
+  fAbsorberThicknessCmd->SetParameterName("thickness", false);
+  fAbsorberThicknessCmd->SetRange("thickness > 0");
+  fAbsorberThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Absorber radius
+  //========================================================================//
+  fAbsorberRadiusCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberRadius", this);
+  fAbsorberRadiusCmd->SetGuidance("Set radius of the absorber in micrometers.");
+  fAbsorberRadiusCmd->SetParameterName("radius", false);
+  fAbsorberRadiusCmd->SetRange("radius > 0");
+  fAbsorberRadiusCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Absorber distance
+  //========================================================================//
+  fAbsorberDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberDistance", this);
+  fAbsorberDistanceCmd->SetGuidance("Set distance of the absorber from the origin in micrometers.");
+  fAbsorberDistanceCmd->SetParameterName("distance", false);
+  fAbsorberDistanceCmd->SetRange("distance > 0");
+  fAbsorberDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
   // Print current parameters
   //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/det/printParameters", this);
+  fPrintCmd = new G4UIcmdWithoutParameter("/neutronAct/det/printParameters", this);
   fPrintCmd->SetGuidance("Print current neutron source configuration.");
   fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
 }
@@ -139,9 +205,13 @@ DetectorMessenger::~DetectorMessenger()
   delete fDetDir;
   delete fDetectorDistanceCmd;
   delete fDetectorAngleCmd;
-  delete fDetectorSpanningStartAngleCmd;
-  delete fDetectorSpanningEndAngleCmd;
+  delete fSpanningStartAngleCmd;
+  delete fSpanningEndAngleCmd;
   delete fWorldMaterialCmd;
+  delete fAbsorberMaterialCmd;
+  delete fAbsorberThicknessCmd;
+  delete fAbsorberRadiusCmd;
+  delete fAbsorberDistanceCmd;
   delete fPrintCmd;
 }
 
@@ -160,16 +230,40 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
     fDetector->SetDetectorAngle(fDetectorAngleCmd->GetNewDoubleValue(newValue));
   }
 
-  if (command == fDetectorSpanningStartAngleCmd) {
-    fDetector->SetSpanningStartAngle(fDetectorSpanningStartAngleCmd->GetNewDoubleValue(newValue));
+  if (command == fSpanningStartAngleCmd) {
+    fDetector->SetSpanningStartAngle(fSpanningStartAngleCmd->GetNewDoubleValue(newValue));
   }
 
-  if (command == fDetectorSpanningEndAngleCmd) {
-    fDetector->SetSpanningEndAngle(fDetectorSpanningEndAngleCmd->GetNewDoubleValue(newValue));
+  if (command == fSpanningEndAngleCmd) {
+    fDetector->SetSpanningEndAngle(fSpanningEndAngleCmd->GetNewDoubleValue(newValue));
   }
 
   if (command == fWorldMaterialCmd) {
     fDetector->SetWorldMaterial(newValue);
+  }
+
+  if (command == fAbsorberMaterialCmd) {
+    G4int Z;
+    G4int A;
+    G4double dens;
+    G4String name, unt;
+    std::istringstream is(newValue);
+    is >> name >> Z >> A >> dens >> unt;
+    dens *= G4UIcommand::ValueOf(unt);
+    fDetector->MaterialWithSingleIsotope(name, name, dens, Z, A);
+    fDetector->SetAbsorberMaterial(name);
+  }
+
+  if (command == fAbsorberThicknessCmd) {
+    fDetector->SetAbsorberThickness(fAbsorberThicknessCmd->GetNewDoubleValue(newValue));
+  }
+
+  if (command == fAbsorberRadiusCmd) {
+    fDetector->SetAbsorberRadius(fAbsorberRadiusCmd->GetNewDoubleValue(newValue));
+  }
+
+  if (command == fAbsorberDistanceCmd) {
+    fDetector->SetAbsorberDistance(fAbsorberDistanceCmd->GetNewDoubleValue(newValue));
   }
 
   if (command == fPrintCmd) {

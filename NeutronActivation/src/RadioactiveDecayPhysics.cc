@@ -24,7 +24,10 @@
 // ********************************************************************
 //
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//
+/// \file RadioactiveDecayPhysics.cc
+/// \brief Implementation of the RadioactiveDecayPhysics class
+//
 
 #include "RadioactiveDecayPhysics.hh"
 
@@ -71,7 +74,6 @@ void RadioactiveDecayPhysics::ConstructProcess()
   radioactiveDecay->SetARM(ARMflag);  // Atomic Rearangement
 
   // EM physics extra configuration
-  // this physics constructor should be defined after EM constructor
   G4EmParameters::Instance()->SetFluo(ARMflag);
   G4EmParameters::Instance()->SetAugerCascade(ARMflag);
   G4EmParameters::Instance()->SetDeexcitationIgnoreCut(ARMflag);

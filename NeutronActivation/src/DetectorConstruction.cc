@@ -78,18 +78,10 @@ DetectorConstruction::DetectorConstruction()
   // Math for detector assembly dimensions and placement
   //========================================================================//
 
-  // Inner assembly volume (for positioning can and detector inside holder)
-  //fInnerAssemblyRadius = kHolderInnerRadius;
-
   // Aluminum can volume
-  // fCanLength = kInnerAssemblyLength;
-  // fCanOuterRadius = kHolderInnerRadius;
-
-  // fCanCapRadius = kCanInnerRadius;
   fCanCapOffset = -(kInnerAssemblyLength - kCanCapThickness) / 2;
 
   // Silicon rubber volume
-  // fRubberRadius = kCanInnerRadius;
   fRubberOffset = fCanCapOffset + (kCanCapThickness + kRubberThickness) / 2;
 
   // Teflon volume
@@ -98,11 +90,7 @@ DetectorConstruction::DetectorConstruction()
   // Detector glass volume
   fDetectorOffset = fTeflonOffset + (kTeflonThickness + kDetectorLength) / 2;
 
-  // Teflon volume (cont.)
-  // fTeflonRadius = kDetectorRadius;
-
   // Photomultiplier tube (PMT) volume
-  // fPMTRadius = kDetectorRadius;
   fPMTOffset = fDetectorOffset + (kDetectorLength + kPMTThickness) / 2;
 
   // Detector assembly volume
@@ -114,16 +102,6 @@ DetectorConstruction::DetectorConstruction()
   fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
   fRotationMatrix = new G4RotationMatrix();
   fRotationMatrix->rotateY(fAssemblyAngle); // Rotation of assembly around Y axis
-
-
-  //========================================================================//
-  // Absorber geometry
-  //========================================================================//
-
-  fAbsorberThickness = 0.03 * mm;  // 30 micrometers
-  fAbsorberRadius = 18.0 * mm / 2;
-
-  fAbsorberDistance = 5.0 * mm;  // Distance from target to gold foil
   
   // Initialize materials and detector messenger
   DefineMaterials();
@@ -302,7 +280,10 @@ void DetectorConstruction::DefineMaterials()
   //========================================================================//
 
   // Gold foil material
-  fAbsorberMaterial = nist->FindOrBuildMaterial("G4_Au");
+  fGoldMaterial = nist->FindOrBuildMaterial("G4_Au");
+
+  // Absorber material
+  fAbsorberMaterial = nist->FindOrBuildMaterial("G4_Au");  // To be replaced with actual absorber material by macro
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -561,27 +542,96 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Absorber geometry (cylindrical)
   //========================================================================//
 
-  fGoldTube = new G4Tubs("GoldFoil",
-                         0.0,             // inner radius (solid cylinder)
-                         fAbsorberRadius,     // outer radius
-                         fAbsorberThickness / 2, // half length
-                         fStartAngle,     // initial spanning angle
-                         fEndAngle);      // final spanning angle
+  // Absorber assembly volume
 
-  fGoldLV = new G4LogicalVolume(fGoldTube,
-                                fAbsorberMaterial,
-                                "GoldFoil");
+  G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness; // Length of absorber assembly (absorber + 2 gold foils)
 
-  fGoldPV = new G4PVPlacement(0,                                  // no rotation
-                              G4ThreeVector(0, 0, fAbsorberDistance), // position
-                              fGoldLV,                            // logical volume
-                              "GoldFoil",                         // name
-                              fWorldLV,                           // mother volume
-                              false,                              // no boolean operation
-                              0);                                 // copy number
+  fAbsorberAssemblyTube = new G4Tubs("AbsorberAssembly",
+                                            0.0,                            // inner radius (solid cylinder)
+                                            fAbsorberRadius,                // outer radius
+                                            absorberAssemblyThickness / 2,  // half length
+                                            fStartAngle,                    // initial spanning angle
+                                            fEndAngle);                     // final spanning angle
 
-  // Print parameters of detector construction
-  PrintParameters();
+  fAbsorberAssemblyLV = new G4LogicalVolume(fAbsorberAssemblyTube,
+                                            fWorldMaterial,
+                                            "AbsorberAssembly");
+
+  fAbsorberAssemblyPV = new G4PVPlacement(0,                                      // no rotation
+                                          G4ThreeVector(0, 0, fAbsorberAssemblyDistance), // position
+                                          fAbsorberAssemblyLV,                    // logical volume
+                                          "AbsorberAssembly",                     // name
+                                          fWorldLV,                               // mother volume
+                                          false,                                  // no boolean operation
+                                          0);                                     // copy number
+
+
+  // Gold foil (front)
+
+  G4double goldDisplacement = (fAbsorberThickness + fGoldThickness) / 2; // Displacement of gold foil from absorber assembly center
+
+  fGoldFrontTube = new G4Tubs("GoldFrontFoil",
+                              0.0,                // inner radius (solid cylinder)
+                              fAbsorberRadius,    // outer radius
+                              fGoldThickness / 2, // half length
+                              fStartAngle,        // initial spanning angle
+                              fEndAngle);         // final spanning angle
+
+  fGoldFrontLV = new G4LogicalVolume(fGoldFrontTube,
+                                     fGoldMaterial,
+                                     "GoldFrontFoil");
+
+  fGoldFrontPV = new G4PVPlacement(0,                                       // no rotation
+                                   G4ThreeVector(0, 0, goldDisplacement),  // position
+                                   fGoldFrontLV,                            // logical volume
+                                   "GoldFrontFoil",                         // name
+                                   fAbsorberAssemblyLV,                     // mother volume
+                                   false,                                   // no boolean operation
+                                   0);                                      // copy number
+
+
+  // Gold foil (back)
+
+  fGoldBackTube = new G4Tubs("GoldBackFoil",
+                             0.0,                 // inner radius (solid cylinder)
+                             fAbsorberRadius,     // outer radius
+                             fGoldThickness / 2,  // half length
+                             fStartAngle,         // initial spanning angle
+                             fEndAngle);          // final spanning angle
+
+  fGoldBackLV = new G4LogicalVolume(fGoldBackTube,
+                                    fGoldMaterial,
+                                    "GoldBackFoil");
+
+  fGoldBackPV = new G4PVPlacement(0,                                      // no rotation
+                                  G4ThreeVector(0, 0, -goldDisplacement), // position
+                                  fGoldBackLV,                            // logical volume
+                                  "GoldBackFoil",                         // name
+                                  fAbsorberAssemblyLV,                    // mother volume
+                                  false,                                  // no boolean operation
+                                  0);                                     // copy number
+
+
+  // Absorber
+
+  fAbsorberTube = new G4Tubs("Absorber",
+                             0.0,                    // inner radius (solid cylinder)
+                             fAbsorberRadius,        // outer radius
+                             fAbsorberThickness / 2, // half length
+                             fStartAngle,            // initial spanning angle
+                             fEndAngle);             // final spanning angle
+
+  fAbsorberLV = new G4LogicalVolume(fAbsorberTube,
+                                    fAbsorberMaterial,
+                                    "Absorber");
+
+  fAbsorberPV = new G4PVPlacement(0,                      // no rotation
+                                  G4ThreeVector(0, 0, 0), // position
+                                  fAbsorberLV,            // logical volume
+                                  "Absorber",             // name
+                                  fAbsorberAssemblyLV,    // mother volume
+                                  false,                  // no boolean operation
+                                  0);                     // copy number
 
   // Return the root volume
   return fWorldPV;
@@ -731,6 +781,7 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
   fWorldLV->SetMaterial(material);
   fAssemblyLV->SetMaterial(material);
   fInnerAssemblyLV->SetMaterial(material);
+  fAbsorberAssemblyLV->SetMaterial(material);
 
   // Create rotation matrix and calculate new assembly position
   fWorldMaterial = material;
@@ -751,26 +802,177 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
-// Set absorber spanning angle (phi) start
+// Create material with single isotope
 //------------------------------------------------------------------------//
-void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
+G4Material* DetectorConstruction::MaterialWithSingleIsotope(G4String name, G4String symbol,
+                                                            G4double density, G4int Z, G4int A)
 {
+  // Define isotope material
+  G4int ncomponents;
+  G4double abundance, massfraction;
+
+  G4Isotope* isotope = new G4Isotope(symbol, Z, A);
+
+  G4Element* element = new G4Element(name, symbol, ncomponents = 1);
+  element->AddIsotope(isotope, abundance = 100. * perCent);
+
+  G4Material* material = new G4Material(name, density, ncomponents = 1);
+  material->AddElement(element, massfraction = 100. * perCent);
+
+  return material;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set absorber material
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetAbsorberMaterial(G4String value)
+{
+  G4Material* material = G4NistManager::Instance()->FindOrBuildMaterial(value);
+
   // Check that geometry has been constructed
-  if (!fGoldPV) {
+  if (!fAbsorberAssemblyPV) {
     G4cerr << "Absorber has not yet been constructed." << G4endl;
     return;
   }
 
-  fStartAngle = startAngle;
+  if (material) {
+    // Update absorber material
+    fAbsorberLV->SetMaterial(material);
+    fAbsorberMaterial = material;
 
-  fGoldTube->SetStartPhiAngle(fStartAngle);
+    G4cout << "New absorber material: " << fAbsorberMaterial->GetName() << G4endl;
+
+    // Notify run manager of geometry modification
+    G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+
+    // Update visualization if it is active
+    G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
+    if (visManager) {
+      // Visualization is active - trigger an update
+      G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
+    }
+  }
+  else {
+    G4cerr << "\n--> warning from DetectorConstruction::SetMaterial : " << value
+           << " not found" << G4endl;
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set absorber thickness
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetAbsorberThickness(G4double thickness)
+{
+  // Check that geometry has been constructed
+  if (!fAbsorberAssemblyPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    return;
+  }
+
+  fAbsorberThickness = thickness;
+
+  G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness; // Length of absorber assembly (absorber + 2 gold foils)
+
+  // Update absorber assembly and component dimensions
+  fAbsorberTube->SetZHalfLength(fAbsorberThickness / 2);
+  fAbsorberAssemblyTube->SetZHalfLength(absorberAssemblyThickness / 2);
+
+  G4cout << "New absorber thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
+
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
   G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
   if (visManager) {
     // Visualization is active - trigger an update
-    // G4UImanager::GetUIpointer()->ApplyCommand("/run/reinitializeGeometry");
+    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
+  }
+
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set absorber radius
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetAbsorberRadius(G4double radius)
+{
+  // Check that geometry has been constructed
+  if (!fAbsorberAssemblyPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    return;
+  }
+
+  fAbsorberRadius = radius;
+
+  G4cout << "New absorber radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
+
+  G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+  // Update visualization if it is active
+  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
+  if (visManager) {
+    // Visualization is active - trigger an update
+    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set absorber distance
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetAbsorberDistance(G4double distance)
+{
+  // Check that geometry has been constructed
+  if (!fAbsorberAssemblyPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    return;
+  }
+
+  fAbsorberAssemblyDistance = distance;
+
+  G4cout << "New absorber distance (to gold face): " << G4BestUnit(fAbsorberAssemblyDistance, "Length") << G4endl;
+
+  G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+  // Update visualization if it is active
+  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
+  if (visManager) {
+    // Visualization is active - trigger an update
+    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Set absorber spanning angle (phi) start
+//------------------------------------------------------------------------//
+void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
+{
+  // Check that geometry has been constructed
+  if (!fAbsorberAssemblyPV) {
+    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    return;
+  }
+
+  fStartAngle = startAngle;
+
+  fAbsorberTube->SetStartPhiAngle(fStartAngle);
+  fGoldFrontTube->SetStartPhiAngle(fStartAngle);
+  fGoldBackTube->SetStartPhiAngle(fStartAngle);
+
+  G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+  // Update visualization if it is active
+  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
+  if (visManager) {
+    // Visualization is active - trigger an update
     G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
   }
 }
@@ -783,21 +985,23 @@ void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 {
   // Check that geometry has been constructed
-  if (!fGoldPV) {
+  if (!fAbsorberAssemblyPV) {
     G4cerr << "Absorber has not yet been constructed." << G4endl;
     return;
   }
 
   fEndAngle = endAngle;
 
-  fGoldTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fAbsorberTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fGoldFrontTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+  fGoldBackTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
+
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
   G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
   if (visManager) {
     // Visualization is active - trigger an update
-    // G4UImanager::GetUIpointer()->ApplyCommand("/run/reinitializeGeometry");
     G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
   }
 }
@@ -810,10 +1014,11 @@ void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 void DetectorConstruction::PrintParameters()
 {
   G4cout << "\n========================================" << G4endl;
-  G4cout << "Detector Configuration:" << G4endl;
+  G4cout << "Configuration:" << G4endl;
   G4cout << "========================================" << G4endl;
   G4cout << "World size: " << G4BestUnit(kWorldSize, "Length") << G4endl;
   G4cout << "World material: " << fWorldMaterial->GetName() << G4endl;
+  G4cout << "\nNeutrons generated at origin (0,0,0)" << G4endl;
   
   G4cout << "\nLi-6 Glass Detector (Cylindrical):" << G4endl;
   G4cout << "  Diameter: " << G4BestUnit(2*kDetectorRadius, "Length") << G4endl;
@@ -821,10 +1026,10 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  Detector face distance from origin: " << G4BestUnit(fDetectorDistance, "Length") << G4endl;
   G4cout << "  Material: " << fLi6GlassMaterial->GetName() << G4endl;
   G4cout << "  Density: " << fLi6GlassMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
-  G4cout << "\nNeutrons generated at origin (0,0,0)" << G4endl;
 
-  G4cout << "\nAbsorber (Cylindrical):" << G4endl;
+  G4cout << "\nAbsorber:" << G4endl;
   G4cout << "  Radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
+  G4cout << "  Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
   G4cout << "  Thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
   G4cout << "  Material: " << fAbsorberMaterial->GetName() << G4endl;
   G4cout << "  Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;

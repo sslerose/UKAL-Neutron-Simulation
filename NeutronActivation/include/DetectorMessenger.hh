@@ -75,12 +75,16 @@ class DetectorMessenger : public G4UImessenger
     G4UIdirectory* fNeutronDetDir = nullptr;
     G4UIdirectory* fDetDir = nullptr;
     
-    G4UIcmdWithADoubleAndUnit* fDetectorDistanceCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fDetectorAngleCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fDetectorSpanningStartAngleCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fDetectorSpanningEndAngleCmd = nullptr;
-    G4UIcmdWithAString*        fWorldMaterialCmd = nullptr;
-    G4UIcmdWithoutParameter*   fPrintCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fDetectorDistanceCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fDetectorAngleCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fSpanningStartAngleCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fSpanningEndAngleCmd = nullptr;
+    G4UIcmdWithAString*         fWorldMaterialCmd = nullptr;
+    G4UIcommand*                fAbsorberMaterialCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fAbsorberThicknessCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fAbsorberDistanceCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit*  fAbsorberRadiusCmd = nullptr;
+    G4UIcmdWithoutParameter*    fPrintCmd = nullptr;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -73,6 +73,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   public:
     G4VPhysicalVolume* Construct() override;
     void ConstructSDandField() override;
+    G4Material* MaterialWithSingleIsotope(G4String, G4String, G4double, G4int, G4int);
 
     // Setters
     void SetDetectorDistance(G4double);
@@ -80,6 +81,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     void SetSpanningStartAngle(G4double);
     void SetSpanningEndAngle(G4double);
     void SetWorldMaterial(G4String);
+    void SetAbsorberMaterial(G4String);
+    void SetAbsorberThickness(G4double);
+    void SetAbsorberRadius(G4double);
+    void SetAbsorberDistance(G4double);
 
     // Getters
     const G4VPhysicalVolume* GetWorld() const { return fWorldPV; }
@@ -90,9 +95,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     G4double GetSpanningStartAngle() const { return fStartAngle; }
     G4double GetSpanningEndAngle() const { return fEndAngle; }
-    G4double GetAbsorberDistance() const { return fAbsorberDistance; }
+    G4double GetAbsorberDistance() const { return fAbsorberAssemblyDistance; }
     G4double GetAbsorberThickness() const { return fAbsorberThickness; }
-    
+    G4double GetAbsorberRadius() const { return fAbsorberRadius; }
     G4Material* GetDetectorMaterial() const { return fLi6GlassMaterial; }
     G4Material* GetAbsorberMaterial() const { return fAbsorberMaterial; }
 
@@ -203,25 +208,40 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //========================================================================//
 
     // Solids
-    G4Tubs* fGoldTube = nullptr;
+    G4Tubs* fAbsorberAssemblyTube = nullptr;
+    G4Tubs* fGoldFrontTube = nullptr;
+    G4Tubs* fGoldBackTube = nullptr;
+    G4Tubs* fAbsorberTube = nullptr;
     
     // Physical volumes
-    G4VPhysicalVolume* fGoldPV = nullptr;
+    G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
+    G4VPhysicalVolume* fGoldFrontPV = nullptr;
+    G4VPhysicalVolume* fGoldBackPV = nullptr;
+    G4VPhysicalVolume* fAbsorberPV = nullptr;
     
     // Logical volumes
-    G4LogicalVolume* fGoldLV = nullptr;
+    G4LogicalVolume* fAbsorberAssemblyLV = nullptr;
+    G4LogicalVolume* fGoldFrontLV = nullptr;
+    G4LogicalVolume* fGoldBackLV = nullptr;
+    G4LogicalVolume* fAbsorberLV = nullptr;
 
 
     //========================================================================//
     // Absorber parameters
     //========================================================================//
 
-    // Gold absorber
-    G4double fAbsorberThickness = 0.;
-    G4double fAbsorberRadius = 0.;
-    G4double fAbsorberDistance = 0.;
+    // Gold foil
+    G4double fGoldThickness = 0.03 * mm;  // Thickness of gold foil
+
+    // Absorber
+    G4double fAbsorberThickness = 0.03 * mm;  // Thickness of absorber
+    G4double fAbsorberRadius = 18.0 * mm / 2; // Radius of absorber (cylindrical)
+
+    // Absorber assembly (includes gold foils)
+    G4double fAbsorberAssemblyDistance = 5.0 * mm;  // Distance from target to absorber assembly face
 
     // Materials
+    G4Material* fGoldMaterial = nullptr;
     G4Material* fAbsorberMaterial = nullptr;
 
 

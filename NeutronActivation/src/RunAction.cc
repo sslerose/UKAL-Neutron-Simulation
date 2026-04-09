@@ -134,6 +134,8 @@ void RunAction::EndOfRunAction(const G4Run*)
   if (analysisManager->IsActive()) {
 
     if (isMaster) {
+      fDetector->PrintParameters();
+      
       G4cout << G4endl;
       G4cout << "============================================================" << G4endl;
       G4cout << "                    Analysis Summary                        " << G4endl;

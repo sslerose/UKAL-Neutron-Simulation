@@ -23,11 +23,11 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-/// \file hadronic/Hadr03/src/GammaNuclearPhysics.cc
+
+//
+/// \file GammaNuclearPhysics.cc
 /// \brief Implementation of the GammaNuclearPhysics class
 //
-//
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "GammaNuclearPhysics.hh"
 

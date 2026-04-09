@@ -67,16 +67,16 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
 
   //========================================================================//
   // Create UI directory for gun commands
-  // Uses same /neutronTOF/ base as DetectorMessenger for consistency
+  // Uses same /neutronAct/ base as DetectorMessenger for consistency
   //========================================================================//
-  fGunDir = new G4UIdirectory("/neutronTOF/gun/");
+  fGunDir = new G4UIdirectory("/neutronAct/gun/");
   fGunDir->SetGuidance("Primary generator (neutron source) control.");
   fGunDir->SetGuidance("Controls SimLiT Li(p,n) source or simple particle gun.");
 
   //========================================================================//
   // Enable/disable SimLiT source
   //========================================================================//
-  fUseSimLiTCmd = new G4UIcmdWithABool("/neutronTOF/gun/useSimLiT", this);
+  fUseSimLiTCmd = new G4UIcmdWithABool("/neutronAct/gun/useSimLiT", this);
   fUseSimLiTCmd->SetGuidance("Enable or disable SimLiT neutron source.");
   fUseSimLiTCmd->SetGuidance("  true  = Use SimLiT 7Li(p,n)7Be source (realistic spectrum)");
   fUseSimLiTCmd->SetGuidance("  false = Use simple particle gun (for testing)");
@@ -87,7 +87,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Proton beam energy (keV)
   //========================================================================//
-  fBeamEnergyCmd = new G4UIcmdWithADouble("/neutronTOF/gun/beamEnergy", this);
+  fBeamEnergyCmd = new G4UIcmdWithADouble("/neutronAct/gun/beamEnergy", this);
   fBeamEnergyCmd->SetGuidance("Set proton beam energy for SimLiT source (in keV).");
   fBeamEnergyCmd->SetGuidance("  Threshold: 1880.4 keV");
   fBeamEnergyCmd->SetGuidance("  Typical values: 1912-2500 keV");
@@ -98,7 +98,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Proton beam energy spread (keV)
   //========================================================================//
-  fBeamSigmaCmd = new G4UIcmdWithADouble("/neutronTOF/gun/beamSigma", this);
+  fBeamSigmaCmd = new G4UIcmdWithADouble("/neutronAct/gun/beamSigma", this);
   fBeamSigmaCmd->SetGuidance("Set proton beam energy spread (1-sigma) in keV.");
   fBeamSigmaCmd->SetGuidance("  Typical values: 5-50 keV");
   fBeamSigmaCmd->SetParameterName("beamSigma", false);
@@ -108,7 +108,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Target material composition
   //========================================================================//
-  fTargetMaterialCmd = new G4UIcmdWithAString("/neutronTOF/gun/targetMaterial", this);
+  fTargetMaterialCmd = new G4UIcmdWithAString("/neutronAct/gun/targetMaterial", this);
   fTargetMaterialCmd->SetGuidance("Set lithium target composition for SimLiT.");
   fTargetMaterialCmd->SetGuidance("  Available materials:");
   fTargetMaterialCmd->SetGuidance("    Li   - Pure lithium");
@@ -124,7 +124,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Target thickness (micrometers)
   //========================================================================//
-  fTargetThicknessCmd = new G4UIcmdWithADouble("/neutronTOF/gun/targetThickness", this);
+  fTargetThicknessCmd = new G4UIcmdWithADouble("/neutronAct/gun/targetThickness", this);
   fTargetThicknessCmd->SetGuidance("Set lithium target thickness in micrometers.");
   fTargetThicknessCmd->SetGuidance("  Typical values: 5-50 um");
   fTargetThicknessCmd->SetParameterName("thickness", false);
@@ -134,7 +134,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Simple gun energy (when SimLiT disabled)
   //========================================================================//
-  fGunEnergyCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/gun/energy", this);
+  fGunEnergyCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/gun/energy", this);
   fGunEnergyCmd->SetGuidance("Set neutron energy for simple particle gun mode.");
   fGunEnergyCmd->SetGuidance("  Only used when SimLiT is disabled.");
   fGunEnergyCmd->SetParameterName("energy", false);
@@ -146,7 +146,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Time exposure for event time randomization
   //========================================================================//
-  fExposureTimeCmd = new G4UIcmdWithADoubleAndUnit("/neutronTOF/gun/exposureTime", this);
+  fExposureTimeCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/gun/exposureTime", this);
   fExposureTimeCmd->SetGuidance("Set time exposure for event time randomization.");
   fExposureTimeCmd->SetGuidance("  Randomizes event time within [0, exposureTime] to simulate continuous beam.");
   fExposureTimeCmd->SetParameterName("exposureTime", false);
@@ -159,7 +159,7 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Print current parameters
   //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronTOF/gun/printParameters", this);
+  fPrintCmd = new G4UIcmdWithoutParameter("/neutronAct/gun/printParameters", this);
   fPrintCmd->SetGuidance("Print current neutron source configuration.");
   fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
 }
