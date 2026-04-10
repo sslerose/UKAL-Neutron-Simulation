@@ -88,20 +88,11 @@ constexpr G4double kPMTThickness = 0.25 * cm;
 
 
 //========================================================================//
-// Absorber constants
-//========================================================================//
-
-// Gold absorber
-constexpr G4double kGoldThickness = 0.03 * mm;  // 30 micrometers
-constexpr G4double kGoldRadius = 5.0 * mm / 2;
-
-
-//========================================================================//
 // Naming conventions
 //========================================================================//
 
 // Sensitive detector and hits collection names
-inline G4String kDetectorSDName = "/neutronTOF/Li6GlassSD";
+inline G4String kDetectorSDName = "/neutronAct/Li6GlassSD";
 inline G4String kDetectorHCName = "DetectorHitsCollection";
 
 

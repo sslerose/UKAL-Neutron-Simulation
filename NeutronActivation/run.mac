@@ -24,10 +24,10 @@
 /process/had/rdm/thresholdForVeryLongDecayTime 1.0e+60 year
 
 # Set parameters
-/neutronTOF/gun/useSimLiT true
-/neutronTOF/gun/exposureTime 900 s
-/neutronTOF/det/setWorldMaterial air
-/neutronTOF/det/setDetectorDistance 25 cm
+/neutronAct/gun/useSimLiT true
+/neutronAct/gun/exposureTime 900 s
+/neutronAct/setWorldMaterial air
+/neutronAct/det/setDetectorDistance 25 cm
 
 /analysis/h1/set 3 100 0 900 s
 /analysis/setFileName Activation_1

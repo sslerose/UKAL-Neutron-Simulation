@@ -128,7 +128,6 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
   delete fParticleGun;
   delete fSimLiTSource;
-  // delete fMessenger;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

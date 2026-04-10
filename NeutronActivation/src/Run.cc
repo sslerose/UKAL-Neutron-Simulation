@@ -246,12 +246,11 @@ void Run::EndOfRun()
 
   // run condition
   G4Material* material = fDetector->GetAbsorberMaterial();
-  G4double density = material->GetDensity();
 
   G4String Particle = fParticle->GetParticleName();
   G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
          << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
-         << " (density: " << G4BestUnit(density, "Volumic Mass") << ")" << G4endl;
+         << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
 
   if (numberOfEvent == 0) {
     G4cout.precision(dfprec);
@@ -259,7 +258,10 @@ void Run::EndOfRun()
   }
 
   // frequency of processes
-  G4cout << "\n Process calls frequency :" << G4endl;
+  G4cout << G4endl;
+  G4cout << "============================================================" << G4endl;
+  G4cout << "                  Process calls frequency                   " << G4endl;
+  G4cout << "============================================================" << G4endl;
   std::map<G4String, G4int>::iterator it;
   for (it = fProcCounter.begin(); it != fProcCounter.end(); it++) {
     G4String procName = it->first;
@@ -269,7 +271,10 @@ void Run::EndOfRun()
   G4cout << G4endl;
 
   // particles count
-  G4cout << "\n List of generated particles (with meanLife != 0):" << G4endl;
+  G4cout << G4endl;
+  G4cout << "============================================================" << G4endl;
+  G4cout << "      List of generated particles (with meanLife != 0)      " << G4endl;
+  G4cout << "============================================================" << G4endl;
 
   for (const auto& particleData : fParticleDataMap1) {
     G4String name = particleData.first;
@@ -280,17 +285,20 @@ void Run::EndOfRun()
     G4double eMax = data.fEmax;
     G4double meanLife = data.fTmean;
 
-    G4cout << "  " << std::setw(13) << name << ": " << std::setw(7) << count
-           << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy") << "\t( "
-           << G4BestUnit(eMin, "Energy") << " --> " << G4BestUnit(eMax, "Energy") << ")";
-    if (meanLife >= 0.)
+    if (meanLife > 0.)
+    {
+      G4cout << "  " << std::setw(13) << name << ": " << std::setw(7) << count
+            << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy") << "\t( "
+            << G4BestUnit(eMin, "Energy") << " --> " << G4BestUnit(eMax, "Energy") << ")";
       G4cout << "\tmean life = " << G4BestUnit(meanLife, "Time") << G4endl;
-    else
-      G4cout << "\tstable" << G4endl;
+    }
   }
 
   // histogram Id for populations
-  G4cout << "\n histo Id for populations :" << G4endl;
+  G4cout << G4endl;
+  G4cout << "============================================================" << G4endl;
+  G4cout << "          Histogram IDs for generated populations           " << G4endl;
+  G4cout << "============================================================" << G4endl;
 
   // Update the histogram titles according to the ion map
   // and print new titles

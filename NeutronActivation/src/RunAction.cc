@@ -134,11 +134,15 @@ void RunAction::EndOfRunAction(const G4Run*)
   if (analysisManager->IsActive()) {
 
     if (isMaster) {
+      PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
+
       fDetector->PrintParameters();
+
+      config->PrintParameters();
       
       G4cout << G4endl;
       G4cout << "============================================================" << G4endl;
-      G4cout << "                    Analysis Summary                        " << G4endl;
+      G4cout << "                Generated Neutron Statistics                " << G4endl;
       G4cout << "============================================================" << G4endl;
       
       // Source statistics
@@ -154,8 +158,7 @@ void RunAction::EndOfRunAction(const G4Run*)
       if (analysisManager->GetH1(1)->entries() > 0) {
         G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
               << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
-      }      
-      G4cout << "============================================================" << G4endl;
+      }
     }
     
 

@@ -151,7 +151,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Detector assembly volume
     G4double fAssemblyLength = 0.;
-    G4double fAssemblyWidth = 0.;
+    // G4double fAssemblyWidth = 0.;
     G4double fAssemblyDistance = 0.;
     G4double fAssemblyDisplacement = 0.;
     G4double fAssemblyAngle = 0. * deg;
@@ -159,26 +159,26 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double fEndAngle = 360.0 * deg;
 
     // Inner assembly volume (for positioning can and detector inside holder)
-    G4double fInnerAssemblyLength = 0.;
-    G4double fInnerAssemblyRadius = 0.;
+    // G4double fInnerAssemblyLength = 0.;
+    // G4double fInnerAssemblyRadius = 0.;
 
     // Aluminum can volume
-    G4double fCanLength = 0.;
-    G4double fCanOuterRadius = 0.;
-    G4double fCanCapRadius = 0.;
+    // G4double fCanLength = 0.;
+    // G4double fCanOuterRadius = 0.;
+    // G4double fCanCapRadius = 0.;
     G4double fCanCapOffset = 0.;
 
     // Silicon rubber volume
-    G4double fRubberRadius = 0.;
+    // G4double fRubberRadius = 0.;
     G4double fRubberOffset = 0.;
 
     // Teflon volume
-    G4double fTeflonRadius = 0.;
+    // G4double fTeflonRadius = 0.;
     G4double fTeflonOffset = 0.;
 
     // Detector glass volume
     G4double fDetectorOffset = 0.;
-    G4double fDetectorDistance = 50.0 * cm;
+    G4double fDetectorDistance = 25.0 * cm;
 
     // Tape volume (irrelevant for current simulations)
     // G4double fTapeThickness = 0.;
@@ -186,7 +186,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     // G4double fTapeDistance = 0.;
 
     // Photomultiplier tube (PMT) volume
-    G4double fPMTRadius = 0.;
+    // G4double fPMTRadius = 0.;
     G4double fPMTOffset = 0.;
 
     // Materials

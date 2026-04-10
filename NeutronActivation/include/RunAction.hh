@@ -56,8 +56,6 @@ class RunAction : public G4UserRunAction
     void EndOfRunAction(const G4Run*) override;
 
   private:
-    // G4String GenerateFileName() const;
-
     DetectorConstruction* fDetector = nullptr;
     PrimaryGeneratorAction* fPrimary = nullptr;
     Run* fRun = nullptr;

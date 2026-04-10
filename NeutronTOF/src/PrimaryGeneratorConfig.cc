@@ -269,7 +269,7 @@ void PrimaryGeneratorConfig::PrintParameters() const
   G4cout << "========================================" << G4endl;
   
   if (fUseSimLiT) {
-    G4cout << "  Source mode:      SimLiT 7Li(p,n)7Be" << G4endl;
+    G4cout << "Source mode:      SimLiT 7Li(p,n)7Be" << G4endl;
     G4cout << "  Proton beam:" << G4endl;
     G4cout << "    Energy:         " << fBeamEnergy << " keV" << G4endl;
     G4cout << "    Sigma:          " << fBeamSigma << " keV" << G4endl;
@@ -284,10 +284,9 @@ void PrimaryGeneratorConfig::PrintParameters() const
     }
   }
   else {
-    G4cout << "  Source mode:      Simple particle gun" << G4endl;
+    G4cout << "Source mode:      Simple particle gun" << G4endl;
     G4cout << "  Particle:         neutron" << G4endl;
     G4cout << "  Energy:           " << G4BestUnit(fGunEnergy, "Energy") << G4endl;
-    G4cout << "  Direction:        Along z-axis (simple mode)" << G4endl;
   }
   
   G4cout << "========================================" << G4endl;

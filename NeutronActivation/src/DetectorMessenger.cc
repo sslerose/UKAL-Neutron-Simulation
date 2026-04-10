@@ -66,14 +66,38 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   // Create UI directory for all simulation commands
   //========================================================================//
   fNeutronDetDir = new G4UIdirectory("/neutronAct/");
-  fNeutronDetDir->SetGuidance("Commands specific to neutron detection simulation");
+  fNeutronDetDir->SetGuidance("Commands specific to neutron activation simulation");
 
   //========================================================================//
-  // Create UI directory for detector and world commands
+  // World material
+  //========================================================================//
+  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronAct/setWorldMaterial", this);
+  fWorldMaterialCmd->SetGuidance("Set material of the world volume");
+  fWorldMaterialCmd->SetGuidance("  Available Materials:");
+  fWorldMaterialCmd->SetGuidance("    air    - G4_AIR");
+  fWorldMaterialCmd->SetGuidance("    vacuum - G4_Galactic");
+  fWorldMaterialCmd->SetParameterName("WorldMaterial", false);
+  fWorldMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+  //========================================================================//
+  // Print current parameters
+  //========================================================================//
+  fPrintCmd = new G4UIcmdWithoutParameter("/neutronAct/printParameters", this);
+  fPrintCmd->SetGuidance("Print current system configuration");
+  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
+
+  //========================================================================//
+  // Create UI directory for detector commands
   //========================================================================//
   G4bool broadcast = false;
   fDetDir = new G4UIdirectory("/neutronAct/det/", broadcast);
   fDetDir->SetGuidance("Detector construction commands");
+
+  //========================================================================//
+  // Create UI directory for absorber commands
+  //========================================================================//
+  fAbsorDir = new G4UIdirectory("/neutronAct/abs/", broadcast);
+  fAbsorDir->SetGuidance("Absorber construction commands");
 
   //========================================================================//
   // Detector distance from origin
@@ -95,20 +119,9 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // World material
-  //========================================================================//
-  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronAct/det/setWorldMaterial", this);
-  fWorldMaterialCmd->SetGuidance("Set material of the world volume");
-  fWorldMaterialCmd->SetGuidance("  Available Materials:");
-  fWorldMaterialCmd->SetGuidance("    air    - G4_AIR");
-  fWorldMaterialCmd->SetGuidance("    vacuum - G4_Galactic");
-  fWorldMaterialCmd->SetParameterName("WorldMaterial", false);
-  fWorldMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
   // Absorber material
   //========================================================================//
-  fAbsorberMaterialCmd = new G4UIcommand("/neutronAct/det/setAbsorberMaterial", this);
+  fAbsorberMaterialCmd = new G4UIcommand("/neutronAct/abs/setAbsorberMaterial", this);
   fAbsorberMaterialCmd->SetGuidance("Build and select a material with single isotope");
   fAbsorberMaterialCmd->SetGuidance("  symbol of isotope, Z, A, density of material, unit of density");
   
@@ -145,27 +158,18 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fAbsorberMaterialCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Initial spanning angle of absorber
+  // Absorber distance
   //========================================================================//
-  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setSpanningStartAngle", this);
-  fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
-  fSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
-  fSpanningStartAngleCmd->SetUnitCategory("Angle");
-  fSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
-  // Final spanning angle of absorber
-  //========================================================================//
-  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setSpanningEndAngle", this);
-  fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
-  fSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
-  fSpanningEndAngleCmd->SetUnitCategory("Angle");
-  fSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fAbsorberDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberDistance", this);
+  fAbsorberDistanceCmd->SetGuidance("Set distance from origin (neutron source) to absorber face");
+  fAbsorberDistanceCmd->SetParameterName("distance", false);
+  fAbsorberDistanceCmd->SetRange("distance > 0");
+  fAbsorberDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
   // Absorber thickness
   //========================================================================//
-  fAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberThickness", this);
+  fAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberThickness", this);
   fAbsorberThicknessCmd->SetGuidance("Set thickness of the absorber in micrometers.");
   fAbsorberThicknessCmd->SetParameterName("thickness", false);
   fAbsorberThicknessCmd->SetRange("thickness > 0");
@@ -174,27 +178,29 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Absorber radius
   //========================================================================//
-  fAbsorberRadiusCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberRadius", this);
+  fAbsorberRadiusCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberRadius", this);
   fAbsorberRadiusCmd->SetGuidance("Set radius of the absorber in micrometers.");
   fAbsorberRadiusCmd->SetParameterName("radius", false);
   fAbsorberRadiusCmd->SetRange("radius > 0");
   fAbsorberRadiusCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Absorber distance
+  // Initial spanning angle of absorber
   //========================================================================//
-  fAbsorberDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/absorberDistance", this);
-  fAbsorberDistanceCmd->SetGuidance("Set distance of the absorber from the origin in micrometers.");
-  fAbsorberDistanceCmd->SetParameterName("distance", false);
-  fAbsorberDistanceCmd->SetRange("distance > 0");
-  fAbsorberDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberSpanningStartAngle", this);
+  fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
+  fSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
+  fSpanningStartAngleCmd->SetUnitCategory("Angle");
+  fSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
-  // Print current parameters
+  // Final spanning angle of absorber
   //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronAct/det/printParameters", this);
-  fPrintCmd->SetGuidance("Print current neutron source configuration.");
-  fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
+  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberSpanningEndAngle", this);
+  fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
+  fSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
+  fSpanningEndAngleCmd->SetUnitCategory("Angle");
+  fSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -203,6 +209,7 @@ DetectorMessenger::~DetectorMessenger()
 {
   delete fNeutronDetDir;
   delete fDetDir;
+  delete fAbsorDir;
   delete fDetectorDistanceCmd;
   delete fDetectorAngleCmd;
   delete fSpanningStartAngleCmd;

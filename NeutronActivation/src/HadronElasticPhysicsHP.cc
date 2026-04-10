@@ -78,8 +78,8 @@ void HadronElasticPhysicsHP::ConstructProcess()
 
 void HadronElasticPhysicsHP::DefineCommands()
 {
-  // Define /neutronTOF/phys command directory using generic messenger class
-  fMessenger = new G4GenericMessenger(this, "/neutronTOF/phys/", "physics list commands");
+  // Define /neutronAct/phys command directory using generic messenger class
+  fMessenger = new G4GenericMessenger(this, "/neutronAct/phys/", "physics list commands");
 
   // thermal scattering command
   auto& thermalCmd = fMessenger->DeclareProperty("thermalScattering", fThermal);

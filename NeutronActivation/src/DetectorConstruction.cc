@@ -95,7 +95,6 @@ DetectorConstruction::DetectorConstruction()
 
   // Detector assembly volume
   fAssemblyLength = kHolderLength + kInnerAssemblyLength / 2;
-  fAssemblyWidth = kHolderOuterRadius * 2;
 
   // Detector placement
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Dist. from target to assembly face
@@ -330,8 +329,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position mother detector assembly volume within world volume
   // Front face at fAssemblyDistance from origin along z-axis
   G4Box* assemblyBox = new G4Box("AssemblyMother",
-                                 fAssemblyWidth / 2,    // Half-width of detector assembly
-                                 fAssemblyWidth / 2,
+                                 kHolderOuterRadius,    // Half-width of detector assembly
+                                 kHolderOuterRadius,
                                  fAssemblyLength / 2);  // Half-length of detector assembly
 
   fAssemblyLV = new G4LogicalVolume(assemblyBox,
@@ -1031,9 +1030,10 @@ void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 //------------------------------------------------------------------------//
 void DetectorConstruction::PrintParameters()
 {
-  G4cout << "\n========================================" << G4endl;
-  G4cout << "Configuration:" << G4endl;
-  G4cout << "========================================" << G4endl;
+  G4cout << G4endl;
+  G4cout << "============================================================" << G4endl;
+  G4cout << "                   Geometry Configuration                   " << G4endl;
+  G4cout << "============================================================" << G4endl;
   G4cout << "World size: " << G4BestUnit(kWorldSize, "Length") << G4endl;
   G4cout << "World material: " << fWorldMaterial->GetName() << G4endl;
   G4cout << "\nNeutrons generated at origin (0,0,0)" << G4endl;
@@ -1045,13 +1045,12 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  Material: " << fLi6GlassMaterial->GetName() << G4endl;
   G4cout << "  Density: " << fLi6GlassMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
 
-  G4cout << "\nAbsorber:" << G4endl;
-  G4cout << "  Radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
-  G4cout << "  Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
-  G4cout << "  Thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
+  G4cout << "\nAbsorber (Cylindrical):" << G4endl;
   G4cout << "  Material: " << fAbsorberMaterial->GetName() << G4endl;
+  G4cout << "  Thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
+  G4cout << "  Radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
   G4cout << "  Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
-  G4cout << "========================================\n" << G4endl;
+  G4cout << "  Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

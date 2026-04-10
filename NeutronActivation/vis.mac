@@ -60,6 +60,3 @@
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
 /hits/verbose 2
-
-# Print detector parameters
-#/help /neutronTOF/det/
