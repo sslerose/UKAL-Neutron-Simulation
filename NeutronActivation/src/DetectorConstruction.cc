@@ -546,6 +546,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 
   G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness; // Length of absorber assembly (absorber + 2 gold foils)
 
+  // Absorber assembly placement
+  fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + absorberAssemblyThickness / 2; // Displacement of absorber assembly from origin (front face at fAbsorberAssemblyDistance)
+
   fAbsorberAssemblyTube = new G4Tubs("AbsorberAssembly",
                                             0.0,                            // inner radius (solid cylinder)
                                             fAbsorberRadius,                // outer radius
@@ -558,7 +561,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                                             "AbsorberAssembly");
 
   fAbsorberAssemblyPV = new G4PVPlacement(0,                                      // no rotation
-                                          G4ThreeVector(0, 0, fAbsorberAssemblyDistance), // position
+                                          G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement), // position
                                           fAbsorberAssemblyLV,                    // logical volume
                                           "AbsorberAssembly",                     // name
                                           fWorldLV,                               // mother volume
@@ -582,7 +585,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                                      "GoldFrontFoil");
 
   fGoldFrontPV = new G4PVPlacement(0,                                       // no rotation
-                                   G4ThreeVector(0, 0, goldDisplacement),  // position
+                                   G4ThreeVector(0, 0, -goldDisplacement),  // position
                                    fGoldFrontLV,                            // logical volume
                                    "GoldFrontFoil",                         // name
                                    fAbsorberAssemblyLV,                     // mother volume
@@ -604,7 +607,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                                     "GoldBackFoil");
 
   fGoldBackPV = new G4PVPlacement(0,                                      // no rotation
-                                  G4ThreeVector(0, 0, -goldDisplacement), // position
+                                  G4ThreeVector(0, 0, goldDisplacement), // position
                                   fGoldBackLV,                            // logical volume
                                   "GoldBackFoil",                         // name
                                   fAbsorberAssemblyLV,                    // mother volume
@@ -679,7 +682,7 @@ void DetectorConstruction::SetDetectorDistance(G4double value)
 {
   // Check that geometry has been constructed
   if (!fAssemblyPV) {
-    G4cerr << "Detector has not yet been constructed." << G4endl;
+    G4cerr << "Detector not yet constructed." << G4endl;
     return;
   }
 
@@ -718,7 +721,7 @@ void DetectorConstruction::SetDetectorAngle(G4double value)
 {
   // Check that geometry has been constructed
   if (!fAssemblyPV) {
-    G4cerr << "Detector has not yet been constructed." << G4endl;
+    G4cerr << "Detector not yet constructed." << G4endl;
     return;
   }
 
@@ -757,7 +760,7 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
 {
   // Check that geometry has been constructed
   if (!fAssemblyPV) {
-    G4cerr << "Detector has not yet been constructed." << G4endl;
+    G4cerr << "Detector not yet constructed." << G4endl;
     return;
   }
 
@@ -833,7 +836,7 @@ void DetectorConstruction::SetAbsorberMaterial(G4String value)
 
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 
@@ -869,17 +872,27 @@ void DetectorConstruction::SetAbsorberThickness(G4double thickness)
 {
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 
   fAbsorberThickness = thickness;
 
+  // Calculate new absorber assembly parameters
   G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness; // Length of absorber assembly (absorber + 2 gold foils)
+  fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + absorberAssemblyThickness / 2;
 
-  // Update absorber assembly and component dimensions
+  // Calculate new gold foil displacement within absorber assembly
+  G4double goldDisplacement = (fAbsorberThickness + fGoldThickness) / 2; // Displacement of gold foil from absorber assembly center
+
+  // Update absorber and absorber assembly dimensions and positions
   fAbsorberTube->SetZHalfLength(fAbsorberThickness / 2);
   fAbsorberAssemblyTube->SetZHalfLength(absorberAssemblyThickness / 2);
+  fAbsorberAssemblyPV->SetTranslation(G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement));
+
+  // Update gold foil positions within absorber assembly
+  fGoldFrontPV->SetTranslation(G4ThreeVector(0, 0, -goldDisplacement));
+  fGoldBackPV->SetTranslation(G4ThreeVector(0, 0, goldDisplacement));
 
   G4cout << "New absorber thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
 
@@ -903,11 +916,16 @@ void DetectorConstruction::SetAbsorberRadius(G4double radius)
 {
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 
   fAbsorberRadius = radius;
+
+  fAbsorberTube->SetOuterRadius(fAbsorberRadius);
+  fAbsorberAssemblyTube->SetOuterRadius(fAbsorberRadius);
+  fGoldFrontTube->SetOuterRadius(fAbsorberRadius);
+  fGoldBackTube->SetOuterRadius(fAbsorberRadius);
 
   G4cout << "New absorber radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
 
@@ -930,7 +948,7 @@ void DetectorConstruction::SetAbsorberDistance(G4double distance)
 {
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 
@@ -957,7 +975,7 @@ void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
 {
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 
@@ -986,7 +1004,7 @@ void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
 {
   // Check that geometry has been constructed
   if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber has not yet been constructed." << G4endl;
+    G4cerr << "Absorber not yet constructed." << G4endl;
     return;
   }
 

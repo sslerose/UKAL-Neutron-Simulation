@@ -239,6 +239,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Absorber assembly (includes gold foils)
     G4double fAbsorberAssemblyDistance = 5.0 * mm;  // Distance from target to absorber assembly face
+    G4double fAbsorberAssemblyDisplacement = 0.; // Displacement of absorber assembly from origin (front face at fAbsorberAssemblyDistance)
 
     // Materials
     G4Material* fGoldMaterial = nullptr;
