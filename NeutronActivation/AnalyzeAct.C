@@ -20,7 +20,7 @@
 ///
 /// Usage (in ROOT):
 ///   .L AnalyzeAct.C
-///   analyzeAct("path/to/data.root", beamTime, "timeScale", coolingTime)
+///   analyzeAct("path/to/data.root", beamTime, "timeScale", coolingTime, plotAll)
 ///
 /// Required arguments:
 ///   filePath   - path to the .root data file
@@ -29,6 +29,7 @@
 ///
 /// Optional argument:
 ///   coolingTime - post-beam cooling time (default = 0, in chosen time scale)
+///   plotAll     - flag to indicate whether to plot all species (default = false)
 ///
 /// Outputs:
 ///   CaptureTimes.png           - histogram of neutron capture times
@@ -159,9 +160,9 @@ void printSpeciesInfo(const char* filePath)
 
     {
         std::ostringstream hdr;
-        hdr << "\n=== printSpeciesInfo: " << filePath << " ===\n"
-            << "  Total PopulationData entries: " << nEntries << "\n"
-            << "  Unique species found        : " << stats.size() << "\n\n";
+        hdr << "\n=== Species Info: " << filePath << " ===\n"
+            << "  Total Population entries: " << nEntries << "\n"
+            << "  Unique species found    : " << stats.size() << "\n\n";
         hdr << std::left
             << std::setw(24) << "Ion Species"
             << std::right
@@ -206,7 +207,8 @@ void printSpeciesInfo(const char* filePath)
 void analyzeAct(const char* filePath,
                 Double_t     beamTime,
                 const char*  timeScale,
-                Double_t     coolingTime = 0.0)
+                Double_t     coolingTime = 0.0,
+                Bool_t       plotAll     = false)
 {
     // ----------------------------------------------------------
     // 1. Parse time scale
@@ -237,10 +239,11 @@ void analyzeAct(const char* filePath,
     // ----------------------------------------------------------
     // 2. Derived time limits (all in display units)
     // ----------------------------------------------------------
-    Double_t tBeam = beamTime;
-    Double_t tCool = coolingTime;
-    Double_t tEnd  = tBeam + tCool;
-    Double_t tMax  = 1.2 * tEnd;
+    Double_t tBeam     = beamTime;
+    Double_t tCool     = coolingTime;
+    Double_t tEnd      = tBeam + tCool;
+    Double_t tMax      = 1.2 * tEnd;
+    Double_t tHalfBeam = tBeam / 2.0;
 
     std::cout << "\n=== analyzeAct ===\n"
               << "  File        : " << filePath   << "\n"
@@ -265,6 +268,7 @@ void analyzeAct(const char* filePath,
     gStyle->SetOptTitle(1);
     gStyle->SetTitleFontSize(0.045);
     gStyle->SetFrameLineWidth(1);
+    gStyle->SetTickLength(0.03, "Y");
 
     // ============================================================
     // SECTION A: Detector data — capture time histogram
@@ -361,17 +365,19 @@ void analyzeAct(const char* filePath,
     // Write header
     {
         std::ostringstream hdr;
-        hdr << "=========================================\n"
-            << " Surviving Ion Populations at t = tEnd\n"
-            << "=========================================\n"
+        hdr << "=============================================================================\n"
+            << " Surviving Ion Populations\n"
+            << "=============================================================================\n"
             << "  Beam time   : " << std::fixed << std::setprecision(4)
             << tBeam << " " << timeUnit << "\n"
             << "  Cooling time: " << tCool << " " << timeUnit << "\n"
             << "  t_end       : " << tEnd  << " " << timeUnit << "\n"
-            << "-----------------------------------------\n"
-            << std::left << std::setw(24) << "Ion Species"
-            << std::right << std::setw(20) << "Population at t_end\n"
-            << "-----------------------------------------\n";
+            << "-----------------------------------------------------------------------------\n"
+            << std::left  << std::setw(24) << "Ion Species"
+            << std::right << std::setw(20) << "Pop at t_beam/2"
+            << std::right << std::setw(20) << "Pop at t_beam"
+            << std::right << std::setw(20) << "Pop at t_end\n"
+            << "-----------------------------------------------------------------------------\n";
         printBoth(hdr.str());
     }
 
@@ -419,12 +425,14 @@ void analyzeAct(const char* filePath,
             grPops.push_back(cumPop);
         }
 
-        // Surviving population: last grPops value at grTimes <= tEnd
+        // Population snapshots: last grPops value at grTimes <= query time
+        Double_t popHalfBeam = 0.0;
+        Double_t popAtBeam   = 0.0;
         Double_t survivingPop = 0.0;
         for (std::size_t k = 0; k < grTimes.size(); ++k) {
-            if (grTimes[k] <= tEnd) {
-                survivingPop = grPops[k];
-            }
+            if (grTimes[k] <= tHalfBeam) popHalfBeam  = grPops[k];
+            if (grTimes[k] <= tBeam)     popAtBeam     = grPops[k];
+            if (grTimes[k] <= tEnd)      survivingPop  = grPops[k];
         }
 
         // Write to text file
@@ -432,7 +440,9 @@ void analyzeAct(const char* filePath,
             std::ostringstream row;
             row << std::left  << std::setw(24) << species
                 << std::right << std::setw(20) << std::fixed << std::setprecision(4)
-                << survivingPop << "\n";
+                << popHalfBeam
+                << std::right << std::setw(20) << popAtBeam
+                << std::right << std::setw(20) << survivingPop << "\n";
             printBoth(row.str());
         }
 
@@ -440,13 +450,16 @@ void analyzeAct(const char* filePath,
         Double_t yMax = 0.0;
         for (Double_t p : grPops) { if (p > yMax) yMax = p; }
         if (yMax <= 0.0) yMax = 1.0;
-        Double_t yPad = 1.15 * yMax;
+        Double_t yPad = 1.3 * yMax;
+
+        // Skip plotting if plotAll is false and surviving population is zero
+        if (!plotAll && survivingPop <= 0.0) continue;
 
         // Create TGraph
         Int_t nPts = static_cast<Int_t>(grTimes.size());
         TGraph* gPop = new TGraph(nPts, grTimes.data(), grPops.data());
 
-        std::string graphTitle = "Population: " + species;
+        std::string graphTitle = "Population of " + species;
         gPop->SetTitle(graphTitle.c_str());
         gPop->SetLineColor(kRed + 1);
         gPop->SetLineWidth(2);
@@ -454,7 +467,6 @@ void analyzeAct(const char* filePath,
         // Canvas
         std::string canvName = "cPop_" + species;
         TCanvas* cPop = new TCanvas(canvName.c_str(), graphTitle.c_str(), 800, 600);
-        cPop->SetGrid();
         cPop->SetLeftMargin(0.13);
         cPop->SetRightMargin(0.05);
         cPop->SetBottomMargin(0.12);
@@ -480,20 +492,24 @@ void analyzeAct(const char* filePath,
         TLine* lEnd = nullptr;
         if (tCool > 0.0) {
             lEnd = new TLine(tEnd, 0.0, tEnd, yPad);
-            lEnd->SetLineStyle(2);
+            lEnd->SetLineStyle(10);
             lEnd->SetLineColor(kGreen + 2);
             lEnd->SetLineWidth(2);
             lEnd->Draw("SAME");
         }
 
         // Legend for dashed lines
-        TLegend* leg = new TLegend(0.55, 0.75, 0.93, 0.90);
-        leg->AddEntry(gPop,  ("Population: " + species).c_str(), "l");
-        leg->AddEntry(lBeam, ("Beam end (t = " + std::to_string(tBeam).substr(0,6)
-                               + " " + timeUnit + ")").c_str(), "l");
+        TLegend* leg = new TLegend();
+        leg->AddEntry(gPop,  "Population", "l");
+        // leg->AddEntry(lBeam, ("Beam end (t = " + std::to_string(tBeam).substr(0,6)
+        //                        + " " + timeUnit + ")").c_str(), "l");
+        // if (lEnd) {
+        //     leg->AddEntry(lEnd, ("Cool end (t = " + std::to_string(tEnd).substr(0,6)
+        //                           + " " + timeUnit + ")").c_str(), "l");
+        // }
+        leg->AddEntry(lBeam, "Beam end", "l");
         if (lEnd) {
-            leg->AddEntry(lEnd, ("Cool end (t = " + std::to_string(tEnd).substr(0,6)
-                                  + " " + timeUnit + ")").c_str(), "l");
+            leg->AddEntry(lEnd, "Cool end", "l");
         }
         leg->SetBorderSize(0);
         leg->SetTextSize(0.03);
@@ -520,10 +536,9 @@ void analyzeAct(const char* filePath,
     // Close text file and ROOT file
     {
         std::ostringstream footer;
-        footer << "-----------------------------------------\n"
-               << " (population is the last recorded value\n"
-               << "  at or before t_end)\n"
-               << "=========================================\n";
+        footer << "-----------------------------------------------------------------------------\n"
+               << " (population is the last recorded value at or before each time point)\n"
+               << "=============================================================================\n";
         printBoth(footer.str());
     }
     if (outFile.is_open()) outFile.close();
