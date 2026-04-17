@@ -373,7 +373,7 @@ void analyzeAct(const char* filePath,
             << "  Cooling time: " << tCool << " " << timeUnit << "\n"
             << "  t_end       : " << tEnd  << " " << timeUnit << "\n"
             << "-----------------------------------------------------------------------------\n"
-            << std::left  << std::setw(24) << "Ion Species"
+            << std::left  << std::setw(16) << "Ion Species"
             << std::right << std::setw(20) << "Pop at t_beam/2"
             << std::right << std::setw(20) << "Pop at t_beam"
             << std::right << std::setw(20) << "Pop at t_end\n"
@@ -438,11 +438,11 @@ void analyzeAct(const char* filePath,
         // Write to text file
         {
             std::ostringstream row;
-            row << std::left  << std::setw(24) << species
+            row << std::left  << std::setw(16) << species
                 << std::right << std::setw(20) << std::fixed << std::setprecision(4)
                 << popHalfBeam
                 << std::right << std::setw(20) << popAtBeam
-                << std::right << std::setw(20) << survivingPop << "\n";
+                << std::right << std::setw(19) << survivingPop << "\n";
             printBoth(row.str());
         }
 
