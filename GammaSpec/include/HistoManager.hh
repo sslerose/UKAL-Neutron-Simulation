@@ -1,0 +1,92 @@
+//
+// ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
+// * Geant4 License and Disclaimer                                    *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the Geant4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+
+//
+/// \file HistoManager.hh
+/// \brief Definition of the HistoManager class
+//
+
+#ifndef HistoManager_h
+#define HistoManager_h 1
+
+#include "G4AnalysisManager.hh"
+#include "globals.hh"
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+class HistoManager
+{
+  public:
+    HistoManager();
+    ~HistoManager() = default;
+
+    //========================================================================//
+    // Histogram ID constants for TOF analysis
+    // These are public so EventAction can reference them
+    //========================================================================//
+    static constexpr G4int kH_NeutronEnergy = 0;  // Neutron energy from primary generator (keV)
+    static constexpr G4int kH_NeutronTheta = 1;   // Neutron angle from primary generator (deg)
+    static constexpr G4int kH_nHits = 2;          // Number of neutrons hits per event
+
+    //========================================================================//
+    // Ntuple column ID constants
+    //========================================================================//
+    static constexpr G4int kNT_CaptureFlag = 0;   // Capture occurred flag (1=capture, 0=no capture)
+    static constexpr G4int kNT_CaptureTime = 1;           // Time of flight (i.e., capture time) (ns)
+
+    static constexpr G4int kNT_IonName = 0;
+    static constexpr G4int kNT_TimeBirth = 1;
+    static constexpr G4int kNT_TimeDeath = 2;
+    static constexpr G4int kNT_Weight = 3;
+
+    // Number of species population histograms
+    static constexpr G4int nID = 20;
+  private:
+    void Book();
+    G4String fFileName = "Activation";  // Default filename
+};
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+#endif
