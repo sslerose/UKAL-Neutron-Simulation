@@ -198,12 +198,12 @@ void EventAction::EndOfEventAction(const G4Event* event)
 
   // Get sensitive detector hits collection ID (cached after first event)
   if (fDetectorHCID == -1) {
-    fDetectorHCID = G4SDManager::GetSDMpointer()->GetCollectionID(kDetectorHCName);
+    fDetectorHCID = -1;
     
     // Validate that the collection was found
     if (fDetectorHCID == -1) {
       G4ExceptionDescription msg;
-      msg << "Hits collection ID for " << kDetectorHCName << " not found. "
+      msg << "Hits collection ID for not found. "
           << "Check that DetectorSD is properly called in DetectorConstruction::ConstructSDandField()." << G4endl;
       G4Exception("EventAction::EndOfEventAction()", "NeutronDet001", RunMustBeAborted, msg);
     }

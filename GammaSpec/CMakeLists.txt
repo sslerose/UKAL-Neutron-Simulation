@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------#
 
 cmake_minimum_required(VERSION 3.16...4.1)
-project(NeutronActivation)
+project(GammaSpec)
 
 
 #------------------------------------------------------------------------#
@@ -38,8 +38,8 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 # Add the executable, and link it to the Geant4 libraries
 #------------------------------------------------------------------------#
 
-add_executable(NeutronActivation NeutronActivation.cc ${sources} ${headers})
-target_link_libraries(NeutronActivation ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
+add_executable(GammaSpec GammaSpec.cc ${sources} ${headers})
+target_link_libraries(GammaSpec ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 
 
 #------------------------------------------------------------------------#
@@ -47,14 +47,12 @@ target_link_libraries(NeutronActivation ${ROOT_LIBRARIES} ${Geant4_LIBRARIES})
 #------------------------------------------------------------------------#
 
 # Copy visualization and analysis scripts into build/
-set(NeutronActivation_VIS_ANALYSIS_SCRIPTS
+set(GammaSpec_VIS_ANALYSIS_SCRIPTS
   vis.mac
   vis_export.mac
-  vis_preview.mac
-  AnalyzeAct.C
   )
 
-foreach(_script ${NeutronActivation_VIS_ANALYSIS_SCRIPTS})
+foreach(_script ${GammaSpec_VIS_ANALYSIS_SCRIPTS})
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}
@@ -64,12 +62,10 @@ endforeach()
 
 
 # Copy test scripts from source root into build/Data_Test/
-set(NeutronActivation_RUN_SCRIPTS
-  run.mac
-  run_nAct.sh
+set(GammaSpec_RUN_SCRIPTS
   )
 
-foreach(_script ${NeutronActivation_RUN_SCRIPTS})
+foreach(_script ${GammaSpec_RUN_SCRIPTS})
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}

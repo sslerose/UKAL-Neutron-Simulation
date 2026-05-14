@@ -20,7 +20,7 @@
 # CAMERA POSITIONING
 # ============================================
 
-/vis/viewer/set/viewpointVector 4 5 -8.6
+/vis/viewer/set/viewpointVector 1.2 -0.8 0.6
 
 # ============================================
 # LIGHTING AND RENDERING
@@ -37,35 +37,14 @@
 
 # Make container volumes invisible
 /vis/geometry/set/visibility World 0 false
-/vis/geometry/set/visibility AssemblyMother 0 false
-/vis/geometry/set/visibility InnerAssembly 0 false
 
 # ============================================
-# COLOR SCHEME - Publication friendly
+# COLOR SCHEME
 # ============================================
 
-# Aluminum holder - bronze/tan
-/vis/geometry/set/colour Holder 0 0.70 0.55 0.30 1.0
-
-# Stainless steel can - dark gray
-/vis/geometry/set/colour Can 0 0.40 0.40 0.40 1.0
-/vis/geometry/set/colour CanCap 0 0.40 0.40 0.40 1.0
-
-# Rubber - yellow-orange with transparency
-/vis/geometry/set/colour Rubber 0 1.0 0.65 0.0 0.6
-
-# Teflon - white/light gray with transparency
-/vis/geometry/set/colour Teflon 0 0.95 0.95 0.95 0.7
-
-# Detector (scintillator) - cyan/light blue with transparency
-/vis/geometry/set/colour Detector 0 0.4 0.8 1.0 0.7
-
-# PMT - blue with transparency
-/vis/geometry/set/colour PMT 0 0.2 0.4 0.8 0.6
-
-# Gold Foils - gold with transparency
-/vis/geometry/set/colour GoldFrontFoil 0 1 0.8 0 0.5
-/vis/geometry/set/colour GoldBackFoil 0 1 0.8 0 0.5
+# HPGe Volumes
+/vis/geometry/set/colour HPGE_LV_1 0 0.40 0.40 0.40 1.0
+/vis/geometry/set/colour HPGE_LV_2 0 0.40 0.40 0.40 1.0
 
 # ============================================
 # VIEWPORT AND ZOOM
@@ -75,33 +54,19 @@
 /vis/viewer/set/background 1 1 1
 
 # ============================================
-# PARTICLE SETTINGS - Uncomment for particle rays
-# ============================================
-
-# To draw particle trajectories (when you run events)
-#/vis/scene/add/trajectories smooth
-#/vis/modeling/trajectories/select drawByParticleID-0
-
-# To superimpose all of the events from a given run:
-#/vis/scene/endOfEventAction accumulate
-
-# Run beam
-#/run/beamOn 10
-
-# ============================================
 # EXPORT SETTINGS AND PRODUCTION
 # ============================================
 
 # Option 1: High-quality PNG with zbuffer (recommended for complex geometry)
 #/vis/tsg/offscreen/set/format zb_png
-#/vis/tsg/offscreen/set/file activation_setup_2.png
+#/vis/tsg/offscreen/set/file hpge_setup_2.png
 #/vis/viewer/rebuild
 
 # Option 2: PDF via gl2ps (vector format, but no transparency)
 # Uncomment if you prefer PDF output:
 #/vis/tsg/offscreen/set/transparency false
 #/vis/tsg/offscreen/set/format gl2ps_pdf
-#/vis/tsg/offscreen/set/file activation_setup.pdf
+#/vis/tsg/offscreen/set/file hpge_setup.pdf
 #/vis/viewer/rebuild
 #/vis/tsg/offscreen/set/transparency true
 
@@ -109,7 +74,7 @@
 # Uncomment if you prefer EPS output:
 #/vis/tsg/offscreen/set/transparency false
 #/vis/tsg/offscreen/set/format gl2ps_eps
-#/vis/tsg/offscreen/set/file activation_setup.eps
+#/vis/tsg/offscreen/set/file hpge_setup.eps
 #/vis/viewer/rebuild
 #/vis/tsg/offscreen/set/transparency true
 
@@ -117,7 +82,7 @@
 # Uncomment for even higher resolution:
 /vis/tsg/offscreen/set/size 2400 1800
 /vis/tsg/offscreen/set/format zb_png
-/vis/tsg/offscreen/set/file activation_hires.png
+/vis/tsg/offscreen/set/file hpge_setup_hires.png
 /vis/viewer/rebuild
 /vis/tsg/offscreen/set/size 0 0  # Return to default size
 

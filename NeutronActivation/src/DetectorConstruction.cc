@@ -753,7 +753,7 @@ void DetectorConstruction::SetDetectorAngle(G4double value)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
-// Set detector assembly angle about y-axis
+// Set world material
 //------------------------------------------------------------------------//
 void DetectorConstruction::SetWorldMaterial(G4String value)
 {

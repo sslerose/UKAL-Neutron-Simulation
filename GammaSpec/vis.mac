@@ -36,22 +36,13 @@
 # Draw hits at end of event
 /vis/scene/add/hits
 
-# Make the "World" and "AssemblyMother" box invisible
+# Make the World box invisible
 /vis/geometry/set/visibility World 0 false
-/vis/geometry/set/visibility AssemblyMother 0 false
-/vis/geometry/set/visibility InnerAssembly 0 false
 
 # Add color to volumes (depth, r, g, b, alpha)
 /vis/viewer/set/background white
-/vis/geometry/set/colour Holder 0 0.45 0.25 0 0.25
-/vis/geometry/set/colour Can 0 0 0 1 0.25
-/vis/geometry/set/colour CanCap 0 0 0 1 0.25
-/vis/geometry/set/colour Rubber 0 1 1 0 0.25
-/vis/geometry/set/colour Teflon 0 1 0 0 0.25
-/vis/geometry/set/colour Detector 0 0 1 1 0.5
-/vis/geometry/set/colour PMT 0 0 1 0 0.25
-/vis/geometry/set/colour GoldFrontFoil 0 1 0.8 0 0.5
-/vis/geometry/set/colour GoldBackFoil 0 1 0.8 0 0.5
+/vis/geometry/set/colour HPGE_LV_1 0 0.40 0.40 0.40 1.0
+/vis/geometry/set/colour HPGE_LV_2 0 0.40 0.40 0.40 1.0
 
 # To superimpose all of the events from a given run:
 /vis/scene/endOfEventAction accumulate

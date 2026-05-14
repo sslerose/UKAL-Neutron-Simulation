@@ -245,12 +245,12 @@ void Run::EndOfRun()
   G4int dfprec = G4cout.precision(prec);
 
   // run condition
-  G4Material* material = fDetector->GetAbsorberMaterial();
+  // G4Material* material = fDetector->GetAbsorberMaterial();
 
   G4String Particle = fParticle->GetParticleName();
-  G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
-         << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
-         << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
+  // G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
+        //  << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
+        //  << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
 
   if (numberOfEvent == 0) {
     G4cout.precision(dfprec);
