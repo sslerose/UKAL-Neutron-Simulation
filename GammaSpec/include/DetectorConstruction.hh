@@ -105,7 +105,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double fWorldSize = 0.;
 
     // Detector volume
-    G4double fHPGEDistance = 0.;
+    G4double fHPGEDistance = 5.0 * cm;
     G4double fHPGEDisplacement = 0.;
 
     // Materials

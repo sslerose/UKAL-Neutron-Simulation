@@ -77,8 +77,7 @@ DetectorConstruction::DetectorConstruction()
   // Math for detector assembly placement
   //========================================================================//
 
-  // Detector placement
-  fHPGEDistance = 5.0 * cm;  // Dist. from origin to HPGe face
+  // Detector placement (distance from origin to detector face)
   fHPGEDisplacement = fHPGEDistance + kHPGELength / 2;
   
   // Initialize materials and detector messenger

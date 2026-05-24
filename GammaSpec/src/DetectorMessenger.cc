@@ -65,13 +65,13 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Create UI directory for all simulation commands
   //========================================================================//
-  fGammaSpecDir = new G4UIdirectory("/neutronAct/");
-  fGammaSpecDir->SetGuidance("Commands specific to neutron activation simulation");
+  fGammaSpecDir = new G4UIdirectory("/gammaSpec/");
+  fGammaSpecDir->SetGuidance("Commands specific to gamma spectroscopy simulation");
 
   //========================================================================//
   // World material
   //========================================================================//
-  fWorldMaterialCmd = new G4UIcmdWithAString("/neutronAct/setWorldMaterial", this);
+  fWorldMaterialCmd = new G4UIcmdWithAString("/gammaSpec/setWorldMaterial", this);
   fWorldMaterialCmd->SetGuidance("Set material of the world volume");
   fWorldMaterialCmd->SetGuidance("  Available Materials:");
   fWorldMaterialCmd->SetGuidance("    air    - G4_AIR");
@@ -82,7 +82,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Print current parameters
   //========================================================================//
-  fPrintCmd = new G4UIcmdWithoutParameter("/neutronAct/printParameters", this);
+  fPrintCmd = new G4UIcmdWithoutParameter("/gammaSpec/printParameters", this);
   fPrintCmd->SetGuidance("Print current system configuration");
   fPrintCmd->AvailableForStates(G4State_PreInit, G4State_Idle, G4State_GeomClosed);
 
@@ -90,13 +90,13 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   // Create UI directory for detector commands
   //========================================================================//
   G4bool broadcast = false;
-  fDetDir = new G4UIdirectory("/neutronAct/det/", broadcast);
+  fDetDir = new G4UIdirectory("/gammaSpec/det/", broadcast);
   fDetDir->SetGuidance("Detector construction commands");
 
   //========================================================================//
   // Detector distance from origin
   //========================================================================//
-  fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/det/setDetectorDistance", this);
+  fDetectorDistanceCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/det/setDetectorDistance", this);
   fDetectorDistanceCmd->SetGuidance("Set distance from origin (neutron source) to detector face");
   fDetectorDistanceCmd->SetParameterName("DetectorDistance", false);
   fDetectorDistanceCmd->SetRange("DetectorDistance > 0.");

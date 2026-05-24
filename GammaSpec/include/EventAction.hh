@@ -81,18 +81,19 @@ class EventAction : public G4UserEventAction
 
     void BeginOfEventAction(const G4Event*) override;
     void EndOfEventAction(const G4Event*) override;
+    void AddEdep(G4int iVol, G4double Edep, G4double time, G4double weight);
 
   private:
     // Helper methods
-    DetectorHitsCollection* GetHitsCollection(G4int, const G4Event*) const;
-    void AnalyzeHits(DetectorHitsCollection*);
     void PrintEventStatistics(G4double, G4int) const;
 
     // Data members
-    G4int fDetectorHCID = -1;  // Hits collection ID
-    DetectorConstruction* fDetector = nullptr; // Pointer to detector construction
-    PrimaryGeneratorAction* fPrimaryGenerator = nullptr; // Pointer to primary generator
-    G4double fDetDist = 0.; // Distance from target to detector
+    DetectorConstruction* fDetector = nullptr;            // Pointer to detector construction
+    PrimaryGeneratorAction* fPrimaryGenerator = nullptr;  // Pointer to primary generator
+    G4double fDetDist = 0.;                               // Distance from target to detector
+    G4double fEdep1 = 0., fEdep2 = 0.;                    // Energy deposition in front and back HPGe detectors
+    G4double fWeight1 = 0., fWeight2 = 0.;                // Weighted energy deposition for front and back HPGe detectors
+    G4double fTime0 = -1 * s;                             // Time of first energy deposition
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
