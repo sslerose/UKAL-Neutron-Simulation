@@ -29,30 +29,33 @@
 
 #include "PhysicsList.hh"
 
-#include "G4BaryonConstructor.hh"
-#include "G4BosonConstructor.hh"
-#include "G4IonConstructor.hh"
-#include "G4LeptonConstructor.hh"
-#include "G4MesonConstructor.hh"
-#include "G4ShortLivedConstructor.hh"
+#include "G4EmLivermorePhysics.hh"
+#include "G4EmParameters.hh"
 
-#include "ElectromagneticPhysics.hh"
-#include "GammaNuclearPhysics.hh"
-#include "HadronElasticPhysicsHP.hh"
-#include "RadioactiveDecayPhysics.hh"
+#include "G4DeexPrecoParameters.hh"
+#include "G4NuclearLevelData.hh"
+#include "G4NuclideTable.hh"
+
+#include "G4DecayPhysics.hh"
+
+#include "G4GenericIon.hh"
+#include "G4PhysicsListHelper.hh"
+#include "G4Radioactivation.hh"
 
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
-#include "G4EmStandardPhysics.hh"
-#include "G4EmExtraPhysics.hh"
-#include "G4DecayPhysics.hh"
-#include "G4HadronElasticPhysics.hh"
-#include "G4HadronPhysicsFTFP_BERT_HP.hh"
-#include "G4IonElasticPhysics.hh"
-#include "G4StoppingPhysics.hh"
-#include "G4NuclideTable.hh"
-#include "G4RadioactiveDecayPhysics.hh"
-#include "G4IonPhysicsXS.hh"
+
+// #include "G4SystemOfUnits.hh"
+// #include "G4EmStandardPhysics.hh"
+// #include "G4EmExtraPhysics.hh"
+// #include "G4DecayPhysics.hh"
+// #include "G4HadronElasticPhysics.hh"
+// #include "G4HadronPhysicsFTFP_BERT_HP.hh"
+// #include "G4IonElasticPhysics.hh"
+// #include "G4StoppingPhysics.hh"
+// #include "G4NuclideTable.hh"
+// #include "G4RadioactiveDecayPhysics.hh"
+// #include "G4IonPhysicsXS.hh"
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -62,80 +65,54 @@ PhysicsList::PhysicsList()
   G4int verb = 1;
   SetVerboseLevel(verb);
 
-  // Add new units
-  new G4UnitDefinition("mm2/g", "mm2/g", "Surface/Mass", mm2 / g);
-  new G4UnitDefinition("um2/mg", "um2/mg", "Surface/Mass", um * um / mg);
+  //=====================================================================//
+  // Nuclide table
+  //=====================================================================//
 
-  const G4double meanLife = 1 * nanosecond, halfLife = meanLife * std::log(2);
-  G4NuclideTable::GetInstance()->SetThresholdOfHalfLife(halfLife);
+  // Set low half-life threshold to capture short-lived states
+  G4NuclideTable::GetInstance()->SetThresholdOfHalfLife(0.1 * picosecond);
+  // Set minimum energy separation between excited states
+  G4NuclideTable::GetInstance()->SetLevelTolerance(1.0 * eV);
 
-  //========================================================================//
-  // Hadron elastic physics
-  //========================================================================//
-  RegisterPhysics(new HadronElasticPhysicsHP(verb));
 
-  //========================================================================//
-  // Hadron inelastic physics
-  //========================================================================//
-  RegisterPhysics(new G4HadronPhysicsFTFP_BERT_HP(verb));
+  //=====================================================================//
+  // Nuclear de-excitation parameters
+  //=====================================================================//
 
-  //========================================================================//
-  // Ion elastic physics
-  //========================================================================//
-  RegisterPhysics(new G4IonElasticPhysics(verb));
+  G4DeexPrecoParameters* deex = G4NuclearLevelData::GetInstance()->GetParameters();
+  deex->SetStoreICLevelData(true);  // Enable internation conversion model
+  deex->SetIsomerProduction(true);  // Enable isomer production
 
-  //========================================================================//
-  // Ion inelastic physics
-  //========================================================================//
-  RegisterPhysics(new G4IonPhysicsXS(verb));
-
-  //========================================================================//
-  // Stopping physics
-  //========================================================================//
-  RegisterPhysics(new G4StoppingPhysics(verb));
-
-  //========================================================================//
-  // Gamma-nuclear physics
-  //========================================================================//
-  RegisterPhysics(new GammaNuclearPhysics("gamma"));
-
-  //========================================================================//
-  // Electromagnetic physics
-  //========================================================================//
-  RegisterPhysics(new ElectromagneticPhysics());
+  // Sync deexcitation with nuclide table threshold (takes corresponding mean lifetime of nuclide table half life threshold)
+  deex->SetMaxLifeTime(G4NuclideTable::GetInstance()->GetThresholdOfHalfLife() / std::log(2.0));
   
-  //========================================================================//
-  // Decay physics - for unstable particles
-  //========================================================================//
-  RegisterPhysics(new G4DecayPhysics(verb));
-  
-  //========================================================================//
-  // Radioactive decay physics
-  //========================================================================//
-  RegisterPhysics(new RadioactiveDecayPhysics());
+
+  //=====================================================================//
+  // Electromagnetic physics options
+  //=====================================================================//
+  G4EmParameters* emParams = G4EmParameters::Instance();
+  emParams->SetFluo(true);  // Enable fluorescence photon emission
+  emParams->SetAugerCascade(true);  // Enable Auger electron emission
+  emParams->SetDeexcitationIgnoreCut(true); // Allow de-excitation processes to ignore production cuts
+  emParams->AddPhysics("World", "G4Radioactivation"); // Enable radioactive decay processes for all particles
+
+
+  //=====================================================================//
+  // Register physics constructors
+  //=====================================================================//
+  RegisterPhysics(new G4EmLivermorePhysics());
+  RegisterPhysics(new G4DecayPhysics());
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void PhysicsList::ConstructParticle()
+void PhysicsList::ConstructProcess()
 {
-  G4BosonConstructor pBosonConstructor;
-  pBosonConstructor.ConstructParticle();
+  // Build processes for all registered constructors (EM and decay)
+  G4VModularPhysicsList::ConstructProcess();
 
-  G4LeptonConstructor pLeptonConstructor;
-  pLeptonConstructor.ConstructParticle();
-
-  G4MesonConstructor pMesonConstructor;
-  pMesonConstructor.ConstructParticle();
-
-  G4BaryonConstructor pBaryonConstructor;
-  pBaryonConstructor.ConstructParticle();
-
-  G4IonConstructor pIonConstructor;
-  pIonConstructor.ConstructParticle();
-
-  G4ShortLivedConstructor pShortLivedConstructor;
-  pShortLivedConstructor.ConstructParticle();
+  // Register radioactive decay processes for all particles
+  G4PhysicsListHelper::GetPhysicsListHelper()->RegisterProcess(new G4Radioactivation(), G4GenericIon::GenericIon());
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -146,14 +123,13 @@ void PhysicsList::SetCuts()
   // These cuts define the minimum range for producing secondaries
   //========================================================================//
 
-  // Set production cuts to zero for protons to ensure accurate tracking
-  // for neutron generation from Li(p,n) reactions
+  // Zero cut for protons to for recoil nuclei tracking
   SetCutValue(0 * mm, "proton");
   
-  // Default cuts for other particles
-  SetCutValue(10 * km, "e-");
-  SetCutValue(10 * km, "e+");
-  SetCutValue(10 * km, "gamma");
+  // Low cuts for other particles
+  SetCutValue(0.01 * mm, "e-");
+  SetCutValue(0.01 * mm, "e+");
+  SetCutValue(0.01 * mm, "gamma");
   
   if (verboseLevel > 0) {
     DumpCutValuesTable();
