@@ -49,7 +49,7 @@
 
 #include "DetectorHit.hh"
 #include "G4UnitsTable.hh"
-#include "G4SystemOfUnits.hh"
+// #include "G4SystemOfUnits.hh"
 #include "G4VVisManager.hh"
 #include "G4Circle.hh"
 #include "G4Colour.hh"
@@ -70,12 +70,7 @@ G4ThreadLocal G4Allocator<DetectorHit>* DetectorHitAllocator;
 void DetectorHit::Draw()
 {
   //========================================================================//
-  // Color scheme:
-  //   - Blue:  General hits (neutron scattering, energy deposition, etc.)
-  //   - Red:   6Li(n,t)4He reaction events
-  //
-  // Allows visual identification of captures vs scattering events
-  // Also provides visual feedback on detector response during simulation
+  // Establish visual feedback on detector response during simulation
   //========================================================================//
   
   // Get pointer to visualization manager
@@ -87,19 +82,8 @@ void DetectorHit::Draw()
   circle.SetScreenSize(8.);        // Size in pixels
   circle.SetFillStyle(G4Circle::filled);
   
-  // Set color based on process type
-  G4Colour colour;
-  if (fProcessName == "Li6ntalpha") {
-    // Red for neutron capture events
-    colour = G4Colour::Red();
-  }
-  else {
-    // Blue for all other interactions (scattering, etc.)
-    colour = G4Colour::Blue();
-  }
-  
   // Set visualization attributes and draw
-  G4VisAttributes attribs(colour);
+  G4VisAttributes attribs(G4Colour::Blue());
   circle.SetVisAttributes(attribs);
   
   pVVisManager->Draw(circle);
@@ -107,9 +91,7 @@ void DetectorHit::Draw()
 
 void DetectorHit::Print()
 {
-  // Print hit information in human-readable format
-  // Useful for debugging and verification
-  
+  // Print hit information  
   G4cout 
     << "  TrackID: " << std::setw(5) << fTrackID
     << "  Particle: " << std::setw(10) << fParticleType

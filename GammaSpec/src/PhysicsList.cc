@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
@@ -23,6 +41,8 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
+
+//
 /// \file PhysicsList.cc
 /// \brief Implementation of the PhysicsList class
 //
@@ -44,18 +64,6 @@
 
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
-
-// #include "G4SystemOfUnits.hh"
-// #include "G4EmStandardPhysics.hh"
-// #include "G4EmExtraPhysics.hh"
-// #include "G4DecayPhysics.hh"
-// #include "G4HadronElasticPhysics.hh"
-// #include "G4HadronPhysicsFTFP_BERT_HP.hh"
-// #include "G4IonElasticPhysics.hh"
-// #include "G4StoppingPhysics.hh"
-// #include "G4NuclideTable.hh"
-// #include "G4RadioactiveDecayPhysics.hh"
-// #include "G4IonPhysicsXS.hh"
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
