@@ -23,40 +23,61 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-/// \file SteppingAction.hh
-/// \brief Definition of the SteppingAction class
-//
-//
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+/// \file BiasedRDPhysics.cc
+/// \brief Implementation of the BiasedRDPhysics class
 
-#ifndef SteppingAction_h
-#define SteppingAction_h 1
+#include "BiasedRDPhysics.hh"
 
-#include "G4UserSteppingAction.hh"
+#include "G4DeexPrecoParameters.hh"
+#include "G4EmParameters.hh"
+#include "G4GenericIon.hh"
+#include "G4LossTableManager.hh"
+#include "G4NuclearLevelData.hh"
+#include "G4NuclideTable.hh"
+#include "G4PhysicsListHelper.hh"
+#include "G4Radioactivation.hh"
+#include "G4UAtomicDeexcitation.hh"
+#include "G4VAtomDeexcitation.hh"
 #include "globals.hh"
 
-class G4LogicalVolume;
-class DetectorConstruction;
-class EventAction;
+// factory
+#include "G4PhysicsConstructorFactory.hh"
+
+G4_DECLARE_PHYSCONSTR_FACTORY(BiasedRDPhysics);
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-class SteppingAction : public G4UserSteppingAction
+BiasedRDPhysics::BiasedRDPhysics(G4int) : G4VPhysicsConstructor("G4Radioactivation")
 {
-  public:
-    SteppingAction(DetectorConstruction*, EventAction*);
-    ~SteppingAction() override = default;
+  G4EmParameters::Instance()->AddPhysics("World", "G4Radioactivation");
+  G4DeexPrecoParameters* deex = G4NuclearLevelData::GetInstance()->GetParameters();
+  deex->SetStoreICLevelData(true);
+  deex->SetIsomerProduction(true);  // Enable isomer production
 
-    void UserSteppingAction(const G4Step*) override;
-
-  private:
-    DetectorConstruction* fDetector = nullptr;
-    EventAction* fEventAction = nullptr;
-
-    G4LogicalVolume* fHPGELV[2] = {nullptr, nullptr};
-};
+  deex->SetMaxLifeTime(G4NuclideTable::GetInstance()->GetThresholdOfHalfLife() / std::log(2.));
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-#endif
+void BiasedRDPhysics::ConstructParticle()
+{
+  G4GenericIon::GenericIon();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void BiasedRDPhysics::ConstructProcess()
+{
+  G4LossTableManager* man = G4LossTableManager::Instance();
+  G4VAtomDeexcitation* ad = man->AtomDeexcitation();
+  if (!ad) {
+    G4EmParameters::Instance()->SetAugerCascade(true);
+    ad = new G4UAtomicDeexcitation();
+    man->SetAtomDeexcitation(ad);
+    ad->InitialiseAtomicDeexcitation();
+  }
+
+  G4PhysicsListHelper::GetPhysicsListHelper()->RegisterProcess(new G4Radioactivation(), G4GenericIon::GenericIon());
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -49,8 +49,6 @@
 
 #include "ActionInitialization.hh"
 #include "PrimaryGeneratorAction.hh"
-#include "PrimaryGeneratorMessenger.hh"
-#include "PrimaryGeneratorConfig.hh"
 #include "EventAction.hh"
 #include "RunAction.hh"
 #include "StackingAction.hh"
@@ -59,21 +57,7 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-ActionInitialization::ActionInitialization(DetectorConstruction* detector) 
-  : fDetector(detector), fGeneratorMessenger(nullptr)
-{
-  // Construct PrimaryGeneratorMessenger
-  // Permits config commands before run initialization and G4cout outputs to master thread
-  fGeneratorMessenger = new PrimaryGeneratorMessenger();
-  
-  // Initialize the config singleton with default values
-  PrimaryGeneratorConfig::Instance();
-}
-
-ActionInitialization::~ActionInitialization()
-{
-  delete fGeneratorMessenger;
-} 
+ActionInitialization::ActionInitialization(DetectorConstruction* detector) : fDetector(detector) {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -84,10 +68,6 @@ void ActionInitialization::BuildForMaster() const
 {
   RunAction* runAction = new RunAction(fDetector, nullptr);
   SetUserAction(runAction);
-  
-  // Print initial generator configuration from master thread
-  G4cout << "\n*** Primary Generator initialized on master thread ***" << G4endl;
-  PrimaryGeneratorConfig::Instance()->PrintParameters();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

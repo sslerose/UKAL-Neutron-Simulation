@@ -62,29 +62,32 @@ class HistoManager
     ~HistoManager() = default;
 
     //========================================================================//
-    // Histogram ID constants for TOF analysis
-    // These are public so EventAction can reference them
-    //========================================================================//
-    static constexpr G4int kH_NeutronEnergy = 0;  // Neutron energy from primary generator (keV)
-    static constexpr G4int kH_NeutronTheta = 1;   // Neutron angle from primary generator (deg)
-    static constexpr G4int kH_nHits = 2;          // Number of neutrons hits per event
-
-    //========================================================================//
     // Ntuple column ID constants
     //========================================================================//
-    static constexpr G4int kNT_CaptureFlag = 0;   // Capture occurred flag (1=capture, 0=no capture)
-    static constexpr G4int kNT_CaptureTime = 1;           // Time of flight (i.e., capture time) (ns)
 
-    static constexpr G4int kNT_IonName = 0;
-    static constexpr G4int kNT_TimeBirth = 1;
-    static constexpr G4int kNT_TimeDeath = 2;
-    static constexpr G4int kNT_Weight = 3;
+    // Column IDs for energy deposition ntuple
+    static constexpr G4int kNT_EnergyDep = 0;   // Energy deposited in the detector (MeV)
+    static constexpr G4int kNT_EDepWeight = 1;   // Weight associated with the energy deposition (for weighted events)
+    static constexpr G4int kNT_EDepTime = 2;        // Global time of the step (us)
 
-    // Number of species population histograms
-    static constexpr G4int nID = 20;
+    // Column IDs for emitted particle ntuple
+    static constexpr G4int kNT_EmissionPID = 0;
+    static constexpr G4int kNT_EmEnergy = 1;
+    static constexpr G4int kNT_EmWeight = 2;
+    static constexpr G4int kNT_EmTime = 3;
+
+    // Column IDs for decay product ntuple
+    static constexpr G4int kNT_DecayPID = 0;
+    static constexpr G4int kNT_DecayZ = 1;
+    static constexpr G4int kNT_DecayA = 2;
+    static constexpr G4int kNT_DecayEnergy = 3;
+    static constexpr G4int kNT_DecayWeight = 4;
+    static constexpr G4int kNT_DecayTimeBirth = 5;
+    static constexpr G4int kNT_DecayTimeDeath = 6;
+
   private:
     void Book();
-    G4String fFileName = "Activation";  // Default filename
+    G4String fFileName = "GammaSpec";  // Default filename
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

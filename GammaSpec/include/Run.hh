@@ -59,10 +59,9 @@ class Run : public G4Run
     static void ResetProgressTracking();
     static void RecordEvent(G4int eventID);
 
-    G4int GetIonId(G4String);
-
     void Merge(const G4Run*) override;
     void EndOfRun();
+    void WriteActivity(G4int);
 
   private:
     struct ParticleData
@@ -82,9 +81,6 @@ class Run : public G4Run
     // utility function
     void Merge(std::map<G4String, ParticleData>& destinationMap,
                const std::map<G4String, ParticleData>& sourceMap) const;
-
-    static std::map<G4String, G4int> fgIonMap;
-    static G4int fgIonId;
 
     DetectorConstruction* fDetector = nullptr;
     G4ParticleDefinition* fParticle = nullptr;

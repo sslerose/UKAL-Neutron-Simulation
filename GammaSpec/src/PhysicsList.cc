@@ -49,6 +49,8 @@
 
 #include "PhysicsList.hh"
 
+#include "BiasedRDPhysics.hh"
+
 #include "G4EmLivermorePhysics.hh"
 #include "G4EmParameters.hh"
 
@@ -87,12 +89,17 @@ PhysicsList::PhysicsList()
   // Nuclear de-excitation parameters
   //=====================================================================//
 
-  G4DeexPrecoParameters* deex = G4NuclearLevelData::GetInstance()->GetParameters();
-  deex->SetStoreICLevelData(true);  // Enable internation conversion model
-  deex->SetIsomerProduction(true);  // Enable isomer production
+  // G4DeexPrecoParameters* deex = G4NuclearLevelData::GetInstance()->GetParameters();
+  // deex->SetStoreICLevelData(true);  // Enable internation conversion model
+  // deex->SetIsomerProduction(true);  // Enable isomer production
 
-  // Sync deexcitation with nuclide table threshold (takes corresponding mean lifetime of nuclide table half life threshold)
-  deex->SetMaxLifeTime(G4NuclideTable::GetInstance()->GetThresholdOfHalfLife() / std::log(2.0));
+  // // Sync deexcitation with nuclide table threshold (takes corresponding mean lifetime of nuclide table half life threshold)
+  // deex->SetMaxLifeTime(G4NuclideTable::GetInstance()->GetThresholdOfHalfLife() / std::log(2.0));
+  
+  //=====================================================================//
+  // Register physics constructors
+  //=====================================================================//
+  RegisterPhysics(new G4EmLivermorePhysics());
   
 
   //=====================================================================//
@@ -102,26 +109,31 @@ PhysicsList::PhysicsList()
   emParams->SetFluo(true);  // Enable fluorescence photon emission
   emParams->SetAugerCascade(true);  // Enable Auger electron emission
   emParams->SetDeexcitationIgnoreCut(true); // Allow de-excitation processes to ignore production cuts
-  emParams->AddPhysics("World", "G4Radioactivation"); // Enable radioactive decay processes for all particles
+  // emParams->AddPhysics("World", "G4Radioactivation"); // Enable radioactive decay processes for all particles
+
+  RegisterPhysics(new G4DecayPhysics());
+
+  RegisterPhysics(new BiasedRDPhysics());
 
 
   //=====================================================================//
   // Register physics constructors
   //=====================================================================//
-  RegisterPhysics(new G4EmLivermorePhysics());
-  RegisterPhysics(new G4DecayPhysics());
+  // RegisterPhysics(new G4EmLivermorePhysics());
+  // RegisterPhysics(new G4DecayPhysics());
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void PhysicsList::ConstructProcess()
-{
-  // Build processes for all registered constructors (EM and decay)
-  G4VModularPhysicsList::ConstructProcess();
+// void PhysicsList::ConstructProcess()
+// {
+//   // Build processes for all registered constructors (EM and decay)
+//   G4VModularPhysicsList::ConstructProcess();
 
-  // Register radioactive decay processes for all particles
-  G4PhysicsListHelper::GetPhysicsListHelper()->RegisterProcess(new G4Radioactivation(), G4GenericIon::GenericIon());
-}
+//   // Register radioactive decay processes for all particles
+//   G4PhysicsListHelper::GetPhysicsListHelper()->RegisterProcess(new G4Radioactivation(), G4GenericIon::GenericIon());
+// }
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void PhysicsList::SetCuts()

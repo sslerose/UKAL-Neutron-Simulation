@@ -51,7 +51,6 @@
 #include "DetectorConstruction.hh"
 #include "HistoManager.hh"
 #include "PrimaryGeneratorAction.hh"
-#include "PrimaryGeneratorConfig.hh"
 #include "Run.hh"
 
 #include "G4Run.hh"
@@ -113,10 +112,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
   //========================================================================//
 
   auto analysisManager = G4AnalysisManager::Instance();
-  
-  if (analysisManager->IsActive()) {
-    analysisManager->OpenFile();
-  }
+  analysisManager->OpenFile();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -131,45 +127,35 @@ void RunAction::EndOfRunAction(const G4Run*)
 
   // Print detector analysis statistics
   auto analysisManager = G4AnalysisManager::Instance();
-  if (analysisManager->IsActive()) {
-
+  if (analysisManager->IsOpenFile()) {
     if (isMaster) {
-      PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-
       fDetector->PrintParameters();
 
-      config->PrintParameters();
-      
       G4cout << G4endl;
       G4cout << "============================================================" << G4endl;
-      G4cout << "                Generated Neutron Statistics                " << G4endl;
+      G4cout << "                       End of Run Action                    " << G4endl;
       G4cout << "============================================================" << G4endl;
-      
-      // Source statistics
-      G4cout << "Neutron Source:" << G4endl;
-      G4cout << "  Mode: " 
-             << (PrimaryGeneratorConfig::Instance()->GetUseSimLiT() ? "SimLiT" : "Particle Gun") 
-             << G4endl;
-      G4cout << "  Total neutrons generated: " << analysisManager->GetH1(0)->entries() << G4endl;
-      if (analysisManager->GetH1(0)->entries() > 0) {
-        G4cout << "  Energy: mean = " << analysisManager->GetH1(0)->mean()
-              << " keV, RMS = " << analysisManager->GetH1(0)->rms() << " keV" << G4endl;
-      }
-      if (analysisManager->GetH1(1)->entries() > 0) {
-        G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
-              << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
-      }
+
+    //   // Source statistics
+    //   G4cout << "Neutron Source:" << G4endl;
+    //   G4cout << "  Mode: "
+    //          << (PrimaryGeneratorConfig::Instance()->GetUseSimLiT() ? "SimLiT" : "Particle Gun")
+    //          << G4endl;
+    //   G4cout << "  Total neutrons generated: " << analysisManager->GetH1(0)->entries() << G4endl;
+    //   if (analysisManager->GetH1(0)->entries() > 0) {
+    //     G4cout << "  Energy: mean = " << analysisManager->GetH1(0)->mean()
+    //           << " keV, RMS = " << analysisManager->GetH1(0)->rms() << " keV" << G4endl;
+    //   }
+    //   if (analysisManager->GetH1(1)->entries() > 0) {
+    //     G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
+    //           << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
+    //   }
     }
-    
+
 
     // Save histograms and ntuple
     analysisManager->Write();
     analysisManager->CloseFile(false);
-
-    // Clear the stored filename so next run can generate a new one
-    if (isMaster) {
-      PrimaryGeneratorConfig::Instance()->ClearOutputFileName();
-    }
   }
 
   // Reset progress tracking and show random number engine status

@@ -23,38 +23,30 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
-/// \file SteppingAction.hh
-/// \brief Definition of the SteppingAction class
-//
-//
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+/// \file BiasedRDPhysics.hh
+/// \brief Definition of the BiasedRDPhysics class
 
-#ifndef SteppingAction_h
-#define SteppingAction_h 1
+#ifndef BiasedRDPhysics_h
+#define BiasedRDPhysics_h 1
 
-#include "G4UserSteppingAction.hh"
-#include "globals.hh"
-
-class G4LogicalVolume;
-class DetectorConstruction;
-class EventAction;
+#include "G4VPhysicsConstructor.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-class SteppingAction : public G4UserSteppingAction
+class BiasedRDPhysics : public G4VPhysicsConstructor
 {
   public:
-    SteppingAction(DetectorConstruction*, EventAction*);
-    ~SteppingAction() override = default;
+    BiasedRDPhysics(G4int verbose = 1);
 
-    void UserSteppingAction(const G4Step*) override;
+    ~BiasedRDPhysics() override = default;
 
-  private:
-    DetectorConstruction* fDetector = nullptr;
-    EventAction* fEventAction = nullptr;
+    // This is a dummy method for physics
+    void ConstructParticle() override;
 
-    G4LogicalVolume* fHPGELV[2] = {nullptr, nullptr};
+    // This method will be invoked in the Construct() method.
+    // each physics process will be instantiated and
+    // registered to the process manager of each particle type
+    void ConstructProcess() override;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

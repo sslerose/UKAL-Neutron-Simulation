@@ -43,7 +43,7 @@ class PhysicsList : public G4VModularPhysicsList
     ~PhysicsList() override = default;
 
   public:
-    void ConstructProcess() override;
+    // void ConstructProcess() override;
     void SetCuts() override;
 };
 

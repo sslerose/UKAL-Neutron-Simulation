@@ -43,6 +43,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4Track.hh"
 #include "G4UnitsTable.hh"
+#include "G4HadronicProcessType.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -52,52 +53,66 @@ TrackingAction::TrackingAction(EventAction* event) : fEventAction(event) {}
 
 void TrackingAction::PreUserTrackingAction(const G4Track* track)
 {
+  // Get the current run and analysis manager
   Run* run = static_cast<Run*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
 
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+
+  // Get track information
   G4ParticleDefinition* particle = track->GetDefinition();
   G4String name = particle->GetParticleName();
+  G4double charge = particle->GetPDGCharge();
+  G4double energy = track->GetKineticEnergy();
   G4double meanLife = particle->GetPDGLifeTime();
-  G4double ekin = track->GetKineticEnergy();
-  fTimeBirth = track->GetGlobalTime();
+  G4double time   = track->GetGlobalTime();   // birth time
+  G4double weight = track->GetWeight();
+
+  // Record emission spectrum data for radioactive-decay products with charge < 3
+  const G4VProcess* creator = track->GetCreatorProcess(); // nullptr for primaries
+  if (creator && creator->GetProcessSubType() == fRadioactiveDecay && charge < 3.) {
+    analysisManager->FillNtupleIColumn(1, HistoManager::kNT_EmissionPID, particle->GetPDGEncoding());
+    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmEnergy, energy);
+    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmWeight, weight);
+    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmTime, time / microsecond);
+    analysisManager->AddNtupleRow(1);
+  }
+
+  // Get decay-product inventory for unstable ions born in "AbsorberAssembly", excluding primaries
+  // Data written in Post action
+  G4bool unstableIon = (charge > 2.) && !particle->GetPDGStable();
+  const G4VPhysicalVolume* pv = track->GetVolume();
+  if (unstableIon && track->GetTrackID() != 1 && pv && pv->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
+    fRecordTrack = true;
+    fTrackPID = particle->GetPDGEncoding();
+    fTrackZ = particle->GetAtomicNumber();
+    fTrackA = particle->GetAtomicMass();
+    fTrackEnergy = energy;
+    fTrackWeight = weight;
+    fTimeBirth = time;
+  }
 
   // count secondary particles (with meanLife > 0)
-  if ((track->GetTrackID() > 1) && !(particle->GetPDGStable())) run->ParticleCount(name, ekin, meanLife);
+  if ((track->GetTrackID() > 1) && !(particle->GetPDGStable())) run->ParticleCount(name, energy, meanLife);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void TrackingAction::PostUserTrackingAction(const G4Track* track)
 {
-  Run* run = static_cast<Run*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
-
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
 
-  const G4ParticleDefinition* particle = track->GetParticleDefinition();
-  G4String name = particle->GetParticleName();
-  G4double meanLife = particle->GetPDGLifeTime();
-  G4double ekin = track->GetKineticEnergy();
-  fTimeEnd = track->GetGlobalTime();
-  if ((particle->GetPDGStable()) && (ekin == 0.)) fTimeEnd = DBL_MAX;
+  if (!fRecordTrack) return;  // Only record tracks flagged in PreUserTrackingAction
 
-  // count population of ions with meanLife > 0.
-  if ((G4IonTable::IsIon(particle)) && !(particle->GetPDGStable())) {
-    G4int id = run->GetIonId(name);
-    G4double unit = analysisManager->GetH1Unit(id);
-    G4double tmin = analysisManager->GetH1Xmin(id) * unit;
-    G4double tmax = analysisManager->GetH1Xmax(id) * unit;
-    G4double binWidth = analysisManager->GetH1Width(id) * unit;
-    G4double weight = track->GetWeight();
-
-    G4double t1 = std::max(fTimeBirth, tmin);
-    G4double t2 = std::min(fTimeEnd, tmax);
-    for (G4double time = t1; time < t2; time += binWidth) analysisManager->FillH1(id, time, weight);
-    
-    analysisManager->FillNtupleSColumn(1, HistoManager::kNT_IonName, name);
-    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_TimeBirth, fTimeBirth / s);
-    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_TimeDeath, fTimeEnd / s);
-    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_Weight, weight);
-    analysisManager->AddNtupleRow(1);
-  }
+  // Record decay product information for unstable ions born in "AbsorberAssembly"
+  G4double timeEnd = track->GetGlobalTime();  // death time
+  analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayPID, fTrackPID);
+  analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayZ, fTrackZ);
+  analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayA, fTrackA);
+  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayEnergy, fTrackEnergy);
+  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayWeight, fTrackWeight);
+  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayTimeBirth, fTimeBirth / microsecond);
+  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayTimeDeath, timeEnd / microsecond);
+  analysisManager->AddNtupleRow(2);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

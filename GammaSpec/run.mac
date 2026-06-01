@@ -1,0 +1,30 @@
+# ---------------------------------------- #
+# Macro file for Gamma Spectroscopy
+#
+# ---------------------------------------- #
+
+# Set verbose levels
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Print progress handled automatically
+
+# Initialize
+/run/initialize
+
+# Set a very high time threshold to allow all decays to happen
+/process/had/rdm/thresholdForVeryLongDecayTime 1.0e+60 year
+
+/process/had/rdm/analogueMC 0
+/process/had/rdm/sourceTimeProfile beam.data
+/process/had/rdm/decayBiasProfile measures.data
+
+# Set ion
+/gun/particle ion
+/gun/ion 26 61
+
+/analysis/setFileName fe61
+
+# Run events
+/run/beamOn 1000000

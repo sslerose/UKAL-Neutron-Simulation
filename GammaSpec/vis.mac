@@ -43,6 +43,9 @@
 /vis/viewer/set/background white
 /vis/geometry/set/colour HPGE_LV_1 0 0.40 0.40 0.40 1.0
 /vis/geometry/set/colour HPGE_LV_2 0 0.40 0.40 0.40 1.0
+/vis/geometry/set/colour Absorber 0 0.60 0.60 0.60 1.0
+/vis/geometry/set/colour GoldFrontFoil 0 1 0.8 0 0.5
+/vis/geometry/set/colour GoldBackFoil 0 1 0.8 0 0.5
 
 # To superimpose all of the events from a given run:
 /vis/scene/endOfEventAction accumulate
@@ -50,4 +53,3 @@
 # Re-establish auto refreshing
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
-/hits/verbose 2

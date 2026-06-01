@@ -48,11 +48,8 @@
 //
 
 #include "PrimaryGeneratorAction.hh"
-#include "PrimaryGeneratorMessenger.hh"
-#include "PrimaryGeneratorConfig.hh"
 #include "DetectorConstruction.hh"
 #include "Constants.hh"
-#include "SimLiT.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleGun.hh"
@@ -62,7 +59,8 @@
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
 #include "G4PhysicalConstants.hh"
-#include "Randomize.hh"
+#include "G4IonTable.hh"
+#include "G4Geantino.hh"
 
 #include <cmath>
 
@@ -71,55 +69,17 @@
 PrimaryGeneratorAction::PrimaryGeneratorAction()
 {
   //========================================================================//
-  // Initialize particle gun for neutrons
+  // Initialize particle gun
   //========================================================================//
 
   // Create particle gun with one particle per event
   G4int nParticle = 1;
   fParticleGun = new G4ParticleGun(nParticle);
-  
-  // Set particle type to neutron
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition* particle = particleTable->FindParticle("neutron");
-  fParticleGun->SetParticleDefinition(particle);
-  fParticleGun->SetParticlePosition(G4ThreeVector(0., 0., 0.));
 
-  // Get initial configuration from shared config
-  PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-  
-
-  //========================================================================//
-  // Default particle gun settings (used when SimLiT is disabled)
-  //========================================================================//
-
-  fParticleGun->SetParticleEnergy(config->GetGunEnergy());
-  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
-  
-
-  //========================================================================//
-  // Initialize SimLiT neutron source with config values
-  //========================================================================//
-
-  fSimLiTSource = new SimLiT(config->GetBeamEnergy(), config->GetBeamSigma());
-  
-  // Set target material
-  int composition = GetSimLiTComposition(config->GetTargetMaterial());
-  if (composition >= 0) {
-    fSimLiTSource->SetComposition(composition);
-  }
-  
-  // Set target thickness (convert um to cm for SimLiT)
-  fSimLiTSource->SetTargetThickness(config->GetTargetThickness() * SimLiT::um);
-  
-  
-  //========================================================================//
-  // Cache initial values for change detection
-  //========================================================================//
-  fCachedBeamEnergy = config->GetBeamEnergy();
-  fCachedBeamSigma = config->GetBeamSigma();
-  fCachedTargetMaterial = config->GetTargetMaterial();
-  fCachedTargetThickness = config->GetTargetThickness();
-  fCachedGunEnergy = config->GetGunEnergy();
+  // Set particle properties
+  fParticleGun->SetParticleEnergy(0. * eV);  // Stationary
+  fParticleGun->SetParticlePosition(G4ThreeVector(0., 0., 0.));  // Origin
+  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));  // Along +Z axis
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -127,88 +87,6 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
 PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
   delete fParticleGun;
-  delete fSimLiTSource;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-//------------------------------------------------------------------------//
-// Sync local primary generator parameters with shared configuration
-//------------------------------------------------------------------------//
-void PrimaryGeneratorAction::SyncWithConfig()
-{
-  //========================================================================//
-  // Sync local SimLiT with shared configuration
-  // Only update parameters that have changed to minimize overhead
-  //========================================================================//
-  
-  PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-  
-  // Check and update SimLiT beam energy
-  G4double beamEnergy = config->GetBeamEnergy();
-  if (beamEnergy != fCachedBeamEnergy) {
-    fSimLiTSource->SetBeamEnergy(beamEnergy);
-    fCachedBeamEnergy = beamEnergy;
-  }
-  
-  // Check and update SimLiT beam sigma
-  G4double beamSigma = config->GetBeamSigma();
-  if (beamSigma != fCachedBeamSigma) {
-    fSimLiTSource->SetBeamSigma(beamSigma);
-    fCachedBeamSigma = beamSigma;
-  }
-  
-  // Check and update SimLiT target material
-  G4String targetMaterial = config->GetTargetMaterial();
-  if (targetMaterial != fCachedTargetMaterial) {
-    int composition = GetSimLiTComposition(targetMaterial);
-    if (composition >= 0) {
-      fSimLiTSource->SetComposition(composition);
-      fCachedTargetMaterial = targetMaterial;
-    }
-    else {
-      G4cerr << "PrimaryGeneratorAction::SyncWithConfig:" << G4endl;
-      G4cerr << "Unknown target material: '" << targetMaterial << "'" << G4endl;
-      G4cerr << "Keeping previous material: '" << fCachedTargetMaterial << "'" << G4endl;
-    }
-  }
-  
-  // Check and update SimLiT target thickness
-  G4double targetThickness = config->GetTargetThickness();
-  if (targetThickness != fCachedTargetThickness) {
-    fSimLiTSource->SetTargetThickness(targetThickness * SimLiT::um);
-    fCachedTargetThickness = targetThickness;
-  }
-  
-  // Check and update gun energy (simple mode)
-  G4double gunEnergy = config->GetGunEnergy();
-  if (gunEnergy != fCachedGunEnergy) {
-    fParticleGun->SetParticleEnergy(gunEnergy);
-    fCachedGunEnergy = gunEnergy;
-  }
-
-  // Check and update exposure time
-  G4double exposureTime = config->GetExposureTime();
-  if (exposureTime != fTimeExposure) {
-    fTimeExposure = exposureTime;
-  }
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-//------------------------------------------------------------------------//
-// Map material name to SimLiT composition enum
-//------------------------------------------------------------------------//
-int PrimaryGeneratorAction::GetSimLiTComposition(const G4String& materialName)
-{  
-  if (materialName == "Li") return SimLiT::Li;
-  if (materialName == "LiF") return SimLiT::LiF;
-  if (materialName == "Li2O") return SimLiT::Li2O;
-  if (materialName == "Li3N") return SimLiT::Li3N;
-  if (materialName == "LiOH") return SimLiT::LiOH;
-  if (materialName == "LiH") return SimLiT::LiH;
-  
-  return -1;  // Unknown material
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -218,68 +96,19 @@ int PrimaryGeneratorAction::GetSimLiTComposition(const G4String& materialName)
 //------------------------------------------------------------------------//
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-  //========================================================================//
-  // Sync with shared config before generating
-  // This picks up any parameter changes from UI commands
-  //========================================================================//
-  SyncWithConfig();
-  
-  // Get current mode from shared config
-  G4bool useSimLiT = PrimaryGeneratorConfig::Instance()->GetUseSimLiT();
-  
-  if (useSimLiT && fSimLiTSource) {
-    //====================================================================//
-    // SimLiT mode: Generate neutron from 7Li(p,n)7Be reaction
-    //====================================================================//
+  // If ion not specified in macro, default is Geantino
+  if (fParticleGun->GetParticleDefinition() == G4Geantino::Geantino()) {
+    G4int Z = 10, A = 24;
+    G4double ionCharge = 0. * eplus;
+    G4double excitEnergy = 0. * keV;
 
-    double energy_keV;  // neutron energy in keV
-    double theta_rad;   // neutron angle in radians (from beam axis)
-    G4double phi;       // azimuthal angle
-
-    fSimLiTSource->GenerateNeutron(energy_keV, theta_rad);
-    phi = twopi * G4UniformRand();
-
-    // Store for analysis access
-    fNeutronEnergy = energy_keV;
-    fNeutronTheta = theta_rad;
-
-    // Convert SimLiT energy (keV) to Geant4 internal units
-    G4double energy = energy_keV * keV;
-
-    // Calculate momentum direction from theta and phi
-    G4double sinTheta = std::sin(theta_rad);
-    G4double cosTheta = std::cos(theta_rad);
-
-    G4ThreeVector direction(
-      sinTheta * std::cos(phi),
-      sinTheta * std::sin(phi),
-      cosTheta
-    );
-
-    // Configure particle gun and generate vertex
-    fParticleGun->SetParticleEnergy(energy);
-    fParticleGun->SetParticleMomentumDirection(direction);
-    fParticleGun->GeneratePrimaryVertex(anEvent);
-  }
-  else {
-    //====================================================================//
-    // Simple mode: Use particle gun with configured energy
-    //====================================================================//
-    
-    // Simple mode: all neutrons along z-axis for testing
-    G4ThreeVector direction(0, 0, 1);
-    
-    fParticleGun->SetParticleMomentumDirection(direction);
-    fParticleGun->GeneratePrimaryVertex(anEvent);
-    
-    // Store for consistency
-    fNeutronEnergy = fParticleGun->GetParticleEnergy() / keV;
-    fNeutronTheta = 0.;
+    G4ParticleDefinition* ion = G4IonTable::GetIonTable()->GetIon(Z, A, excitEnergy);
+    fParticleGun->SetParticleDefinition(ion);
+    fParticleGun->SetParticleCharge(ionCharge);
   }
 
-  // Randomize time zero of anEvent
-  G4double t0 = fTimeExposure * G4UniformRand();
-  anEvent->GetPrimaryVertex()->SetT0(t0);
+  // Generate primary
+  fParticleGun->GeneratePrimaryVertex(anEvent);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

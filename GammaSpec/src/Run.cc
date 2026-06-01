@@ -36,6 +36,8 @@
 #include "PrimaryGeneratorAction.hh"
 #include "Constants.hh"
 
+#include "G4ProcessTable.hh"
+#include "G4Radioactivation.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
 
@@ -53,9 +55,6 @@ std::atomic<G4int> Run::fGlobalEventCount{0};
 std::atomic<G4int> Run::fNextGlobalMilestone{0};
 G4int Run::fTotalEventsInRun = 0;
 G4int Run::fCurrentMilestonePercent = 0;
-
-std::map<G4String, G4int> Run::fgIonMap;
-G4int Run::fgIonId = HistoManager::kH_nHits + 1;  // Start after the neutron hits histogram ID
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -103,21 +102,6 @@ void Run::ParticleCount(G4String name, G4double Ekin, G4double meanLife)
     if (Ekin > emax) data.fEmax = Ekin;
     data.fTmean = meanLife;
   }
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-G4int Run::GetIonId(G4String ionName)
-{
-  G4AutoLock lock(&ionIdMapMutex);
-  // updating the global ion map needs to be locked
-
-  std::map<G4String, G4int>::const_iterator it = fgIonMap.find(ionName);
-  if (it == fgIonMap.end()) {
-    fgIonMap[ionName] = fgIonId;
-    if (fgIonId < (HistoManager::nID + HistoManager::kH_nHits - 1)) fgIonId++;
-  }
-  return fgIonMap[ionName];
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -247,15 +231,15 @@ void Run::EndOfRun()
   // run condition
   // G4Material* material = fDetector->GetAbsorberMaterial();
 
-  G4String Particle = fParticle->GetParticleName();
-  // G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
-        //  << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
-        //  << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
-
   if (numberOfEvent == 0) {
     G4cout.precision(dfprec);
     return;
   }
+
+  // G4String Particle = fParticle ? fParticle->GetParticleName() : "unknown";
+  // G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
+        //  << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
+        //  << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
 
   // frequency of processes
   G4cout << G4endl;
@@ -269,6 +253,10 @@ void Run::EndOfRun()
     G4cout << "\t" << procName << "= " << count;
   }
   G4cout << G4endl;
+
+  auto* p = G4ProcessTable::GetProcessTable()->FindProcess("Radioactivation", "GenericIon");
+  G4cout << "dynamic_cast G4Radioactivation*: "
+        << dynamic_cast<G4Radioactivation*>(p) << G4endl;
 
   // particles count
   G4cout << G4endl;
@@ -294,47 +282,57 @@ void Run::EndOfRun()
     }
   }
 
-  // histogram Id for populations
-  G4cout << G4endl;
-  G4cout << "============================================================" << G4endl;
-  G4cout << "          Histogram IDs for generated populations           " << G4endl;
-  G4cout << "============================================================" << G4endl;
-
-  // Update the histogram titles according to the ion map
-  // and print new titles
-  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
-  for (const auto& ionMapElement : fgIonMap) {
-    G4String ionName = ionMapElement.first;
-    G4int h1Id = ionMapElement.second;
-    // print new titles
-    G4cout << " " << std::setw(20) << ionName << "  id = " << std::setw(3) << h1Id << G4endl;
-
-    // update histogram ids
-    if (!analysisManager->GetH1(h1Id)) continue;
-    // Skip inactive histograms, this is not necessary
-    // but it  makes the code safe wrt modifications in future
-    G4String title = analysisManager->GetH1Title(h1Id);
-    title = ionName + title;
-    analysisManager->SetH1Title(h1Id, title);
-  }
-  G4cout << G4endl;
-
-  for (G4int ih = HistoManager::kH_nHits + 1; ih < HistoManager::nID + HistoManager::kH_nHits; ih++) {
-    G4double binWidth = analysisManager->GetH1Width(ih);
-    G4double unit = analysisManager->GetH1Unit(ih);
-    G4double fac = (second / (binWidth * unit));
-    analysisManager->ScaleH1(ih, fac);
-  }
+  WriteActivity(numberOfEvent);
 
   // remove all contents in fProcCounter, fCount
   fProcCounter.clear();
   // fParticleDataMap.clear();
   fParticleDataMap1.clear();
   // fParticleDataMap2.clear();
-  fgIonMap.clear();
 
   // restore default format
   G4cout.precision(dfprec);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void Run::WriteActivity(G4int nevent)
+{
+  G4ProcessTable* pTable = G4ProcessTable::GetProcessTable();
+  G4Radioactivation* rDecay =
+    (G4Radioactivation*)pTable->FindProcess("Radioactivation", "GenericIon");
+
+  // output the induced radioactivities (in VR mode only)
+  //
+  if (rDecay == 0) {
+    G4cerr << "WriteActivity: G4Radioactivation process not found for GenericIon." << G4endl;
+    return;
+  }
+  if (rDecay->IsAnalogueMonteCarlo()) {
+    G4cerr << "WriteActivity: Running in analogue MC mode — no activity file written." << G4endl;
+    return;
+  }
+
+  G4String fileName = G4AnalysisManager::Instance()->GetFileName() + ".activity";
+  std::ofstream outfile(fileName, std::ios::out);
+
+  std::vector<G4RadioactivityTable*> theTables = rDecay->GetTheRadioactivityTables();
+
+  for (size_t i = 0; i < theTables.size(); i++) {
+    G4double rate, error;
+    outfile << "Radioactivities in decay window no. " << i << G4endl;
+    outfile << "Z \tA \tE \tActivity (decays/window) \tError (decays/window) " << G4endl;
+
+    map<G4ThreeVector, G4TwoVector>* aMap = theTables[i]->GetTheMap();
+    map<G4ThreeVector, G4TwoVector>::iterator iter;
+    for (iter = aMap->begin(); iter != aMap->end(); iter++) {
+      rate = iter->second.x() / nevent;
+      error = std::sqrt(iter->second.y()) / nevent;
+      if (rate < 0.) rate = 0.;  // statically it can be < 0.
+      outfile << iter->first.x() << "\t" << iter->first.y() << "\t" << iter->first.z() << "\t"
+              << rate << "\t" << error << G4endl;
+    }
+    outfile << G4endl;
+  }
+  outfile.close();
+}

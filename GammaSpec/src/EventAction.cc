@@ -76,28 +76,6 @@ void EventAction::BeginOfEventAction(const G4Event* event) {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void EventAction::AddEdep(G4int iVol, G4double edep, G4double time, G4double weight)
-{
-  // initialize time of first deposit
-  if (fTime0 < 0.) fTime0 = time;
-
-  // Check if subsequent deposits are within time window
-  const G4double TimeWindow(1 * microsecond);
-  if (std::fabs(time - fTime0) > TimeWindow) return;
-
-  // Record energy deposition and weighted energy for volume of deposit
-  if (iVol == 1) {
-    fEdep1 += edep;
-    fWeight1 += edep * weight;
-  }
-  if (iVol == 2) {
-    fEdep2 += edep;
-    fWeight2 += edep * weight;
-  }
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
 //------------------------------------------------------------------------//
 // Analyze hits collection at the end of each event
 //------------------------------------------------------------------------//
@@ -105,20 +83,6 @@ void EventAction::EndOfEventAction(const G4Event* event)
 {
   // Track progress across all threads
   Run::RecordEvent(event->GetEventID());
-
-  
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void EventAction::PrintEventStatistics(G4double tof, G4int nHits) const
-{
-  // Print event summary for periodic monitoring
-  G4cout
-    << "Event Statistics:"
-    << "\n  Time of Flight: " << std::setw(7) << G4BestUnit(tof, "Time")
-    << "\n  Number of Hits: " << nHits
-    << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

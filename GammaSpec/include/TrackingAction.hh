@@ -51,7 +51,11 @@ class TrackingAction : public G4UserTrackingAction
 
   private:
     EventAction* fEventAction = nullptr;
-    G4double fTimeBirth = 0., fTimeEnd = 0.;
+
+    G4bool fRecordTrack = false;  // Flag to indicate whether to record track information
+    G4int fTrackPID = 0, fTrackZ = 0, fTrackA = 0;  // Particle ID, charge, and mass number of the track
+    G4double fTrackEnergy = 0., fTrackWeight = 0.;  // Energy and weight of the track
+    G4double fTimeBirth = 0., fTimeEnd = 0.;        // Birth and death times of the track
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

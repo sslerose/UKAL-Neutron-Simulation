@@ -53,22 +53,17 @@
 #include "G4VUserActionInitialization.hh"
 
 class DetectorConstruction;
-class PrimaryGeneratorMessenger;
 
 class ActionInitialization : public G4VUserActionInitialization
 {
   public:
     ActionInitialization(DetectorConstruction* detector);
-    ~ActionInitialization() override;
 
     void BuildForMaster() const override;
     void Build() const override;
 
   private:
     DetectorConstruction* fDetector = nullptr;
-
-    // Messenger created on master thread (mutable because Build() is const)
-    mutable PrimaryGeneratorMessenger* fGeneratorMessenger = nullptr;
 };
 
 #endif

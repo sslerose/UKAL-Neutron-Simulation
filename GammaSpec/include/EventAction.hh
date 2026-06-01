@@ -60,17 +60,6 @@ class PrimaryGeneratorAction;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-/// Event action class
-///
-/// Processes hits at the end of each event to extract physics information:
-/// - Total energy deposited (should be ~4.78 MeV for neutron captures)
-/// - Time-of-flight from neutron generation to first detector hit
-/// - Particle contributions to energy deposition
-/// - Process identification (to count neutron captures)
-///
-/// This class bridges between the sensitive detector (which records hits)
-/// and the analysis manager (which creates histograms)
-
 class EventAction : public G4UserEventAction
 {
   public:
@@ -81,19 +70,11 @@ class EventAction : public G4UserEventAction
 
     void BeginOfEventAction(const G4Event*) override;
     void EndOfEventAction(const G4Event*) override;
-    void AddEdep(G4int iVol, G4double Edep, G4double time, G4double weight);
 
   private:
-    // Helper methods
-    void PrintEventStatistics(G4double, G4int) const;
-
     // Data members
     DetectorConstruction* fDetector = nullptr;            // Pointer to detector construction
     PrimaryGeneratorAction* fPrimaryGenerator = nullptr;  // Pointer to primary generator
-    G4double fDetDist = 0.;                               // Distance from target to detector
-    G4double fEdep1 = 0., fEdep2 = 0.;                    // Energy deposition in front and back HPGe detectors
-    G4double fWeight1 = 0., fWeight2 = 0.;                // Weighted energy deposition for front and back HPGe detectors
-    G4double fTime0 = -1 * s;                             // Time of first energy deposition
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

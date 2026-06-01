@@ -92,15 +92,6 @@ int main(int argc, char** argv)
   // initialize visualization
   G4VisManager* visManager = nullptr;
 
-  // Replaced HP environmental variables with C++ calls
-  G4ParticleHPManager::GetInstance()->SetSkipMissingIsotopes(true);
-  G4ParticleHPManager::GetInstance()->SetDoNotAdjustFinalState(true);
-  G4ParticleHPManager::GetInstance()->SetUseOnlyPhotoEvaporation(true);
-  G4ParticleHPManager::GetInstance()->SetNeglectDoppler(false);
-  G4ParticleHPManager::GetInstance()->SetProduceFissionFragments(false);
-  G4ParticleHPManager::GetInstance()->SetUseWendtFissionModel(false);
-  G4ParticleHPManager::GetInstance()->SetUseNRESP71Model(false);
-
   // get the pointer to the User Interface manager
   G4UImanager* UImanager = G4UImanager::GetUIpointer();
 

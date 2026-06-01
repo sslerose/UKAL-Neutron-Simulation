@@ -73,13 +73,31 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   public:
     G4VPhysicalVolume* Construct() override;
+    G4Material* MaterialWithSingleIsotope(G4String, G4String, G4double, G4int, G4int);
 
     // Setters
     void SetDetectorDistance(G4double);
+    // void SetDetectorAngle(G4double);
     void SetWorldMaterial(G4String);
+    void SetSpanningStartAngle(G4double);
+    void SetSpanningEndAngle(G4double);
+    void SetAbsorberMaterial(G4String);
+    void SetAbsorberThickness(G4double);
+    void SetAbsorberRadius(G4double);
 
     // Getters
     const G4VPhysicalVolume* GetWorld() const { return fWorldPV; }
+    G4LogicalVolume* GetHPGELV(G4int i) const { return (i == 0 || i == 1) ? fHPGELV[i] : nullptr; } // Return the i-th HPGe logical volume
+
+    G4double GetDetectorAngle() const { return fHPGEAngle; }
+    G4double GetDetectorDistance() const { return fHPGEDistance; }
+
+    G4double GetSpanningStartAngle() const { return fStartAngle; }
+    G4double GetSpanningEndAngle() const { return fEndAngle; }
+    G4double GetAbsorberThickness() const { return fAbsorberThickness; }
+    G4double GetAbsorberRadius() const { return fAbsorberRadius; }
+    G4Material* GetDetectorMaterial() const { return fHPGEMaterial; }
+    G4Material* GetAbsorberMaterial() const { return fAbsorberMaterial; }
 
     void PrintParameters();
 
@@ -98,6 +116,29 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
 
     //========================================================================//
+    // Absorber volumes
+    //========================================================================//
+
+    // Solids
+    G4Tubs* fAbsorberAssemblyTube = nullptr;
+    G4Tubs* fGoldFrontTube = nullptr;
+    G4Tubs* fGoldBackTube = nullptr;
+    G4Tubs* fAbsorberTube = nullptr;
+    
+    // Physical volumes
+    G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
+    G4VPhysicalVolume* fGoldFrontPV = nullptr;
+    G4VPhysicalVolume* fGoldBackPV = nullptr;
+    G4VPhysicalVolume* fAbsorberPV = nullptr;
+    
+    // Logical volumes
+    G4LogicalVolume* fAbsorberAssemblyLV = nullptr;
+    G4LogicalVolume* fGoldFrontLV = nullptr;
+    G4LogicalVolume* fGoldBackLV = nullptr;
+    G4LogicalVolume* fAbsorberLV = nullptr;
+
+
+    //========================================================================//
     // Detector assembly parameters
     //========================================================================//
 
@@ -107,6 +148,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     // Detector volume
     G4double fHPGEDistance = 5.0 * cm;
     G4double fHPGEDisplacement = 0.;
+    G4double fHPGEAngle = 0. * deg;
 
     // Materials
     G4Material* fWorldMaterial = nullptr;
@@ -116,6 +158,25 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     DetectorMessenger* fDetectorMessenger = nullptr;
     G4RotationMatrix* fRotationMatrix[2] = {nullptr, nullptr}; // Array of rotation matrices for HPGe detector (2 for front and back)
 
+
+    //========================================================================//
+    // Absorber parameters
+    //========================================================================//
+
+    // Gold foil
+    G4double fGoldThickness = 0.03 * mm;  // Thickness of gold foil
+
+    // Absorber
+    G4double fAbsorberThickness = 0.03 * mm;  // Thickness of absorber
+    G4double fAbsorberRadius = 18.0 * mm / 2; // Radius of absorber (cylindrical)
+
+    // Absorber assembly (includes gold foils)
+    G4double fStartAngle = 0.0 * deg;
+    G4double fEndAngle = 360.0 * deg;
+
+    // Materials
+    G4Material* fGoldMaterial = nullptr;
+    G4Material* fAbsorberMaterial = nullptr;
 
   private:
     void DefineMaterials();

@@ -49,12 +49,42 @@ SteppingAction::SteppingAction(DetectorConstruction* det, EventAction* event)
 
 void SteppingAction::UserSteppingAction(const G4Step* aStep)
 {
-  // count processes
-  //
+  // Get the current run and analysis manager
+  Run* run = static_cast<Run*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
+
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+
+  // Count processes
   const G4StepPoint* endPoint = aStep->GetPostStepPoint();
   const G4VProcess* process = endPoint->GetProcessDefinedStep();
-  Run* run = static_cast<Run*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
   run->CountProcesses(process);
+
+  // Cache the HPGe volumes
+  if (!fHPGELV[0] && !fHPGELV[1]) {
+    fHPGELV[0] = fDetector->GetHPGELV(0);
+    fHPGELV[1] = fDetector->GetHPGELV(1);
+  }
+
+  // Get energy deposit for this step
+  G4double edep = aStep->GetTotalEnergyDeposit();
+  if (edep <= 0.) return;
+
+  // Get volume of pre-step point
+  const G4VPhysicalVolume* pv = aStep->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
+  if (!pv) return;
+  G4LogicalVolume* lv = pv->GetLogicalVolume();
+
+  // Check if step is in either HPGe
+  if (lv != fHPGELV[0] && lv != fHPGELV[1]) return;
+
+  // Record energy deposits in NTuple
+  G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
+  G4double weight = aStep->GetPreStepPoint()->GetWeight();
+
+  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EnergyDep, edep);
+  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EDepWeight, weight);
+  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EDepTime, time / microsecond);
+  analysisManager->AddNtupleRow(0);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

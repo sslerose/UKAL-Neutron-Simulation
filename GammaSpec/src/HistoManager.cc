@@ -74,7 +74,6 @@ void HistoManager::Book()
   //   - SetDefaultFileType("root"): Output format
   //   - SetVerboseLevel(1): Print info about analysis operations
   //   - SetNtupleMerging(true): Combine worker thread ntuples (MT mode)
-  //   - SetActivation(true): Enable activation/inactivation of histograms
   //========================================================================//
 
   // Initialize analysis manager
@@ -83,61 +82,37 @@ void HistoManager::Book()
   analysisManager->SetFileName(fFileName);
   analysisManager->SetVerboseLevel(1);
   analysisManager->SetNtupleMerging(true);
-  analysisManager->SetActivation(true);
-
-
-  //========================================================================//
-  // Create histograms
-  //
-  // Format: CreateH1("name", "title;xaxis;yaxis", nbins, xmin, xmax)
-  //========================================================================//
-
-  // Neutron energy from primary generator (keV)
-  analysisManager->CreateH1("NeutronEnergy",
-    "Generated Neutron Energy;Energy [keV];Events",
-    200, 0., 200.);
-
-  // Neutron angle from primary generator (degrees)
-  analysisManager->CreateH1("NeutronTheta",
-    "Generated Neutron Angle;Angle [deg];Events",
-    90, 0., 90.);
-
-  // Number of neutron hits per event
-  analysisManager->CreateH1("NHits",
-    "Number of Neutron Hits per Event;Number of Hits;Events",
-    10, 0., 10.);
-  
-
-  // Default values for population histograms (to be reset via /analysis/h1/set command)
-  G4int nbins = 100;
-  G4double vmin = 0.;
-  G4double vmax = 100.;
-
-  // Population of species
-  for (G4int k = 0; k < nID; k++) {
-    G4int id = k + kH_nHits + 1;
-    G4int ih = analysisManager->CreateH1(std::to_string(id), " population", nbins, vmin, vmax);
-    analysisManager->SetH1Activation(ih, false);  // Set inactive by default
-  }
 
 
   //========================================================================//
   // Create ntuple for event-by-event analysis
   //========================================================================//
 
-  // Detector data (id = 0)
-  analysisManager->CreateNtuple("DetectorData", "Neutron Detection Event Data");
-  analysisManager->CreateNtupleIColumn("CaptureFlag");  // Capture flag (1 = capture occurred, 0 = no capture)
-  analysisManager->CreateNtupleDColumn("CaptureTime");  // Capture time (s), -1 if no capture
-  analysisManager->FinishNtuple();                      // Finalize DetectorData ntuple
+  // Energy deposition (id = 0)
+  analysisManager->CreateNtuple("EnergyDeposition", "Gamma energy deposition in the detectors");
+  analysisManager->CreateNtupleDColumn("EnergyDep");  // Column 0: Energy deposited in the detector (MeV)
+  analysisManager->CreateNtupleDColumn("Weight");     // Column 1: Weight associated with the energy deposition (for weighted events)
+  analysisManager->CreateNtupleDColumn("Time");       // Column 2: Global time of the step (us)
+  analysisManager->FinishNtuple();  // Finalize
 
-  // Ion population data (id = 1)
-  analysisManager->CreateNtuple("PopulationData", "Population of Each Species per Event");
-  analysisManager->CreateNtupleSColumn("IonName");     // Ion species name
-  analysisManager->CreateNtupleDColumn("TimeBirth");   // Birth time of ion
-  analysisManager->CreateNtupleDColumn("TimeDeath");   // Death time of ion
-  analysisManager->CreateNtupleDColumn("Weight");      // Weight of ion
-  analysisManager->FinishNtuple();                     // Finalize PopulationData ntuple
+  // Emitted particle information (id = 1)
+  analysisManager->CreateNtuple("EmittedParticles", "Particles emitted from the sample");
+  analysisManager->CreateNtupleIColumn("PID");        // Column 0: Particle ID (PDG code)
+  analysisManager->CreateNtupleDColumn("Energy");     // Column 1: Energy of the emitted particle (MeV)
+  analysisManager->CreateNtupleDColumn("Weight");     // Column 2: Weight associated with the emitted particle (for weighted events)
+  analysisManager->CreateNtupleDColumn("Time");       // Column 3: Global time of the emission (us)
+  analysisManager->FinishNtuple();  // Finalize
+
+  // Decay product information (id = 2)
+  analysisManager->CreateNtuple("DecayProducts", "Decay products in the sample");
+  analysisManager->CreateNtupleIColumn("PID");        // Column 0: Particle ID (PDG code)
+  analysisManager->CreateNtupleIColumn("Z");          // Column 1: Atomic number of the decay product
+  analysisManager->CreateNtupleIColumn("A");          // Column 2: Mass number of the decay product
+  analysisManager->CreateNtupleDColumn("Energy");     // Column 3: Energy of the decay product (MeV)
+  analysisManager->CreateNtupleDColumn("Weight");     // Column 4: Weight associated with the decay product (for weighted events)
+  analysisManager->CreateNtupleDColumn("TimeBirth");  // Column 5: Global time of the decay product's birth (us)
+  analysisManager->CreateNtupleDColumn("TimeDeath");  // Column 6: Global time of the decay product's death (us)
+  analysisManager->FinishNtuple();  // Finalize
 
 }
 
