@@ -53,7 +53,6 @@ BiasedRDPhysics::BiasedRDPhysics(G4int) : G4VPhysicsConstructor("G4Radioactivati
   G4DeexPrecoParameters* deex = G4NuclearLevelData::GetInstance()->GetParameters();
   deex->SetStoreICLevelData(true);
   deex->SetIsomerProduction(true);  // Enable isomer production
-
   deex->SetMaxLifeTime(G4NuclideTable::GetInstance()->GetThresholdOfHalfLife() / std::log(2.));
 }
 
