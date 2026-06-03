@@ -98,9 +98,9 @@ void HistoManager::Book()
   // Emitted particle information (id = 1)
   analysisManager->CreateNtuple("EmittedParticles", "Particles emitted from the sample");
   analysisManager->CreateNtupleIColumn("PID");        // Column 0: Particle ID (PDG code)
-  analysisManager->CreateNtupleDColumn("Energy");     // Column 1: Energy of the emitted particle (MeV)
-  analysisManager->CreateNtupleDColumn("Weight");     // Column 2: Weight associated with the emitted particle (for weighted events)
-  analysisManager->CreateNtupleDColumn("Time");       // Column 3: Global time of the emission (us)
+  analysisManager->CreateNtupleDColumn("Energy");     // Column 2: Energy of the emitted particle (MeV)
+  analysisManager->CreateNtupleDColumn("Weight");     // Column 3: Weight associated with the emitted particle (for weighted events)
+  analysisManager->CreateNtupleDColumn("Time");       // Column 4: Global time of the emission (us)
   analysisManager->FinishNtuple();  // Finalize
 
   // Decay product information (id = 2)

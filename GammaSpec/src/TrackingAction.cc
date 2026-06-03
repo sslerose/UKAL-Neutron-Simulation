@@ -60,6 +60,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
 
   // Get track information
   G4ParticleDefinition* particle = track->GetDefinition();
+  G4int pdgCode = particle->GetPDGEncoding();
   G4String name = particle->GetParticleName();
   G4double charge = particle->GetPDGCharge();
   G4double energy = track->GetKineticEnergy();
@@ -70,7 +71,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   // Record emission spectrum data for radioactive-decay products with charge < 3
   const G4VProcess* creator = track->GetCreatorProcess(); // nullptr for primaries
   if (creator && creator->GetProcessSubType() == fRadioactiveDecay && charge < 3.) {
-    analysisManager->FillNtupleIColumn(1, HistoManager::kNT_EmissionPID, particle->GetPDGEncoding());
+    analysisManager->FillNtupleIColumn(1, HistoManager::kNT_EmissionPID, pdgCode);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmEnergy, energy);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmWeight, weight);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmTime, time / microsecond);
@@ -83,7 +84,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   const G4VPhysicalVolume* pv = track->GetVolume();
   if (unstableIon && track->GetTrackID() != 1 && pv && pv->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
     fRecordTrack = true;
-    fTrackPID = particle->GetPDGEncoding();
+    fTrackPID = pdgCode;
     fTrackZ = particle->GetAtomicNumber();
     fTrackA = particle->GetAtomicMass();
     fTrackEnergy = energy;
@@ -104,7 +105,12 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
   if (!fRecordTrack) return;  // Only record tracks flagged in PreUserTrackingAction
 
   // Record decay product information for unstable ions born in "AbsorberAssembly"
+  G4ParticleDefinition* particle = track->GetDefinition();
   G4double timeEnd = track->GetGlobalTime();  // death time
+  G4double energy = track->GetKineticEnergy();  // kinetic energy
+
+  if ((particle->GetPDGStable()) && (energy == 0.)) timeEnd = DBL_MAX;
+
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayPID, fTrackPID);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayZ, fTrackZ);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayA, fTrackA);

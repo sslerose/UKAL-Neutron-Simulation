@@ -50,6 +50,8 @@
 #include "TAxis.h"
 #include "TString.h"
 #include "TMath.h"
+#include "TDatabasePDG.h"
+#include "TParticlePDG.h"
 
 #include <cmath>
 #include <fstream>
@@ -181,6 +183,140 @@ void analyzePHS(const char* filePath,
     }
     csv.close();
     std::cout << "Saved data : " << csvName.Data() << "\n";
+
+    // ---- EmittedParticles CSV + gamma histograms ----
+    TTree* emTree = dynamic_cast<TTree*>(f->Get("EmittedParticles"));
+    if (!emTree) {
+        std::cerr << "Warning: \"EmittedParticles\" tree not found in \"" << filePath << "\"\n";
+    } else {
+        Int_t    emPID    = 0;
+        Double_t emEnergy = 0.0;
+        Double_t emWeight = 0.0;
+        Double_t emTime   = 0.0;
+
+        emTree->SetBranchAddress("PID",    &emPID);
+        emTree->SetBranchAddress("Energy", &emEnergy);
+        emTree->SetBranchAddress("Weight", &emWeight);
+        emTree->SetBranchAddress("Time",   &emTime);
+
+        TDatabasePDG* pdgDB = TDatabasePDG::Instance();
+
+        TString emCsvName = TString(stem) + "_EmittedParticles.csv";
+        std::ofstream emCsv(emCsvName.Data());
+        emCsv << "PID,Name,Energy_MeV,Weight,Time_us\n";
+
+        Long64_t emEntries  = emTree->GetEntries();
+        Long64_t emCsvLimit = (emEntries + 9) / 10;
+
+        TH1D* hGammaE   = new TH1D("hGammaE",   "Emitted Gamma Energy Spectrum",      nBins, 0.0, eMax);
+        TH1D* hGammaPHS = new TH1D("hGammaPHS",  "Emitted Gamma Pulse-Height Spectrum", nBins, 0.0, eMax);
+        std::map<long long, double> gammaWindowSums;
+
+        for (Long64_t i = 0; i < emEntries; ++i) {
+            emTree->GetEntry(i);
+            if (i < emCsvLimit) {
+                TParticlePDG* pdgParticle = pdgDB->GetParticle(emPID);
+                const char* emName = pdgParticle ? pdgParticle->GetName() : "unknown";
+                emCsv << emPID << ","
+                      << emName << ","
+                      << std::fixed << std::setprecision(6)
+                      << emEnergy << ","
+                      << emWeight << ","
+                      << emTime   << "\n";
+            }
+            if (emPID == 22) {
+                hGammaE->Fill(emEnergy);
+                long long idx = static_cast<long long>(std::floor(emTime / window_us));
+                gammaWindowSums[idx] += emEnergy * emWeight;
+            }
+        }
+        emCsv.close();
+        std::cout << "Saved data : " << emCsvName.Data()
+                  << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
+
+        for (auto& kv : gammaWindowSums) hGammaPHS->Fill(kv.second);
+
+        TString gammaETag  = TString(stem) + "_GammaEnergy";
+        TString gammaPHSTag = TString(stem) + "_GammaPHS_" + tagStream.str().c_str() + "us";
+
+        styleAxis(hGammaE,   "Energy (MeV)",      "Counts");
+        styleAxis(hGammaPHS, "Pulse Height (MeV)", "Counts");
+
+        TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
+        cGammaE->SetLeftMargin(0.12);
+        cGammaE->SetBottomMargin(0.12);
+        hGammaE->Draw("HIST");
+        TString gammaEPng = gammaETag + ".png";
+        cGammaE->SaveAs(gammaEPng.Data());
+        std::cout << "Saved plot : " << gammaEPng.Data() << "\n";
+
+        TString gammaECsv = gammaETag + ".csv";
+        std::ofstream gammaECsvFile(gammaECsv.Data());
+        gammaECsvFile << "BinCenter_MeV,Counts\n";
+        for (int b = 1; b <= hGammaE->GetNbinsX(); ++b) {
+            gammaECsvFile << std::fixed << std::setprecision(6)
+                          << hGammaE->GetBinCenter(b) << ","
+                          << hGammaE->GetBinContent(b) << "\n";
+        }
+        gammaECsvFile.close();
+        std::cout << "Saved data : " << gammaECsv.Data() << "\n";
+
+        TCanvas* cGammaPHS = new TCanvas("cGammaPHS", "Emitted Gamma PHS", 800, 600);
+        cGammaPHS->SetLeftMargin(0.12);
+        cGammaPHS->SetBottomMargin(0.12);
+        hGammaPHS->Draw("HIST");
+        TString gammaPHSPng = gammaPHSTag + ".png";
+        cGammaPHS->SaveAs(gammaPHSPng.Data());
+        std::cout << "Saved plot : " << gammaPHSPng.Data() << "\n";
+
+        delete cGammaE;
+        delete cGammaPHS;
+        delete hGammaE;
+        delete hGammaPHS;
+    }
+
+    // ---- DecayProducts CSV ----
+    TTree* dpTree = dynamic_cast<TTree*>(f->Get("DecayProducts"));
+    if (!dpTree) {
+        std::cerr << "Warning: \"DecayProducts\" tree not found in \"" << filePath << "\"\n";
+    } else {
+        Int_t    dpPID       = 0;
+        Int_t    dpZ         = 0;
+        Int_t    dpA         = 0;
+        Double_t dpEnergy    = 0.0;
+        Double_t dpWeight    = 0.0;
+        Double_t dpTimeBirth = 0.0;
+        Double_t dpTimeDeath = 0.0;
+
+        dpTree->SetBranchAddress("PID",       &dpPID);
+        dpTree->SetBranchAddress("Z",         &dpZ);
+        dpTree->SetBranchAddress("A",         &dpA);
+        dpTree->SetBranchAddress("Energy",    &dpEnergy);
+        dpTree->SetBranchAddress("Weight",    &dpWeight);
+        dpTree->SetBranchAddress("TimeBirth", &dpTimeBirth);
+        dpTree->SetBranchAddress("TimeDeath", &dpTimeDeath);
+
+        TString dpCsvName = TString(stem) + "_DecayProducts.csv";
+        std::ofstream dpCsv(dpCsvName.Data());
+        dpCsv << "PID,Z,A,Energy_MeV,Weight,TimeBirth_us,TimeDeath_us\n";
+
+        Long64_t dpEntries  = dpTree->GetEntries();
+        Long64_t dpCsvLimit = (dpEntries + 9) / 10;
+        for (Long64_t i = 0; i < dpCsvLimit; ++i) {
+            dpTree->GetEntry(i);
+            dpCsv << dpPID << ","
+                  << dpZ   << ","
+                  << dpA   << ","
+                  << std::fixed << std::setprecision(6)
+                  << dpEnergy    << ","
+                  << dpWeight    << ","
+                  << dpTimeBirth << ","
+                  << dpTimeDeath << "\n";
+        }
+        dpCsv.close();
+        std::cout << "Saved data : " << dpCsvName.Data()
+                  << "  (first " << dpCsvLimit << " of " << dpEntries << " rows)\n";
+    }
 
     // ---- cleanup ----
     delete c;
