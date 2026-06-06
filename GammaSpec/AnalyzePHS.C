@@ -123,21 +123,23 @@ void analyzePHS(const char* filePath,
     tree->SetBranchAddress("Time",      &time);
 
     // ---- single-pass accumulation into time windows ----
-    std::map<long long, double> windowSums;
+    std::map<long long, double> windowEnergy;
+    std::map<long long, double> windowWeighted;
 
     Long64_t nEntries = tree->GetEntries();
     for (Long64_t i = 0; i < nEntries; ++i) {
         tree->GetEntry(i);
         long long idx = static_cast<long long>(std::floor(time / window_us));
-        windowSums[idx] += energyDep * weight;
+        windowEnergy[idx]   += energyDep;
+        windowWeighted[idx] += energyDep * weight;
     }
 
-    long long nWindows = static_cast<long long>(windowSums.size());
+    long long nWindows = static_cast<long long>(windowEnergy.size());
 
     // ---- determine energy range of occupied windows for summary ----
     double minPulse =  1e30;
     double maxPulse = -1e30;
-    for (auto& kv : windowSums) {
+    for (auto& kv : windowEnergy) {
         if (kv.second < minPulse) minPulse = kv.second;
         if (kv.second > maxPulse) maxPulse = kv.second;
     }
@@ -157,8 +159,10 @@ void analyzePHS(const char* filePath,
     TH1D* hPHS = new TH1D("hPHS", "Pulse-Height Spectrum",
                            nBins, 0.0, eMax);
 
-    for (auto& kv : windowSums) {
-        hPHS->Fill(kv.second);
+    for (auto& kv : windowEnergy) {
+        double E    = kv.second;
+        double Wavg = windowWeighted[kv.first] / E;
+        hPHS->Fill(E, Wavg);
     }
 
     styleAxis(hPHS, "Pulse Height (MeV)", "Counts");
@@ -210,7 +214,8 @@ void analyzePHS(const char* filePath,
 
         TH1D* hGammaE   = new TH1D("hGammaE",   "Emitted Gamma Energy Spectrum",      nBins, 0.0, eMax);
         TH1D* hGammaPHS = new TH1D("hGammaPHS",  "Emitted Gamma Pulse-Height Spectrum", nBins, 0.0, eMax);
-        std::map<long long, double> gammaWindowSums;
+        std::map<long long, double> gammaWindowEnergy;
+        std::map<long long, double> gammaWindowWeighted;
 
         for (Long64_t i = 0; i < emEntries; ++i) {
             emTree->GetEntry(i);
@@ -227,14 +232,19 @@ void analyzePHS(const char* filePath,
             if (emPID == 22) {
                 hGammaE->Fill(emEnergy);
                 long long idx = static_cast<long long>(std::floor(emTime / window_us));
-                gammaWindowSums[idx] += emEnergy * emWeight;
+                gammaWindowEnergy[idx]   += emEnergy;
+                gammaWindowWeighted[idx] += emEnergy * emWeight;
             }
         }
         emCsv.close();
         std::cout << "Saved data : " << emCsvName.Data()
                   << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
 
-        for (auto& kv : gammaWindowSums) hGammaPHS->Fill(kv.second);
+        for (auto& kv : gammaWindowEnergy) {
+            double E    = kv.second;
+            double Wavg = gammaWindowWeighted[kv.first] / E;
+            hGammaPHS->Fill(E, Wavg);
+        }
 
         TString gammaETag  = TString(stem) + "_GammaEnergy";
         TString gammaPHSTag = TString(stem) + "_GammaPHS_" + tagStream.str().c_str() + "us";

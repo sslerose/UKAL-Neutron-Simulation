@@ -68,9 +68,16 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   G4double time   = track->GetGlobalTime();   // birth time
   G4double weight = track->GetWeight();
 
-  // Record emission spectrum data for radioactive-decay products with charge < 3
-  const G4VProcess* creator = track->GetCreatorProcess(); // nullptr for primaries
-  if (creator && creator->GetProcessSubType() == fRadioactiveDecay && charge < 3.) {
+
+  //========================================================================//
+  // Record emission spectrum data
+  //========================================================================//
+
+  // Get the process that created the track (nullptr for primaries)
+  const G4VProcess* creator = track->GetCreatorProcess();
+
+  // Check if the track is a product of a radioactive decay process and has charge < 3
+  if (creator && creator->GetProcessSubType() == fRadioactiveDecay && charge < 3.){
     analysisManager->FillNtupleIColumn(1, HistoManager::kNT_EmissionPID, pdgCode);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmEnergy, energy);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmWeight, weight);
@@ -78,11 +85,27 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
     analysisManager->AddNtupleRow(1);
   }
 
-  // Get decay-product inventory for unstable ions born in "AbsorberAssembly", excluding primaries
-  // Data written in Post action
+
+  //========================================================================//
+  // Get decay-product inventory
+  //========================================================================//
+
+  // Check if the track is within the absorber assembly (including daughter volumes)
+  auto* touchable = track->GetTouchable();
+  G4bool inAbsorberRegion = false;
+
+  for (G4int depth = 0; depth < touchable->GetHistoryDepth() + 1; ++depth) {
+    if (touchable->GetVolume(depth)->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
+        inAbsorberRegion = true;
+        break;
+    }
+  }
+
+  // Flag unstable ions
   G4bool unstableIon = (charge > 2.) && !particle->GetPDGStable();
-  const G4VPhysicalVolume* pv = track->GetVolume();
-  if (unstableIon && track->GetTrackID() != 1 && pv && pv->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
+  
+  // If unstable ion in absorber region, record its properties for later use in PostUserTrackingAction
+  if (unstableIon && track->GetTrackID() != 1 && inAbsorberRegion) {
     fRecordTrack = true;
     fTrackPID = pdgCode;
     fTrackZ = particle->GetAtomicNumber();
@@ -104,11 +127,12 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
 
   if (!fRecordTrack) return;  // Only record tracks flagged in PreUserTrackingAction
 
-  // Record decay product information for unstable ions born in "AbsorberAssembly"
+  // Record decay product information for unstable ions originally born in absorber region
   G4ParticleDefinition* particle = track->GetDefinition();
   G4double timeEnd = track->GetGlobalTime();  // death time
   G4double energy = track->GetKineticEnergy();  // kinetic energy
 
+  // If the track is stable and has zero kinetic energy, set death time to "infinity"
   if ((particle->GetPDGStable()) && (energy == 0.)) timeEnd = DBL_MAX;
 
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayPID, fTrackPID);
