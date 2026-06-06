@@ -62,6 +62,41 @@
 #include <string>
 
 // ============================================================
+// Run metadata for multi-file total PHS analysis
+// ============================================================
+struct RunInfo {
+    TString file;  // ROOT file stem (no .root extension)
+    double  P;     // true parent population from activation sim
+    double  N;     // simulated parent population used in GammaSpec run
+};
+
+// Parse a whitespace-delimited run info file into a vector of RunInfo.
+// Lines beginning with '#' are treated as comments and skipped.
+std::vector<RunInfo> parseRunInfo(const char* infoPath)
+{
+    std::vector<RunInfo> runs;
+    std::ifstream fin(infoPath);
+    if (!fin.is_open()) {
+        std::cerr << "Error: cannot open run info file \"" << infoPath << "\"\n";
+        return runs;
+    }
+    std::string line;
+    while (std::getline(fin, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::istringstream ss(line);
+        std::string fname;
+        double P, N;
+        if (!(ss >> fname >> P >> N)) continue;
+        RunInfo r;
+        r.file = TString(fname);
+        r.P    = P;
+        r.N    = N;
+        runs.push_back(r);
+    }
+    return runs;
+}
+
+// ============================================================
 // Helper: apply consistent axis styling to a histogram
 // ============================================================
 void styleAxis(TH1D* h, const char* xTitle, const char* yTitle)
@@ -332,4 +367,159 @@ void analyzePHS(const char* filePath,
     delete c;
     delete hPHS;
     f->Close();
+}
+
+// ============================================================
+// Multi-file total PHS: reads a run info file, scales each
+// file's PHS contribution by P_i/N_i, and sums into a single
+// combined pulse-height spectrum.
+//
+// Usage (in ROOT):
+//   .L AnalyzePHS.C
+//   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax)
+//
+// Arguments:
+//   infoPath  - path to the run info file (stem, P_i, N_i per line)
+//   rootDir   - directory containing the .root files (default = ".")
+//   outStem   - output filename stem for the combined PHS (default = "Total")
+//   window_us - charge-collection window length in microseconds (default = 1.0)
+//   nBins     - number of histogram bins (default = 3000)
+//   eMax      - histogram upper edge in MeV (default = 3.0)
+//
+// Outputs:
+//   <outStem>_PHS_<window_us>us.png  - combined pulse-height spectrum plot
+//   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
+//
+// Scale factor logic:
+//   f_i = P_i / N_i
+//   H_total = sum_i ( f_i * H_i )
+//   This correctly handles both the proportional-population case
+//   (N_i = c*P_i, so f_i = 1/c for all i) and the equal-population
+//   case (N_i = N, so f_i = P_i/N per species).
+// ============================================================
+void analyzePHSTotal(const char* infoPath,
+                     const char* rootDir  = ".",
+                     const char* outStem  = "Total",
+                     double window_us = 1.0,
+                     int    nBins     = 3000,
+                     double eMax      = 3.0)
+{
+    std::vector<RunInfo> runs = parseRunInfo(infoPath);
+    if (runs.empty()) {
+        std::cerr << "Error: no valid runs found in \"" << infoPath << "\"\n";
+        return;
+    }
+
+    // Sumw2() ensures correct error propagation through scaling and addition
+    TH1D* hTotal = new TH1D("hTotal", "Combined Pulse-Height Spectrum",
+                             nBins, 0.0, eMax);
+    hTotal->Sumw2();
+
+    std::cout << "\n=== Total PHS Analysis ===\n"
+              << "  Info file : " << infoPath << "\n"
+              << "  Root dir  : " << rootDir  << "\n"
+              << "  Window    : " << window_us << " us\n\n";
+
+    for (auto& r : runs) {
+        double scaleFactor = r.P / r.N;
+
+        TString path = TString(rootDir) + "/" + r.file + ".root";
+        TFile* f = TFile::Open(path.Data(), "READ");
+        if (!f || f->IsZombie()) {
+            std::cerr << "Warning: skipping \"" << path << "\" (cannot open)\n";
+            continue;
+        }
+
+        TTree* tree = dynamic_cast<TTree*>(f->Get("EnergyDeposition"));
+        if (!tree) {
+            std::cerr << "Warning: skipping \"" << path
+                      << "\" (EnergyDeposition tree not found)\n";
+            f->Close();
+            continue;
+        }
+
+        // ---- bind branches ----
+        Double_t energyDep = 0.0, weight = 0.0, time = 0.0;
+        tree->SetBranchAddress("EnergyDep", &energyDep);
+        tree->SetBranchAddress("Weight",    &weight);
+        tree->SetBranchAddress("Time",      &time);
+
+        // ---- single-pass accumulation into time windows ----
+        std::map<long long, double> windowEnergy;
+        std::map<long long, double> windowWeighted;
+
+        Long64_t nEntries = tree->GetEntries();
+        for (Long64_t i = 0; i < nEntries; ++i) {
+            tree->GetEntry(i);
+            long long idx = static_cast<long long>(std::floor(time / window_us));
+            windowEnergy[idx]   += energyDep;
+            windowWeighted[idx] += energyDep * weight;
+        }
+
+        // ---- build this file's PHS, then scale and accumulate ----
+        TH1D* hThis = new TH1D("hThis", "", nBins, 0.0, eMax);
+        hThis->Sumw2();
+        for (auto& kv : windowEnergy) {
+            double E    = kv.second;
+            double Wavg = windowWeighted[kv.first] / E;
+            hThis->Fill(E, Wavg);
+        }
+        hThis->Scale(scaleFactor);
+        hTotal->Add(hThis);
+
+        std::cout << "  Processed : " << r.file
+                  << "  (P=" << r.P << ", N=" << r.N
+                  << ", scale=" << scaleFactor
+                  << ", windows=" << windowEnergy.size() << ")\n";
+
+        delete hThis;
+        f->Close();
+    }
+
+    // ---- output tag ----
+    std::ostringstream tagStream;
+    tagStream << std::fixed << std::setprecision(2) << window_us;
+    TString tag = TString(outStem) + "_PHS_" + tagStream.str().c_str() + "us";
+
+    long long totalWindows = 0;
+    double minPulse =  1e30, maxPulse = -1e30;
+    for (int b = 1; b <= hTotal->GetNbinsX(); ++b) {
+        double val = hTotal->GetBinContent(b);
+        if (val <= 0.0) continue;
+        ++totalWindows;
+        if (val < minPulse) minPulse = val;
+        if (val > maxPulse) maxPulse = val;
+    }
+
+    std::cout << "\n  Combined bins with content : " << totalWindows << "\n"
+              << "  Counts range : [" << minPulse << ", " << maxPulse << "]\n"
+              << "==========================\n\n";
+
+    // ---- save PNG ----
+    gStyle->SetOptStat(0);
+    styleAxis(hTotal, "Pulse Height (MeV)", "Counts");
+
+    TCanvas* c = new TCanvas("cTotal", "Combined Pulse-Height Spectrum", 800, 600);
+    c->SetLeftMargin(0.12);
+    c->SetBottomMargin(0.12);
+    hTotal->Draw("HIST");
+    TString pngName = tag + ".png";
+    c->SaveAs(pngName.Data());
+    std::cout << "Saved plot : " << pngName.Data() << "\n";
+
+    // ---- save CSV ----
+    TString csvName = tag + ".csv";
+    std::ofstream csv(csvName.Data());
+    csv << "BinCenter_MeV,Counts\n";
+    for (int b = 1; b <= hTotal->GetNbinsX(); ++b) {
+        csv << std::fixed << std::setprecision(6)
+            << hTotal->GetBinCenter(b) << ","
+            << hTotal->GetBinContent(b) << "\n";
+    }
+    csv.close();
+    std::cout << "Saved data : " << csvName.Data() << "\n";
+
+    // ---- cleanup ----
+    delete c;
+    delete hTotal;
 }
