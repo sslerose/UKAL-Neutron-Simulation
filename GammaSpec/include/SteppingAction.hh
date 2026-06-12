@@ -54,7 +54,7 @@ class SteppingAction : public G4UserSteppingAction
     DetectorConstruction* fDetector = nullptr;
     EventAction* fEventAction = nullptr;
 
-    G4LogicalVolume* fHPGELV[2] = {nullptr, nullptr};
+    G4LogicalVolume* fActiveHPGELV[2] = {nullptr, nullptr};
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

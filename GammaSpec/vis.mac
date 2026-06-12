@@ -38,11 +38,26 @@
 
 # Make the World box invisible
 /vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility EncasementMother 0 false
+/vis/geometry/set/visibility CupMother 0 false
+/vis/geometry/set/visibility GeMother 0 false
+/vis/geometry/set/visibility AbsorberAssembly 0 false
 
 # Add color to volumes (depth, r, g, b, alpha)
 /vis/viewer/set/background white
-/vis/geometry/set/colour HPGE_LV_1 0 0.40 0.40 0.40 1.0
-/vis/geometry/set/colour HPGE_LV_2 0 0.40 0.40 0.40 1.0
+/vis/geometry/set/colour EncasementCap 0 0.75 0.75 0.75 0.5
+/vis/geometry/set/colour EncasementWall 0 0.75 0.75 0.75 0.5
+/vis/geometry/set/colour Cup 0 0.75 0.75 0.75 0.5
+/vis/geometry/set/colour CupCapAl 0 0.75 0.75 0.75 0.5
+/vis/geometry/set/colour CupCapMylar 0 0.90 0.90 0.90 0.5
+/vis/geometry/set/colour CupBackCap 0 0.75 0.75 0.75 0.5
+/vis/geometry/set/colour DeadLayerFront 0 0.65 0.60 0.35 0.5
+/vis/geometry/set/colour DeadLayerSide 0 0.65 0.60 0.35 0.5
+/vis/geometry/set/colour HPGE_LV_1 0 0.75 0.65 0.55 0.5
+/vis/geometry/set/colour HPGE_LV_2 0 0.75 0.65 0.55 0.5
+/vis/geometry/set/colour DeadLayerBoreBottom 0 0.65 0.60 0.35 0.5
+/vis/geometry/set/colour DeadLayerBoreWall 0 0.65 0.60 0.35 0.5
+
 /vis/geometry/set/colour Absorber 0 0.60 0.60 0.60 1.0
 /vis/geometry/set/colour GoldFrontFoil 0 1 0.8 0 0.5
 /vis/geometry/set/colour GoldBackFoil 0 1 0.8 0 0.5

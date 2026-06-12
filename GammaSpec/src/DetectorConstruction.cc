@@ -78,7 +78,7 @@ DetectorConstruction::DetectorConstruction()
   //========================================================================//
 
   // Detector placement (distance from origin to detector face)
-  fHPGEDisplacement = fHPGEDistance + kHPGELength / 2;
+  fDetectorDisplacement = fDetectorDistance + kEncLength / 2;
   
   // Initialize materials and detector messenger
   DefineMaterials();
@@ -118,10 +118,11 @@ void DetectorConstruction::DefineMaterials()
   //========================================================================//
   
   // Get pure elements
-  G4Material* Ge = nist->FindOrBuildMaterial("G4_Ge");     // Germanium
-  G4Material* Al = nist->FindOrBuildMaterial("G4_Al");     // Aluminum
+  fHPGEMaterial = nist->FindOrBuildMaterial("G4_Ge");     // Germanium
+  fAlMaterial = nist->FindOrBuildMaterial("G4_Al");     // Aluminum
 
-  fHPGEMaterial = Ge;
+  // Get materials
+  fMylarMaterial = nist->FindOrBuildMaterial("G4_MYLAR");   // Mylar
 
 
   //========================================================================//
@@ -172,64 +173,27 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 
   //========================================================================//
   // Detector geometry
-  // Particles generated at origin
   //========================================================================//
 
-  // Solids
-  G4Tubs* outerTube = new G4Tubs("HPGE_Outer", 
-                                  0, 
-                                  kHPGEOuterRadius, 
-                                  kHPGELength / 2, 
-                                  0, 
-                                  360 * deg);
-
-  G4Tubs* boreTube = new G4Tubs("HPGE_Bore",
-                                 0,
-                                 kHPGEInnerRadius,
-                                 kHPGEBoreDepth / 2 + kHPGEBoreDepth * 0.1, // Add extra length to ensure complete subtraction
-                                 0,
-                                 360 * deg);
-
-  G4ThreeVector borePosition(0, 0, (kHPGELength - kHPGEBoreDepth) / 2 + kHPGEBoreDepth * 0.1);
-
-  G4SubtractionSolid* hpgeSolid = new G4SubtractionSolid("HPGE_Solid", 
-                                                          outerTube, 
-                                                          boreTube, 
-                                                          0, 
-                                                          borePosition);
-
-  // Logical volumes
-  fHPGELV[0] = new G4LogicalVolume(hpgeSolid, 
-                                   fHPGEMaterial, 
-                                   "HPGE_LV_1");
-
-  fHPGELV[1] = new G4LogicalVolume(hpgeSolid, 
-                                   fHPGEMaterial, 
-                                   "HPGE_LV_2");
-
-  // Physical volumes
   fRotationMatrix[0] = new G4RotationMatrix();
   fRotationMatrix[0]->rotateY(0 * deg); // Front HPGe - no rotation
 
   fRotationMatrix[1] = new G4RotationMatrix();
   fRotationMatrix[1]->rotateY(180 * deg); // Back HPGe - rotated 180 degrees about Y axis
 
-  fHPGEPV[0] = new G4PVPlacement(fRotationMatrix[0],
-                                G4ThreeVector(0, 0, fHPGEDisplacement),
-                                fHPGELV[0],
-                                "HPGE_PV_1",
-                                fWorldLV,
-                                false,
-                                0);
+  for (G4int i = 0; i < 2; ++i) {
+    G4LogicalVolume* detectorLV = BuildDetector(i);
 
-  fHPGEPV[1] = new G4PVPlacement(fRotationMatrix[1],
-                                G4ThreeVector(0, 0, -fHPGEDisplacement),
-                                fHPGELV[1],
-                                "HPGE_PV_2",
-                                fWorldLV,
-                                false,
-                                0);
+    G4double sign = (i == 0) ? +1.0 : -1.0;
 
+    fDetectorPV[i] = new G4PVPlacement(fRotationMatrix[i],
+                                        G4ThreeVector(0, 0, sign * fDetectorDisplacement),
+                                        detectorLV,
+                                        (i == 0) ? "Detector_1" : "Detector_2",
+                                        fWorldLV,
+                                        false,
+                                        i);
+  }
   
   //========================================================================//
   // Absorber geometry (cylindrical)
@@ -335,25 +299,353 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
+// Build one full detector hierarchy (encasement mother and contents).
+// Index (0 or 1) names the active crystal LV: HPGE_LV_1 / HPGE_LV_2.
+//------------------------------------------------------------------------//
+G4LogicalVolume* DetectorConstruction::BuildDetector(G4int index)
+{
+  //========================================================================//
+  // Derived dimensions
+  //========================================================================//
+
+  // Germanium structure (active crystal + dead layer)
+  G4double geOuterRadius = kCrystalRadius + kDeadOuter;   // incl. side dead layer
+  G4double geLength      = kCrystalLength + kDeadOuter;   // incl. front dead layer
+
+  // Cup: 2 mm radial gap between the germanium structure and the cup wall
+  G4double cupInnerRadius = geOuterRadius + kGapCupGe;
+  G4double cupOuterRadius = cupInnerRadius + kCupThickness;
+
+  // Encasement: gap G maintained at front and around the sides
+  G4double encInnerRadius = cupOuterRadius + kGapEncCup;
+  G4double encOuterRadius = encInnerRadius + kEncThickness;
+
+
+  //========================================================================//
+  // Encasement
+  //========================================================================//
+
+  // Mother volume
+  G4Tubs* encMotherTube = new G4Tubs("EncasementMother",
+                                      0.0,
+                                      encOuterRadius,
+                                      kEncLength / 2,
+                                      0.0, 360.0 * deg);
+
+  G4LogicalVolume* encMotherLV = new G4LogicalVolume(encMotherTube,
+                                                     fWorldMaterial,
+                                                     "EncasementMother");
+
+  // Front cap (full-width disk, flush with mother front)
+  G4Tubs* encCapTube = new G4Tubs("EncasementCap",
+                                  0.0,
+                                  encInnerRadius,
+                                  kEncThickness / 2,
+                                  0.0, 360.0 * deg);
+
+  G4LogicalVolume* encCapLV = new G4LogicalVolume(encCapTube,
+                                                  fAlMaterial,
+                                                  "EncasementCap");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, -kEncLength / 2 + kEncThickness / 2),
+                    encCapLV,
+                    "EncasementCap",
+                    encMotherLV,
+                    false,
+                    index);
+
+  // Side walls
+  G4Tubs* encWallTube = new G4Tubs("EncasementWall",
+                                    encInnerRadius,
+                                    encOuterRadius,
+                                    kEncLength / 2,
+                                    0.0, 360.0 * deg);
+
+  G4LogicalVolume* encWallLV = new G4LogicalVolume(encWallTube,
+                                                    fAlMaterial,
+                                                    "EncasementWall");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, 0),
+                    encWallLV,
+                    "EncasementWall",
+                    encMotherLV,
+                    false,
+                    index);
+
+
+  //========================================================================//
+  // Cup
+  //========================================================================//
+
+  // Mother volume
+  G4Tubs* cupMotherTube = new G4Tubs("CupMother",
+                                     0.0,
+                                     cupOuterRadius,
+                                     kCupLength / 2,
+                                     0.0, 360.0 * deg);
+
+  G4LogicalVolume* cupMotherLV = new G4LogicalVolume(cupMotherTube,
+                                                     fWorldMaterial,
+                                                     "CupMother");
+
+  G4double cupMotherZ = -kEncLength / 2 + kEncThickness + kGapEncCup + kCupLength / 2; // Add gap between encasement and cup
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, cupMotherZ),
+                    cupMotherLV,
+                    "CupMother",
+                    encMotherLV,
+                    false,
+                    index);
+
+  // Cup walls
+  G4Tubs* cupTube = new G4Tubs("Cup",
+                               cupInnerRadius,
+                               cupOuterRadius,
+                               kCupLength / 2,
+                               0.0, 360.0 * deg);
+
+  G4LogicalVolume* cupLV = new G4LogicalVolume(cupTube,
+                                               fAlMaterial,
+                                               "Cup");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, 0),
+                    cupLV,
+                    "Cup",
+                    cupMotherLV,
+                    false,
+                    index);
+
+  // Front cup cap aluminum layer
+  G4Tubs* capAlTube = new G4Tubs("CupCapAl",
+                                 0.0,
+                                 cupInnerRadius,
+                                 kCapAlThickness / 2,
+                                 0.0, 360.0 * deg);
+
+  G4LogicalVolume* capAlLV = new G4LogicalVolume(capAlTube,
+                                                 fAlMaterial,
+                                                 "CupCapAl");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, -kCupLength / 2 + kCapAlThickness / 2),
+                    capAlLV,
+                    "CupCapAl",
+                    cupMotherLV,
+                    false,
+                    index);
+
+  // Front cup cap Mylar layer
+  G4Tubs* capMylarTube = new G4Tubs("CupCapMylar",
+                                    0.0,
+                                    cupInnerRadius,
+                                    kCapMylarThickness / 2,
+                                    0.0, 360.0 * deg);
+
+  G4LogicalVolume* capMylarLV = new G4LogicalVolume(capMylarTube,
+                                                    fMylarMaterial,
+                                                    "CupCapMylar");
+
+  G4double capMylarZ = -kCupLength / 2 + kCapAlThickness + kCapMylarThickness / 2; // Position Mylar layer behind Al layer
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, capMylarZ),
+                    capMylarLV,
+                    "CupCapMylar",
+                    cupMotherLV,
+                    false,
+                    index);
+
+  // Rear cup cap
+  G4Tubs* backCapTube = new G4Tubs("CupBackCap",
+                                   kHoleRadius,
+                                   cupInnerRadius,
+                                   kBackCapThickness / 2,
+                                   0.0, 360.0 * deg);
+
+  G4LogicalVolume* backCapLV = new G4LogicalVolume(backCapTube,
+                                                   fAlMaterial,
+                                                   "CupBackCap");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, kCupLength / 2 - kBackCapThickness / 2),
+                    backCapLV,
+                    "CupBackCap",
+                    cupMotherLV,
+                    false,
+                    index);
+
+
+  //========================================================================//
+  // Germanium structure (active crystal + dead layer)
+  //========================================================================//
+
+  // Mother volume
+  G4Tubs* geMotherTube = new G4Tubs("GeMother",
+                                    0.0,
+                                    geOuterRadius,
+                                    geLength / 2,
+                                    0.0, 360.0 * deg);
+
+  G4LogicalVolume* geMotherLV = new G4LogicalVolume(geMotherTube,
+                                                    fWorldMaterial,
+                                                    "GeMother");
+
+  G4double geMotherZ = -kCupLength / 2 + kCapAlThickness + kCapMylarThickness + geLength / 2; // Front face flush to the Mylar layer of cup
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, geMotherZ),
+                    geMotherLV,
+                    "GeMother",
+                    cupMotherLV,
+                    false,
+                    index);
+
+  // Outer dead layer face
+  G4Tubs* deadFrontTube = new G4Tubs("DeadLayerFront",
+                                     0.0,
+                                     geOuterRadius,
+                                     kDeadOuter / 2,
+                                     0.0, 360.0 * deg);
+
+  G4LogicalVolume* deadFrontLV = new G4LogicalVolume(deadFrontTube,
+                                                     fHPGEMaterial,
+                                                     "DeadLayerFront");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, -geLength / 2 + kDeadOuter / 2),
+                    deadFrontLV,
+                    "DeadLayerFront",
+                    geMotherLV,
+                    false,
+                    index);
+
+  // Outer dead layer side
+  G4Tubs* deadSideTube = new G4Tubs("DeadLayerSide",
+                                    kCrystalRadius,
+                                    geOuterRadius,
+                                    kCrystalLength / 2,
+                                    0.0, 360.0 * deg);
+
+  G4LogicalVolume* deadSideLV = new G4LogicalVolume(deadSideTube,
+                                                    fHPGEMaterial,
+                                                    "DeadLayerSide");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, kDeadOuter / 2),
+                    deadSideLV,
+                    "DeadLayerSide",
+                    geMotherLV,
+                    false,
+                    index);
+
+  // Active coaxial crystal
+  G4Tubs* crystalOuterTube = new G4Tubs("ActiveCrystalOuter",
+                                        0.0,
+                                        kCrystalRadius,
+                                        kCrystalLength / 2,
+                                        0.0, 360.0 * deg);
+
+  G4double boreClearance = 1.0 * mm;  // extra length for a clean subtraction
+
+  G4Tubs* boreTube = new G4Tubs("CrystalBore",
+                                0.0,
+                                kHoleRadius,
+                                (kHoleDepth + boreClearance) / 2,
+                                0.0, 360.0 * deg);
+
+  G4ThreeVector borePosition(0, 0, kCrystalLength / 2 - kHoleDepth / 2 + boreClearance / 2);  // Bore placement
+
+  G4SubtractionSolid* crystalSolid = new G4SubtractionSolid("ActiveCrystal",
+                                                            crystalOuterTube,
+                                                            boreTube,
+                                                            0,
+                                                            borePosition);
+
+  G4String activeName = (index == 0) ? "HPGE_LV_1" : "HPGE_LV_2"; // LV names for active Germanium crystals
+
+  fActiveHPGELV[index] = new G4LogicalVolume(crystalSolid,
+                                             fHPGEMaterial,
+                                             activeName);
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, kDeadOuter / 2),
+                    fActiveHPGELV[index],
+                    activeName,
+                    geMotherLV,
+                    false,
+                    index);
+
+  // Inner dead layer cap
+  G4Tubs* deadBoreBottomTube = new G4Tubs("DeadLayerBoreBottom",
+                                          0.0,
+                                          kHoleRadius,
+                                          kDeadInner / 2,
+                                          0.0, 360.0 * deg);
+
+  G4LogicalVolume* deadBoreBottomLV = new G4LogicalVolume(deadBoreBottomTube,
+                                                          fHPGEMaterial,
+                                                          "DeadLayerBoreBottom");
+
+  G4double boreBottomZ  = geLength / 2 - kHoleDepth;  // Bore placement
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, boreBottomZ + kDeadInner / 2),
+                    deadBoreBottomLV,
+                    "DeadLayerBoreBottom",
+                    geMotherLV,
+                    false,
+                    index);
+
+  // Inner dead layer walls
+  G4double boreWallLength = kHoleDepth - kDeadInner;
+
+  G4Tubs* deadBoreWallTube = new G4Tubs("DeadLayerBoreWall",
+                                        kHoleRadius - kDeadInner,
+                                        kHoleRadius,
+                                        boreWallLength / 2,
+                                        0.0, 360.0 * deg);
+
+  G4LogicalVolume* deadBoreWallLV = new G4LogicalVolume(deadBoreWallTube,
+                                                        fHPGEMaterial,
+                                                        "DeadLayerBoreWall");
+
+  new G4PVPlacement(0,
+                    G4ThreeVector(0, 0, geLength / 2 - boreWallLength / 2),
+                    deadBoreWallLV,
+                    "DeadLayerBoreWall",
+                    geMotherLV,
+                    false,
+                    index);
+
+  return encMotherLV;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
 // Set HPGe detector distance from origin
 //------------------------------------------------------------------------//
 void DetectorConstruction::SetDetectorDistance(G4double value)
 {
   // Check that geometry has been constructed
-  if (!fHPGEPV[0] || !fHPGEPV[1]) {
+  if (!fDetectorPV[0] || !fDetectorPV[1]) {
     G4cerr << "Detector not yet constructed." << G4endl;
     return;
   }
 
   // Calculate new assembly coordinates accounting for assembly angle
-  fHPGEDistance = value;  // Distance from origin to detector face
-  fHPGEDisplacement = fHPGEDistance + kHPGELength / 2;  // Distance from origin to detector center
+  fDetectorDistance = value;  // Distance from origin to detector face
+  fDetectorDisplacement = fDetectorDistance + kEncLength / 2;  // Distance from origin to detector center
 
   // Update assembly position
-  fHPGEPV[0]->SetTranslation(G4ThreeVector(0, 0, fHPGEDisplacement));
-  fHPGEPV[1]->SetTranslation(G4ThreeVector(0, 0, -fHPGEDisplacement));
+  fDetectorPV[0]->SetTranslation(G4ThreeVector(0, 0, fDetectorDisplacement));
+  fDetectorPV[1]->SetTranslation(G4ThreeVector(0, 0, -fDetectorDisplacement));
 
-  G4cout << "New HPGe detector distance to source: " << G4BestUnit(fHPGEDistance, "Length") << G4endl;
+  G4cout << "New detector distance to source: " << G4BestUnit(fDetectorDistance, "Length") << G4endl;
 
   // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
@@ -623,12 +915,12 @@ void DetectorConstruction::PrintParameters()
   G4cout << "World material: " << fWorldMaterial->GetName() << G4endl;
   G4cout << "\nNeutrons generated at origin (0,0,0)" << G4endl;
   
-  G4cout << "\nHPGe Detector (Coaxial):" << G4endl;
-  G4cout << "  Diameter: " << G4BestUnit(2*kHPGEOuterRadius, "Length") << G4endl;
-  G4cout << "  Length: " << G4BestUnit(kHPGELength, "Length") << G4endl;
-  G4cout << "  Detector face distance from origin: " << G4BestUnit(fHPGEDistance, "Length") << G4endl;
-  G4cout << "  Material: " << fHPGEMaterial->GetName() << G4endl;
-  G4cout << "  Density: " << fHPGEMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
+  // G4cout << "\nHPGe Detector (Coaxial):" << G4endl;
+  // G4cout << "  Diameter: " << G4BestUnit(2*kHPGEOuterRadius, "Length") << G4endl;
+  // G4cout << "  Length: " << G4BestUnit(kHPGELength, "Length") << G4endl;
+  // G4cout << "  Detector face distance from origin: " << G4BestUnit(fHPGEDistance, "Length") << G4endl;
+  // G4cout << "  Material: " << fHPGEMaterial->GetName() << G4endl;
+  // G4cout << "  Density: " << fHPGEMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

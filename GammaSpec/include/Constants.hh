@@ -54,17 +54,33 @@
 #include "G4SystemOfUnits.hh"
 
 //========================================================================//
-// Detector assembly constants
+// Detector assembly constants (Ametek GMX45P4-76-A)
 //========================================================================//
 
 // World volume
 constexpr G4double kWorldSize = 2.0 * m;
 
 // Detector assembly volume
-constexpr G4double kHPGELength = 10.0 * cm;
-constexpr G4double kHPGEInnerRadius = 1.5 * cm / 2;
-constexpr G4double kHPGEOuterRadius = 9.0 * cm / 2;
-constexpr G4double kHPGEBoreDepth = 8.5 * cm;
+// constexpr G4double kHPGELength = 10.0 * cm;
+// constexpr G4double kHPGEInnerRadius = 1.5 * cm / 2;
+// constexpr G4double kHPGEOuterRadius = 9.0 * cm / 2;
+// constexpr G4double kHPGEBoreDepth = 8.5 * cm;
+
+constexpr G4double kCrystalRadius       = 31.55 * mm;  // A - active crystal radius
+constexpr G4double kCrystalLength       = 69.0 * mm;   // B - active crystal length
+constexpr G4double kHoleRadius          = 4.4  * mm;   // C - active bore radius
+constexpr G4double kHoleDepth           = 60.3 * mm;   // D - active bore depth
+constexpr G4double kCupLength           = 105.0 * mm;  // F - cup length
+constexpr G4double kGapEncCup           = 4.0  * mm;   // G - encasement-to-cup space
+constexpr G4double kCapAlThickness      = 0.03 * mm;   // H - front cap Al layer
+constexpr G4double kCapMylarThickness   = 0.03 * mm;   // H - front cap Mylar layer
+constexpr G4double kEncThickness        = 1.0  * mm;   // I - encasement wall
+constexpr G4double kCupThickness        = 0.8  * mm;   // K - cup wall
+constexpr G4double kDeadOuter           = 0.3  * um;   // M - outer (Ge/B) dead layer
+constexpr G4double kDeadInner           = 700. * um;   // N - inner (Ge/Li) dead layer
+constexpr G4double kBackCapThickness    = 3.0  * mm;   // Cup back cap
+constexpr G4double kEncLength           = kEncThickness + kGapEncCup + kCupLength + 10.0 * mm;  // Encasement length
+constexpr G4double kGapCupGe            = 2.0  * mm;   // Ge structure-to-cup radial gap
 
 
 #endif
