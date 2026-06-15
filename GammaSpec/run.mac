@@ -20,11 +20,19 @@
 /process/had/rdm/sourceTimeProfile beam.data
 /process/had/rdm/decayBiasProfile measures.data
 
-# Set ion
+# Set ion to Fe61
 /gun/particle ion
 /gun/ion 26 61
 
 /analysis/setFileName fe61
+
+# Run events
+/run/beamOn 1000000
+
+# Set ion to au198
+/gun/ion 79 198
+
+/analysis/setFileName au198
 
 # Run events
 /run/beamOn 1000000

@@ -18,12 +18,14 @@
 /// \file AnalyzePHS.C
 /// \brief ROOT macro for generating a pulse-height spectrum from GammaSpec output.
 ///
+/// -- analyzePHS -------------------------------------------------------------
 /// Usage (in ROOT):
 ///   .L AnalyzePHS.C
+///   analyzePHS("path/to/GammaSpec.root")
 ///   analyzePHS("path/to/GammaSpec.root", window_us, nBins, eMax)
 ///
 /// Required argument:
-///   filePath   - path to the .root data file
+///   filePath   - path to the GammaSpec .root output file
 ///
 /// Optional arguments:
 ///   window_us  - charge-collection window length in microseconds (default = 1.0)
@@ -31,15 +33,54 @@
 ///   eMax       - histogram upper edge in MeV (default = 3.0)
 ///
 /// Outputs:
-///   <stem>_PHS_<window_us>us.png  - pulse-height spectrum plot
-///   <stem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
+///   <stem>_PHS_<window>us.png          - pulse-height spectrum plot
+///   <stem>_PHS_<window>us.csv          - bin-center (MeV) and counts
+///   <stem>_EmittedParticles.csv        - first 10% of emitted-particle rows
+///   <stem>_GammaEnergy.png/.csv        - emitted gamma energy spectrum
+///   <stem>_GammaPHS_<window>us.png     - emitted gamma pulse-height spectrum
+///   <stem>_DecayProducts.csv           - first 10% of decay-product rows
 ///
 /// Algorithm:
-///   Each row in EnergyDeposition is assigned to a time window
-///   idx = floor(Time / window_us).  Within each window, the
-///   weighted energy deposits are summed: pulse[idx] += EnergyDep * Weight.
-///   One histogram entry is filled per occupied window.  Empty windows
-///   are skipped entirely to avoid a spurious zero-energy peak.
+///   Each EnergyDeposition row is assigned to a time-window index
+///   idx = floor(Time / window_us).  Two quantities are accumulated per window:
+///     windowEnergy[idx]   += EnergyDep           (total deposited energy)
+///     windowWeighted[idx] += EnergyDep * Weight  (weight-scaled energy)
+///   One histogram entry is filled per occupied window, at pulse height
+///   E = windowEnergy[idx], with fill weight W_avg = windowWeighted[idx] / E.
+///   Empty windows are skipped to avoid a spurious zero-energy peak.
+///
+/// -- analyzePHSTotal -------------------------------------------------------------
+/// Usage (in ROOT):
+///   .L AnalyzePHS.C
+///   analyzePHSTotal("runs.info")
+///   analyzePHSTotal("runs.info", rootDir, outStem, window_us, nBins, eMax)
+///
+/// Required argument:
+///   infoPath   - path to a run scale info file (see runs.info for example)
+///
+/// Optional arguments:
+///   rootDir    - directory containing the .root files (default = ".")
+///   outStem    - output filename prefix (default = "Total")
+///   window_us  - charge-collection window length in microseconds (default = 1.0)
+///   nBins      - number of histogram bins (default = 3000)
+///   eMax       - histogram upper edge in MeV (default = 3.0)
+///
+/// Outputs:
+///   <outStem>_PHS_<window>us.png  - combined pulse-height spectrum plot
+///   <outStem>_PHS_<window>us.csv  - bin-center (MeV) and counts
+///
+/// Algorithm:
+///   For each run listed in runs.info, a per-run PHS is built using the same
+///   two-accumulator time-window method as analyzePHS (see above).  That
+///   per-run histogram is then scaled by P/N, which corrects for the ratio of
+///   the true parent population to the number of parents actually simulated,
+///   normalizing each run's contribution to the physical source strength.  The
+///   scaled histograms are summed bin-by-bin into a single combined spectrum
+///   with Sumw2 error propagation.
+///
+/// Scale factor logic:
+///   f_i = P_i / N_i
+///   H_total = sum_i ( f_i * H_i )
 //
 
 #include "TFile.h"
@@ -370,32 +411,7 @@ void analyzePHS(const char* filePath,
 }
 
 // ============================================================
-// Multi-file total PHS: reads a run info file, scales each
-// file's PHS contribution by P_i/N_i, and sums into a single
-// combined pulse-height spectrum.
-//
-// Usage (in ROOT):
-//   .L AnalyzePHS.C
-//   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax)
-//
-// Arguments:
-//   infoPath  - path to the run info file (stem, P_i, N_i per line)
-//   rootDir   - directory containing the .root files (default = ".")
-//   outStem   - output filename stem for the combined PHS (default = "Total")
-//   window_us - charge-collection window length in microseconds (default = 1.0)
-//   nBins     - number of histogram bins (default = 3000)
-//   eMax      - histogram upper edge in MeV (default = 3.0)
-//
-// Outputs:
-//   <outStem>_PHS_<window_us>us.png  - combined pulse-height spectrum plot
-//   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
-//
-// Scale factor logic:
-//   f_i = P_i / N_i
-//   H_total = sum_i ( f_i * H_i )
-//   This correctly handles both the proportional-population case
-//   (N_i = c*P_i, so f_i = 1/c for all i) and the equal-population
-//   case (N_i = N, so f_i = P_i/N per species).
+// Multi-file total PHS
 // ============================================================
 void analyzePHSTotal(const char* infoPath,
                      const char* rootDir  = ".",
