@@ -26,7 +26,7 @@ Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight
 **Windows Users:**
 
 **Linux:**  
-A shell file for easy installation of version 11.4.0 is included in the [Scripts](Scripts) directory. You can source (i.e., execute) the script as
+A shell file for easy installation of version 11.4.1 is included in the [Scripts](Scripts) directory. You can source (i.e., execute) the script as
 ```bash
 cd /path/to/UKAL-Neutron-Simulation
 source geant4_install_script.sh
@@ -80,13 +80,19 @@ If you would prefer to install manually or want a different version, follow thes
         * USE_SYSTEM_EXPAT
     5. Type <kbd>C</kbd> to Configure again. Once this is finished, type <kbd>G</kbd> to Generate. You will be returned to the main terminal once it is finished.
 7. Build Geant4:
-    1. From the build directory,  
-	
+    1. Check your devices core count and RAM size to prevent memory overload during the build:
+
+         ```bash
+         lscpu | grep 'Core' && free -h
+         ```
+         The core count will show beside "Core(s) per socket", and the RAM size will be the first value beside "Mem". Take the minimum between the number of cores and half the RAM size.
+
+    2. From the build directory,  
        ```bash
        make -j#
        ```
-       where the hash in `-j#` corresponds to the number of cores on your computer (run `lscpu | grep 'Core'` to check).
-    2. Once the build is complete,  
+       where the hash in `-j#` corresponds to the number determined in the above step.
+    3. Once the build is complete,  
        ```bash
        make install
        ```
@@ -97,22 +103,14 @@ If you would prefer to install manually or want a different version, follow thes
 ### Setup a Geant4 Environment Script
 
 **Linux:**  
-Before you can build or run any Geant4 simulations, you must source the Geant4 libraries:
+Before you can build or run any Geant4 simulations, you must source the Geant4 libraries. To make this easy, we will add a command and alias to our `.bashrc` file. The command will also contain some visualization fixes and diagnostic feedback.
 
 1. Open `.bashrc`:  
    ```bash
    sudo nano ~/.bashrc
    ```
 
-2. At the end of the bash file, insert the alias and a header (remember to change the version number if you installed one other than 11.4.0):  
-   ```bash
-   # Geant4 source alias
-   alias geant4make="source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh"
-   ```
-   Press <kbd>Ctrl</kbd> + <kbd>X</kbd> to exit the file, press <kbd>Y</kbd> to accept changes, and press <kbd>Enter</kbd> to write to the file.
-   
-   (Optional)
-   If you want some feedback as to whether your file has been sourced properly, insert the following, more detailed function and alias:
+2. At the end of the bash file, add the following function and its alias (remember to change the version number if you installed one other than 11.4.1):
    ```bash
    # <<< geant4 initialize >>>
    setup_geant4() {
@@ -121,19 +119,25 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
          echo "Geant4 environment already active"
          return 0
       fi
-    
+      
+      export QT_QPA_PLATFORM=xcb
+      export G4VIS_DEFAULT_DRIVER=TSGQt
+      
       # Source Geant4 environment
       source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh
-    
+      
       # Mark Geant4 as active
       export GEANT4_ACTIVE=true
-    
+      
       echo "Geant4 environment activated"
+      echo "Default visualizer: $G4VIS_DEFAULT_DRIVER"
       echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
    }
    alias geant4make="setup_geant4"
    # <<< geant4 initialize >>>
    ```
+   Press <kbd>Ctrl</kbd> + <kbd>X</kbd> to exit the file, press <kbd>Y</kbd> to accept changes, and press <kbd>Enter</kbd> to write to the file.
+
 3. Before building or running any Geant4 program, call the alias:  
    ```bash
    geant4make
@@ -172,37 +176,7 @@ I could offer a script for this section, but this particular set of actions must
 After a few moments, Geant4 will open in a new window. The largest section is the visualizer and is our main concern. You should see the following:  
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/2c877e07-20e3-436e-95f2-8c81cf44b3f8" />
 
-If you experience ghosting of the Geant4 window (i.e., the visualizer is transparent and duplicates when the window is moved), you will need to change your `.bashrc` file to force X11 display for Geant4. Open your `.bashrc` file and change the environment script to the following:
-```bash
-# <<< geant4 initialize >>>
-setup_geant4() {
-   # Check if Geant4 is already set up
-   if [[ "$GEANT4_ACTIVE" == "true" ]]; then
-      echo "Geant4 environment already active"
-      return 0
-   fi
-	
-   export QT_QPA_PLATFORM=xcb
-   export GDK_BACKEND=x11\
-   export WAYLAND_DISPLAY=""
-   export G4VIS_DEFAULT_DRIVER=TSGQt
-	
-   # Source Geant4 environment
-   source ~/Software/Geant4/geant4-v11.4.1-install/share/Geant4/geant4make/geant4make.sh
-	
-   # Mark Geant4 as active
-   export GEANT4_ACTIVE=true
-	
-   echo "Geant4 environment activated"
-   echo "Default visualizer: $G4VIS_DEFAULT_DRIVER"
-   echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-}
-alias geant4make="setup_geant4"
-# <<< geant4 initialize >>>
-```
-Return to [Sourcing the Geant4 Shell Script](#sourcing-the-geant4-shell-script) for more detail.
-
-To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name can be found in the project folder via a file explorer or calling `ls` in the terminal.
+To generalize the above to any project, change step (1) to whichever directory the project is in, follow steps (2) -- (4) as normal, then launch using `./executable_name`, where the executable's name can be found in the build directory of the project via a file explorer or by calling `ls` in the terminal.
 
 
 ## Running Projects on the Morgan Compute Cluster (UKY Users Only)
@@ -305,7 +279,7 @@ Before importing any Neutron Simulation project, you should test that the basic 
 	```
 4. Make the example:
 	```bash
-	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.4.0/cmake
+	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.4.1/cmake
 	$SING_RUN make
 	```
 5. Run the example:
