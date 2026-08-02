@@ -87,7 +87,10 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Getters
     const G4VPhysicalVolume* GetWorld() const { return fWorldPV; }
-    G4LogicalVolume* GetHPGELV(G4int i) const { return (i == 0 || i == 1) ? fHPGELV[i] : nullptr; } // Return the i-th HPGe logical volume
+    // G4LogicalVolume* GetHPGELV(G4int i) const { return (i == 0 || i == 1) ? fHPGELV[i] : nullptr; } // Return the i-th HPGe logical volume
+    G4LogicalVolume* GetActiveCrystalLV() const { return fActiveCrystalLV; }
+    G4LogicalVolume* GetAbsorberLV() const { return fAbsorberLV; }
+    G4LogicalVolume* GetGoldLV() const { return fGoldLV; }
 
     G4double GetDetectorAngle() const { return fHPGEAngle; }
     G4double GetDetectorDistance() const { return fHPGEDistance; }
@@ -103,64 +106,57 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   private:
     //========================================================================//
-    // Detector assembly volumes
-    //========================================================================//
-    
-    // Physical volumes
-    G4VPhysicalVolume* fWorldPV = nullptr;
-    G4VPhysicalVolume* fHPGEPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector (2 for front and back)
-    
-    // Logical volumes
-    G4LogicalVolume* fWorldLV = nullptr;
-    G4LogicalVolume* fHPGELV[2] = {nullptr, nullptr}; // Array of logical volumes for HPGe detector (2 for front and back)
-
-
-    //========================================================================//
-    // Absorber volumes
+    // World variables and volumes
     //========================================================================//
 
-    // Solids
-    G4Tubs* fAbsorberAssemblyTube = nullptr;
-    G4Tubs* fGoldFrontTube = nullptr;
-    G4Tubs* fGoldBackTube = nullptr;
-    G4Tubs* fAbsorberTube = nullptr;
-    
-    // Physical volumes
-    G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
-    G4VPhysicalVolume* fGoldFrontPV = nullptr;
-    G4VPhysicalVolume* fGoldBackPV = nullptr;
-    G4VPhysicalVolume* fAbsorberPV = nullptr;
-    
-    // Logical volumes
-    G4LogicalVolume* fAbsorberAssemblyLV = nullptr;
-    G4LogicalVolume* fGoldFrontLV = nullptr;
-    G4LogicalVolume* fGoldBackLV = nullptr;
-    G4LogicalVolume* fAbsorberLV = nullptr;
-
-
-    //========================================================================//
-    // Detector assembly parameters
-    //========================================================================//
-
-    // World volume
+    // Size
     G4double fWorldSize = 0.;
 
-    // Detector volume
+    // Material
+    G4Material* fWorldMaterial = nullptr;
+
+    // Volumes
+    G4LogicalVolume* fWorldLV = nullptr;
+
+    G4VPhysicalVolume* fWorldPV = nullptr;
+
+
+    //========================================================================//
+    // Detector variables and volumes
+    //========================================================================//
+
+    // Parameters
     G4double fHPGEDistance = 5.0 * cm;
     G4double fHPGEDisplacement = 0.;
     G4double fHPGEAngle = 0. * deg;
 
     // Materials
-    G4Material* fWorldMaterial = nullptr;
     G4Material* fHPGEMaterial = nullptr;
+    G4Material* fVacuumMaterial = nullptr;
+    G4Material* fAluminumMaterial = nullptr;
 
     // Misc.
     DetectorMessenger* fDetectorMessenger = nullptr;
     G4RotationMatrix* fRotationMatrix[2] = {nullptr, nullptr}; // Array of rotation matrices for HPGe detector (2 for front and back)
+    
+    // Volumes
+    G4LogicalVolume* fHPGEMotherLV[2] = {nullptr, nullptr}; // Array of logical volumes for HPGe detector (2 for front and back)  
+    G4LogicalVolume* fCryostatLV        = nullptr;
+    G4LogicalVolume* fVacuum2LV         = nullptr;
+    G4LogicalVolume* fDetectorCupLV     = nullptr;
+    G4LogicalVolume* fVacuum1LV         = nullptr;
+    G4LogicalVolume* fOuterDeadLayerLV  = nullptr;
+    G4LogicalVolume* fActiveCrystalLV   = nullptr;
+    G4LogicalVolume* fInnerDeadLayerLV  = nullptr;
+    G4LogicalVolume* fCentralContactLV  = nullptr;
 
+    G4VPhysicalVolume* fHPGEMotherPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector mother volumes (2 for front and back)
+
+    // G4VPhysicalVolume* fHPGEPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector (2 for front and back)
+    
 
     //========================================================================//
-    // Absorber parameters
+    // Absorber variables and volumes
     //========================================================================//
 
     // Gold foil
@@ -178,8 +174,28 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4Material* fGoldMaterial = nullptr;
     G4Material* fAbsorberMaterial = nullptr;
 
+    // Solids
+    G4Tubs* fAbsorberAssemblyTube = nullptr;
+    G4Tubs* fGoldFrontTube = nullptr;
+    G4Tubs* fGoldBackTube = nullptr;
+    G4Tubs* fAbsorberTube = nullptr;
+
+    // Volumes
+    G4LogicalVolume* fAbsorberAssemblyLV = nullptr;
+    // G4LogicalVolume* fGoldFrontLV = nullptr;
+    // G4LogicalVolume* fGoldBackLV = nullptr;
+    G4LogicalVolume* fGoldLV = nullptr;
+    G4LogicalVolume* fAbsorberLV = nullptr;
+    
+    G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
+    G4VPhysicalVolume* fGoldFrontPV = nullptr;
+    G4VPhysicalVolume* fGoldBackPV = nullptr;
+    // G4VPhysicalVolume* fAbsorberPV = nullptr;
+
   private:
     void DefineMaterials();
+    void BuildDetectorStack(G4LogicalVolume* motherLV, G4int detectorID);
+
     G4VPhysicalVolume* ConstructVolumes();
 };
 

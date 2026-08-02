@@ -33,6 +33,7 @@
 #include "TrackingAction.hh"
 
 #include "EventAction.hh"
+#include "DetectorConstruction.hh"
 #include "HistoManager.hh"
 #include "Run.hh"
 
@@ -47,7 +48,9 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-TrackingAction::TrackingAction(EventAction* event) : fEventAction(event) {}
+TrackingAction::TrackingAction(DetectorConstruction* det, EventAction* event)
+  : fDetectorConstruction(det), fEventAction(event)
+{}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -63,10 +66,17 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   G4int pdgCode = particle->GetPDGEncoding();
   G4String name = particle->GetParticleName();
   G4double charge = particle->GetPDGCharge();
-  G4double energy = track->GetKineticEnergy();
+  G4double kineticEnergy = track->GetKineticEnergy();
   G4double meanLife = particle->GetPDGLifeTime();
   G4double time   = track->GetGlobalTime();   // birth time
   G4double weight = track->GetWeight();
+
+  G4bool isIon = G4IonTable::IsIon(particle);
+  G4double excitationEnergy = 0.0;
+  if (isIon) {
+    const G4Ions* ion = dynamic_cast<const G4Ions*>(particle);
+    excitationEnergy = ion->GetExcitationEnergy();
+  }
 
 
   //========================================================================//
@@ -79,7 +89,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   // Check if the track is a product of a radioactive decay process and has charge < 3
   if (creator && creator->GetProcessSubType() == fRadioactiveDecay && charge < 3.){
     analysisManager->FillNtupleIColumn(1, HistoManager::kNT_EmissionPID, pdgCode);
-    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmEnergy, energy);
+    analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmEnergy, kineticEnergy);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmWeight, weight);
     analysisManager->FillNtupleDColumn(1, HistoManager::kNT_EmTime, time / microsecond);
     analysisManager->AddNtupleRow(1);
@@ -91,32 +101,42 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   //========================================================================//
 
   // Check if the track is within the absorber assembly (including daughter volumes)
-  auto* touchable = track->GetTouchable();
-  G4bool inAbsorberRegion = false;
+  // auto* touchable = track->GetTouchable();
+  // G4bool inAbsorberRegion = false;
 
-  for (G4int depth = 0; depth < touchable->GetHistoryDepth() + 1; ++depth) {
-    if (touchable->GetVolume(depth)->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
-        inAbsorberRegion = true;
-        break;
+  // for (G4int depth = 0; depth < touchable->GetHistoryDepth() + 1; ++depth) {
+  //   if (touchable->GetVolume(depth)->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
+  //       inAbsorberRegion = true;
+  //       break;
+  //   }
+  // }
+
+  // Flag unstable ions
+  // G4bool unstableIon = (charge > 2.) && !particle->GetPDGStable();
+  
+  // If ion in absorber region, record its properties for later use in PostUserTrackingAction
+  if (isIon && track->GetTrackID() != 1) {
+    G4LogicalVolume* lv = track->GetVolume()->GetLogicalVolume();
+    G4bool inAbsorberRegion = (lv == fDetectorConstruction->GetAbsorberLV()) || (lv == fDetectorConstruction->GetGoldLV());
+
+    if (inAbsorberRegion) {
+      fRecordTrack = true;
+      fTrackPID = pdgCode;
+      fTrackZ = particle->GetAtomicNumber();
+      fTrackA = particle->GetAtomicMass();
+      // fTrackKineticEnergy = kineticEnergy;
+      fTrackExcitationEnergy = excitationEnergy;
+      fTrackWeight = weight;
+      fTimeBirth = time;
+      fTrackCreatorProcess = creator ? creator->GetProcessName() : "primary";
+
+      // Record ion data into run object for end of run summary
+      run->ParticleCount(name, fTrackZ, fTrackA);
     }
   }
 
-  // Flag unstable ions
-  G4bool unstableIon = (charge > 2.) && !particle->GetPDGStable();
-  
-  // If unstable ion in absorber region, record its properties for later use in PostUserTrackingAction
-  if (unstableIon && track->GetTrackID() != 1 && inAbsorberRegion) {
-    fRecordTrack = true;
-    fTrackPID = pdgCode;
-    fTrackZ = particle->GetAtomicNumber();
-    fTrackA = particle->GetAtomicMass();
-    fTrackEnergy = energy;
-    fTrackWeight = weight;
-    fTimeBirth = time;
-  }
-
   // count secondary particles (with meanLife > 0)
-  if ((track->GetTrackID() > 1) && !(particle->GetPDGStable())) run->ParticleCount(name, energy, meanLife);
+  // if ((track->GetTrackID() > 1) && !(particle->GetPDGStable())) run->ParticleCount(name, kineticEnergy, meanLife);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -127,19 +147,25 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
 
   if (!fRecordTrack) return;  // Only record tracks flagged in PreUserTrackingAction
 
+  // Reset the record flag for the next track
+  fRecordTrack = false;
+
   // Record decay product information for unstable ions originally born in absorber region
   G4ParticleDefinition* particle = track->GetDefinition();
   G4double timeEnd = track->GetGlobalTime();  // death time
-  G4double energy = track->GetKineticEnergy();  // kinetic energy
+  G4double kineticEnergy = track->GetKineticEnergy();  // kinetic energy
 
   // If the track is stable and has zero kinetic energy, set death time to "infinity"
-  if ((particle->GetPDGStable()) && (energy == 0.)) timeEnd = DBL_MAX;
+  if ((particle->GetPDGStable()) && (kineticEnergy == 0.)) timeEnd = DBL_MAX;
 
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayPID, fTrackPID);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayZ, fTrackZ);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayA, fTrackA);
-  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayEnergy, fTrackEnergy);
+  analysisManager->FillNtupleSColumn(2, HistoManager::kNT_DecayCreatorProcess, fTrackCreatorProcess);
+  // analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayKineticEnergy, fTrackKineticEnergy);
+  analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayExcitationEnergy, fTrackExcitationEnergy);
   analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayWeight, fTrackWeight);
+  analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayIsStable, particle->GetPDGStable() ? 1 : 0);
   analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayTimeBirth, fTimeBirth / microsecond);
   analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayTimeDeath, timeEnd / microsecond);
   analysisManager->AddNtupleRow(2);

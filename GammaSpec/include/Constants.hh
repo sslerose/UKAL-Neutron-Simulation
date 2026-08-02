@@ -61,10 +61,56 @@
 constexpr G4double kWorldSize = 2.0 * m;
 
 // Detector assembly volume
-constexpr G4double kHPGELength = 10.0 * cm;
-constexpr G4double kHPGEInnerRadius = 1.5 * cm / 2;
-constexpr G4double kHPGEOuterRadius = 9.0 * cm / 2;
-constexpr G4double kHPGEBoreDepth = 8.5 * cm;
+// constexpr G4double kHPGELength = 10.0 * cm;
+// constexpr G4double kHPGEInnerRadius = 1.5 * cm / 2;
+// constexpr G4double kHPGEOuterRadius = 9.0 * cm / 2;
+// constexpr G4double kHPGEBoreDepth = 8.5 * cm;
+
+// Cryostat (outermost Al shell)
+constexpr G4double kCryoHalfLength        = 4.28   * cm;
+constexpr G4double kCryoROut              = 4.400  * cm;
+constexpr G4double kCryoRIn               = 4.080  * cm; // = kVac2ROut
+
+// Vacuum gap 2
+constexpr G4double kVac2HalfLength        = 4.25   * cm;
+constexpr G4double kVac2ROut              = 4.080  * cm;
+constexpr G4double kVac2RIn               = 3.635  * cm; // = kDetCupROut
+
+// Detector cup (Al)
+constexpr G4double kDetCupHalfLength      = 4.05   * cm;
+constexpr G4double kDetCupROut            = 3.635  * cm;
+constexpr G4double kDetCupRIn             = 3.537  * cm; // = kVac1ROut
+
+// Vacuum gap 1
+constexpr G4double kVac1HalfLength        = 4.00   * cm;
+constexpr G4double kVac1ROut              = 3.537  * cm;
+constexpr G4double kVac1RIn               = 3.385  * cm; // = kGeCrystalROut
+
+// Outer dead layer (Ge, Li-diffused contact)
+constexpr G4double kOuterDeadHalfLength   = 4.00   * cm;
+constexpr G4double kOuterDeadROut         = 3.385  * cm;
+constexpr G4double kOuterDeadRIn          = 3.3655 * cm; // = kActiveROut
+
+// Active crystal (Ge)
+constexpr G4double kActiveHalfLength      = 3.95   * cm;
+constexpr G4double kActiveROut            = 3.3655 * cm;
+constexpr G4double kActiveRIn             = 0.1805 * cm; // = kInnerDeadROut
+
+// Inner dead layer (Ge, B-implanted contact)
+constexpr G4double kInnerDeadHalfLength   = 3.90   * cm;
+constexpr G4double kInnerDeadROut         = 0.1805 * cm;
+constexpr G4double kInnerDeadRIn          = 0.1005 * cm; // = kCentralROut
+
+// Central contact (vacuum bore)
+constexpr G4double kCentralHalfLength     = 3.50   * cm;
+constexpr G4double kCentralROut           = 0.1005 * cm;
+
+// Mother volume is flush with the cryostat outer dimensions
+constexpr G4double kMotherHalfLength      = kCryoHalfLength;
+constexpr G4double kMotherROut            = kCryoROut;
+
+// Distance from the origin to the front face of each detector
+constexpr G4double kFaceDistance          = 5.0    * cm;
 
 
 #endif

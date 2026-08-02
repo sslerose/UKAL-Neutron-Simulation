@@ -60,9 +60,8 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   run->CountProcesses(process);
 
   // Cache the HPGe volumes
-  if (!fHPGELV[0] && !fHPGELV[1]) {
-    fHPGELV[0] = fDetector->GetHPGELV(0);
-    fHPGELV[1] = fDetector->GetHPGELV(1);
+  if (!fActiveCrystalLV) {
+    fActiveCrystalLV = fDetector->GetActiveCrystalLV();
   }
 
   // Get energy deposit for this step
@@ -75,7 +74,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   G4LogicalVolume* lv = pv->GetLogicalVolume();
 
   // Check if step is in either HPGe
-  if (lv != fHPGELV[0] && lv != fHPGELV[1]) return;
+  if (lv != fActiveCrystalLV) return;
 
   // Record energy deposits in NTuple
   G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
