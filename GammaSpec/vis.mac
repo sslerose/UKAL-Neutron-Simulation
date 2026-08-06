@@ -42,28 +42,29 @@
 /vis/geometry/set/visibility DetectorMother_1 0 false
 /vis/geometry/set/visibility DetectorMother_2 0 false
 /vis/geometry/set/visibility AbsorberAssembly 0 false
-/vis/geometry/set/visibility Vacuum1 0 false
-/vis/geometry/set/visibility Vacuum2 0 false
-/vis/geometry/set/visibility CentralContact 0 false
+/vis/geometry/set/visibility InnerStruct 0 false
 
 
 # Add color to volumes (depth, r, g, b, alpha)
 /vis/viewer/set/background white
 
 /vis/geometry/set/colour Absorber 0 0.60 0.60 0.60 0.75
-/vis/geometry/set/colour GoldFrontFoil 0 0.85 0.75 0.35 0.5
-/vis/geometry/set/colour GoldBackFoil 0 0.85 0.75 0.35 0.5
-
-#/vis/geometry/set/colour Cryostat 0 0.45 0.55 0.75 0.5
-#/vis/geometry/set/colour DetectorCup 0 0.45 0.55 0.75 0.5
+/vis/geometry/set/colour GoldFoil 0 0.85 0.75 0.35 0.5
 
 /vis/geometry/set/colour Cryostat 0 0.40 0.40 0.40 0.5
+/vis/geometry/set/colour CryostatCap 0 0.40 0.40 0.40 0.5
 /vis/geometry/set/colour DetectorCup 0 0.40 0.40 0.40 0.5
+/vis/geometry/set/colour DetectorCupCap 0 0.40 0.40 0.40 0.5
+
+/vis/geometry/set/colour AlSheet 0 0.40 0.40 0.40 0.5
+/vis/geometry/set/colour MylarSheet 0 0.40 0.40 0.40 0.5
 
 /vis/geometry/set/colour ActiveCrystal 0 0.50 0.70 0.50 0.5
 
 /vis/geometry/set/colour OuterDeadLayer 0 0.55 0.40 0.60 0.5
+/vis/geometry/set/colour OuterDeadLayerCap 0 0.55 0.40 0.60 0.5
 /vis/geometry/set/colour InnerDeadLayer 0 0.55 0.40 0.60 0.5
+/vis/geometry/set/colour InnerDeadLayerCap 0 0.55 0.40 0.60 0.5
 
 
 # To superimpose all of the events from a given run:

@@ -53,6 +53,8 @@
 #include "TDatabasePDG.h"
 #include "TParticlePDG.h"
 
+#include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -160,13 +162,15 @@ void analyzePHS(const char* filePath,
     // ---- single-pass accumulation into time windows ----
     std::map<long long, double> windowEnergy;
     std::map<long long, double> windowWeighted;
+    std::map<long long, double> windowWeightSum;
 
     Long64_t nEntries = tree->GetEntries();
     for (Long64_t i = 0; i < nEntries; ++i) {
         tree->GetEntry(i);
         long long idx = static_cast<long long>(std::floor(time / window_us));
-        windowEnergy[idx]   += energyDep;
-        windowWeighted[idx] += energyDep * weight;
+        windowEnergy[idx]    += energyDep;
+        windowWeighted[idx]  += energyDep * weight;
+        windowWeightSum[idx] += weight;
     }
 
     long long nWindows = static_cast<long long>(windowEnergy.size());
@@ -194,10 +198,15 @@ void analyzePHS(const char* filePath,
     TH1D* hPHS = new TH1D("hPHS", "Pulse-Height Spectrum",
                            nBins, 0.0, eMax);
 
+    // Pulse magnitude is the unweighted energy sum; the histogram fill weight
+    // is the summed biasing weight of the deposits in the window
     for (auto& kv : windowEnergy) {
         double E    = kv.second;
-        double Wavg = windowWeighted[kv.first] / E;
-        hPHS->Fill(E, Wavg);
+        double Wsum = windowWeightSum[kv.first];
+        hPHS->Fill(E, Wsum);
+        // --- previous implementation: energy-weighted average of the weights ---
+        // double Wavg = windowWeighted[kv.first] / E;
+        // hPHS->Fill(E, Wavg);
     }
 
     styleAxis(hPHS, "Pulse Height (MeV)", "Counts");
@@ -242,15 +251,13 @@ void analyzePHS(const char* filePath,
 
         TString emCsvName = TString(stem) + "_EmittedParticles.csv";
         std::ofstream emCsv(emCsvName.Data());
-        emCsv << "PID,Name,Energy_MeV,Weight,Time_us\n";
+        emCsv << "PID,Name,Energy_MeV,Weight,Time_s\n";
 
         Long64_t emEntries  = emTree->GetEntries();
-        Long64_t emCsvLimit = (emEntries + 9) / 10;
+        // Dump the first 10% of rows, capped at 10000
+        Long64_t emCsvLimit = std::min<Long64_t>((emEntries + 9) / 10, 10000);
 
-        TH1D* hGammaE   = new TH1D("hGammaE",   "Emitted Gamma Energy Spectrum",      nBins, 0.0, eMax);
-        TH1D* hGammaPHS = new TH1D("hGammaPHS",  "Emitted Gamma Pulse-Height Spectrum", nBins, 0.0, eMax);
-        std::map<long long, double> gammaWindowEnergy;
-        std::map<long long, double> gammaWindowWeighted;
+        TH1D* hGammaE = new TH1D("hGammaE", "Emitted Gamma Energy Spectrum", nBins, 0.0, eMax);
 
         for (Long64_t i = 0; i < emEntries; ++i) {
             emTree->GetEntry(i);
@@ -262,30 +269,19 @@ void analyzePHS(const char* filePath,
                       << std::fixed << std::setprecision(6)
                       << emEnergy << ","
                       << emWeight << ","
-                      << emTime   << "\n";
+                      << emTime * 1e-6 << "\n";
             }
             if (emPID == 22) {
                 hGammaE->Fill(emEnergy);
-                long long idx = static_cast<long long>(std::floor(emTime / window_us));
-                gammaWindowEnergy[idx]   += emEnergy;
-                gammaWindowWeighted[idx] += emEnergy * emWeight;
             }
         }
         emCsv.close();
         std::cout << "Saved data : " << emCsvName.Data()
                   << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
 
-        for (auto& kv : gammaWindowEnergy) {
-            double E    = kv.second;
-            double Wavg = gammaWindowWeighted[kv.first] / E;
-            hGammaPHS->Fill(E, Wavg);
-        }
+        TString gammaETag = TString(stem) + "_GammaEnergy";
 
-        TString gammaETag  = TString(stem) + "_GammaEnergy";
-        TString gammaPHSTag = TString(stem) + "_GammaPHS_" + tagStream.str().c_str() + "us";
-
-        styleAxis(hGammaE,   "Energy (MeV)",      "Counts");
-        styleAxis(hGammaPHS, "Pulse Height (MeV)", "Counts");
+        styleAxis(hGammaE, "Energy (MeV)", "Counts");
 
         TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
         cGammaE->SetLeftMargin(0.12);
@@ -306,18 +302,8 @@ void analyzePHS(const char* filePath,
         gammaECsvFile.close();
         std::cout << "Saved data : " << gammaECsv.Data() << "\n";
 
-        TCanvas* cGammaPHS = new TCanvas("cGammaPHS", "Emitted Gamma PHS", 800, 600);
-        cGammaPHS->SetLeftMargin(0.12);
-        cGammaPHS->SetBottomMargin(0.12);
-        hGammaPHS->Draw("HIST");
-        TString gammaPHSPng = gammaPHSTag + ".png";
-        cGammaPHS->SaveAs(gammaPHSPng.Data());
-        std::cout << "Saved plot : " << gammaPHSPng.Data() << "\n";
-
         delete cGammaE;
-        delete cGammaPHS;
         delete hGammaE;
-        delete hGammaPHS;
     }
 
     // ---- DecayProducts CSV ----
@@ -325,38 +311,48 @@ void analyzePHS(const char* filePath,
     if (!dpTree) {
         std::cerr << "Warning: \"DecayProducts\" tree not found in \"" << filePath << "\"\n";
     } else {
-        Int_t    dpPID       = 0;
-        Int_t    dpZ         = 0;
-        Int_t    dpA         = 0;
-        Double_t dpEnergy    = 0.0;
-        Double_t dpWeight    = 0.0;
-        Double_t dpTimeBirth = 0.0;
-        Double_t dpTimeDeath = 0.0;
+        Int_t    dpPID        = 0;
+        Int_t    dpZ          = 0;
+        Int_t    dpA          = 0;
+        Char_t   dpCreator[256] = {0};
+        Double_t dpExcitation = 0.0;
+        Double_t dpWeight     = 0.0;
+        Int_t    dpIsStable   = 0;
+        Double_t dpTimeBirth  = 0.0;
+        Double_t dpTimeDeath  = 0.0;
 
-        dpTree->SetBranchAddress("PID",       &dpPID);
-        dpTree->SetBranchAddress("Z",         &dpZ);
-        dpTree->SetBranchAddress("A",         &dpA);
-        dpTree->SetBranchAddress("Energy",    &dpEnergy);
-        dpTree->SetBranchAddress("Weight",    &dpWeight);
-        dpTree->SetBranchAddress("TimeBirth", &dpTimeBirth);
-        dpTree->SetBranchAddress("TimeDeath", &dpTimeDeath);
+        dpTree->SetBranchAddress("PID",              &dpPID);
+        dpTree->SetBranchAddress("Z",                &dpZ);
+        dpTree->SetBranchAddress("A",                &dpA);
+        dpTree->SetBranchAddress("CreatorProcess",   dpCreator);   // array: no &
+        dpTree->SetBranchAddress("ExcitationEnergy", &dpExcitation);
+        dpTree->SetBranchAddress("Weight",           &dpWeight);
+        dpTree->SetBranchAddress("IsStable",         &dpIsStable);
+        dpTree->SetBranchAddress("TimeBirth",        &dpTimeBirth);
+        dpTree->SetBranchAddress("TimeDeath",        &dpTimeDeath);
 
         TString dpCsvName = TString(stem) + "_DecayProducts.csv";
         std::ofstream dpCsv(dpCsvName.Data());
-        dpCsv << "PID,Z,A,Energy_MeV,Weight,TimeBirth_us,TimeDeath_us\n";
+        dpCsv << "PID,Z,A,CreatorProcess,ExcitationEnergy_MeV,Weight,IsStable,"
+                 "TimeBirth_s,TimeDeath_s\n";
 
         Long64_t dpEntries  = dpTree->GetEntries();
-        Long64_t dpCsvLimit = (dpEntries + 9) / 10;
+        // Dump the first 10% of rows, capped at 10000
+        Long64_t dpCsvLimit = std::min<Long64_t>((dpEntries + 9) / 10, 10000);
         for (Long64_t i = 0; i < dpCsvLimit; ++i) {
             dpTree->GetEntry(i);
             dpCsv << dpPID << ","
                   << dpZ   << ","
                   << dpA   << ","
+                  << "\"" << dpCreator << "\","
                   << std::fixed << std::setprecision(6)
-                  << dpEnergy    << ","
-                  << dpWeight    << ","
-                  << dpTimeBirth << ","
-                  << dpTimeDeath << "\n";
+                  << dpExcitation << ","
+                  << dpWeight     << ","
+                  << dpIsStable   << ","
+                  << dpTimeBirth * 1e-6 << ",";
+            // Stable particles have no meaningful death time; emit "inf".
+            if (dpIsStable) dpCsv << "inf\n";
+            else             dpCsv << dpTimeDeath * 1e-6 << "\n";
         }
         dpCsv.close();
         std::cout << "Saved data : " << dpCsvName.Data()
@@ -447,22 +443,29 @@ void analyzePHSTotal(const char* infoPath,
         // ---- single-pass accumulation into time windows ----
         std::map<long long, double> windowEnergy;
         std::map<long long, double> windowWeighted;
+        std::map<long long, double> windowWeightSum;
 
         Long64_t nEntries = tree->GetEntries();
         for (Long64_t i = 0; i < nEntries; ++i) {
             tree->GetEntry(i);
             long long idx = static_cast<long long>(std::floor(time / window_us));
-            windowEnergy[idx]   += energyDep;
-            windowWeighted[idx] += energyDep * weight;
+            windowEnergy[idx]    += energyDep;
+            windowWeighted[idx]  += energyDep * weight;
+            windowWeightSum[idx] += weight;
         }
 
         // ---- build this file's PHS, then scale and accumulate ----
+        // Pulse magnitude is the unweighted energy sum; the histogram fill
+        // weight is the summed biasing weight of the deposits in the window.
         TH1D* hThis = new TH1D("hThis", "", nBins, 0.0, eMax);
         hThis->Sumw2();
         for (auto& kv : windowEnergy) {
             double E    = kv.second;
-            double Wavg = windowWeighted[kv.first] / E;
-            hThis->Fill(E, Wavg);
+            double Wsum = windowWeightSum[kv.first];
+            hThis->Fill(E, Wsum);
+            // --- previous implementation: energy-weighted average of the weights ---
+            // double Wavg = windowWeighted[kv.first] / E;
+            // hThis->Fill(E, Wavg);
         }
         hThis->Scale(scaleFactor);
         hTotal->Add(hThis);

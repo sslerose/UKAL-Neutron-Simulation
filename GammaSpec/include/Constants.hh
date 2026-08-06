@@ -53,10 +53,6 @@
 #include "globals.hh"
 #include "G4SystemOfUnits.hh"
 
-//========================================================================//
-// Detector assembly constants
-//========================================================================//
-
 // World volume
 constexpr G4double kWorldSize = 2.0 * m;
 
@@ -66,51 +62,101 @@ constexpr G4double kWorldSize = 2.0 * m;
 // constexpr G4double kHPGEOuterRadius = 9.0 * cm / 2;
 // constexpr G4double kHPGEBoreDepth = 8.5 * cm;
 
-// Cryostat (outermost Al shell)
-constexpr G4double kCryoHalfLength        = 4.28   * cm;
-constexpr G4double kCryoROut              = 4.400  * cm;
-constexpr G4double kCryoRIn               = 4.080  * cm; // = kVac2ROut
+//========================================================================//
+// Detector component dimensions
+//========================================================================//
 
-// Vacuum gap 2
-constexpr G4double kVac2HalfLength        = 4.25   * cm;
-constexpr G4double kVac2ROut              = 4.080  * cm;
-constexpr G4double kVac2RIn               = 3.635  * cm; // = kDetCupROut
+// Cryostat (outermost Al shell)
+constexpr G4double kCryoHalfLength         = 82.5 * mm;
+constexpr G4double kCryoRIn                = 37.0 * mm;
+constexpr G4double kCryoROut               = kCryoRIn + 1.0 * mm;   // 1 mm thick
+
+constexpr G4double kCryoCapHalfLength      = 0.5 * mm;
+constexpr G4double kCryoCapRIn             = 0.0;
+constexpr G4double kCryoCapROut            = kCryoRIn;
 
 // Detector cup (Al)
-constexpr G4double kDetCupHalfLength      = 4.05   * cm;
-constexpr G4double kDetCupROut            = 3.635  * cm;
-constexpr G4double kDetCupRIn             = 3.537  * cm; // = kVac1ROut
+constexpr G4double kDetCupHalfLength       = 52.53 * mm;
+constexpr G4double kDetCupRIn              = 33.0 * mm;
+constexpr G4double kDetCupROut             = kDetCupRIn + 0.8 * mm; // 0.8 mm thick
 
-// Vacuum gap 1
-constexpr G4double kVac1HalfLength        = 4.00   * cm;
-constexpr G4double kVac1ROut              = 3.537  * cm;
-constexpr G4double kVac1RIn               = 3.385  * cm; // = kGeCrystalROut
+constexpr G4double kDetCupCapHalfLength    = 1.5 * mm;
+constexpr G4double kDetCupCapRIn           = 4.4 * mm;
+constexpr G4double kDetCupCapROut          = kDetCupRIn;
 
-// Outer dead layer (Ge, Li-diffused contact)
-constexpr G4double kOuterDeadHalfLength   = 4.00   * cm;
-constexpr G4double kOuterDeadROut         = 3.385  * cm;
-constexpr G4double kOuterDeadRIn          = 3.3655 * cm; // = kActiveROut
+// Al/Mylar sheet
+constexpr G4double kAlMylarHalfLength      = 0.03 * mm;
+constexpr G4double kAlMylarRIn             = 0.0;
+constexpr G4double kAlMylarROut            = kDetCupRIn;
 
 // Active crystal (Ge)
-constexpr G4double kActiveHalfLength      = 3.95   * cm;
-constexpr G4double kActiveROut            = 3.3655 * cm;
-constexpr G4double kActiveRIn             = 0.1805 * cm; // = kInnerDeadROut
+constexpr G4double kActiveHalfLength       = 34.5 * mm;
+constexpr G4double kActiveRIn              = 0.0;
+constexpr G4double kActiveROut             = 31.55 * mm;
+
+constexpr G4double kActiveBoreHalfLength   = 30.15 * mm;
+constexpr G4double kActiveBoreRIn          = 0.0;
+constexpr G4double kActiveBoreROut         = 4.4 * mm;
+
+// Outer dead layer (Ge, Li-diffused contact)
+constexpr G4double kOuterDeadHalfLength    = kActiveHalfLength;
+constexpr G4double kOuterDeadRIn           = kActiveROut;
+constexpr G4double kOuterDeadROut          = kActiveROut + 0.3 * um; // 0.3 um thick
+
+constexpr G4double kOuterDeadCapHalfLength = 0.15 * um;
+constexpr G4double kOuterDeadCapRIn        = 0.0;
+constexpr G4double kOuterDeadCapROut       = kOuterDeadROut;
 
 // Inner dead layer (Ge, B-implanted contact)
-constexpr G4double kInnerDeadHalfLength   = 3.90   * cm;
-constexpr G4double kInnerDeadROut         = 0.1805 * cm;
-constexpr G4double kInnerDeadRIn          = 0.1005 * cm; // = kCentralROut
+constexpr G4double kInnerDeadHalfLength    = kActiveBoreHalfLength;
+constexpr G4double kInnerDeadRIn           = 3.7 * mm;
+constexpr G4double kInnerDeadROut          = kActiveBoreROut;
 
-// Central contact (vacuum bore)
-constexpr G4double kCentralHalfLength     = 3.50   * cm;
-constexpr G4double kCentralROut           = 0.1005 * cm;
+constexpr G4double kInnerDeadCapHalfLength = 0.35 * mm;
+constexpr G4double kInnerDeadCapRIn        = 0.0;
+constexpr G4double kInnerDeadCapROut       = kInnerDeadRIn;
 
-// Mother volume is flush with the cryostat outer dimensions
-constexpr G4double kMotherHalfLength      = kCryoHalfLength;
-constexpr G4double kMotherROut            = kCryoROut;
+// HPGe mother volume (flush with the cryostat outer dimensions)
+constexpr G4double kMotherHalfLength       = kCryoHalfLength;
+constexpr G4double kMotherROut             = kCryoROut;
+
+// Inner structure mother volume
+constexpr G4double kInnerStructHalfLength  = kDetCupHalfLength;
+constexpr G4double kInnerStructRIn         = 0.0;
+constexpr G4double kInnerStructROut        = kDetCupROut;
 
 // Distance from the origin to the front face of each detector
-constexpr G4double kFaceDistance          = 5.0    * cm;
+// constexpr G4double kFaceDistance          = 5.0    * cm;
 
+//=========================================================================//
+// Detector component placement
+//=========================================================================//
+
+// Cryostat (mother - fHPGEMotherLV)
+constexpr G4double kCryoZPos = 0.0;
+constexpr G4double kCryoCapZPos = kMotherHalfLength - kCryoCapHalfLength;
+
+// Inner structure mother volume (mother - fHPGEMotherLV)
+constexpr G4double kVacuumGap = 4.0 * mm;
+constexpr G4double kInnerStructZPos = kMotherHalfLength - 2 * kCryoCapHalfLength - kVacuumGap - kInnerStructHalfLength;
+
+// Detector cup (mother - fInnerStructLV)
+constexpr G4double kDetCupZPos = 0.0;
+constexpr G4double kDetCupCapZPos = -kInnerStructHalfLength + kDetCupCapHalfLength;
+
+// Al/Mylar sheet (mother - fInnerStructLV)
+constexpr G4double kAlSheetZPos = kInnerStructHalfLength - kAlMylarHalfLength / 2;
+constexpr G4double kMylarSheetZPos = kInnerStructHalfLength - 3 * kAlMylarHalfLength / 2;
+
+// Active crystal (mother - fInnerStructLV)
+constexpr G4double kActiveZPos = kInnerStructHalfLength - 2 * kAlMylarHalfLength - 2 * kOuterDeadCapHalfLength - kActiveHalfLength;
+
+// Outer dead layer (mother - fInnerStructLV)
+constexpr G4double kOuterDeadZPos = kActiveZPos;
+constexpr G4double kOuterDeadCapZPos = kActiveZPos + kActiveHalfLength + kOuterDeadCapHalfLength;
+
+// Inner dead layer (mother - fInnerStructLV)
+constexpr G4double kInnerDeadZPos = kActiveZPos - kActiveHalfLength + kInnerDeadHalfLength;
+constexpr G4double kInnerDeadCapZPos = kInnerDeadZPos + kInnerDeadHalfLength - kInnerDeadCapHalfLength;
 
 #endif

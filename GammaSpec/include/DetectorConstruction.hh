@@ -134,21 +134,26 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4Material* fHPGEMaterial = nullptr;
     G4Material* fVacuumMaterial = nullptr;
     G4Material* fAluminumMaterial = nullptr;
+    G4Material* fMylarMaterial = nullptr;
 
     // Misc.
     DetectorMessenger* fDetectorMessenger = nullptr;
     G4RotationMatrix* fRotationMatrix[2] = {nullptr, nullptr}; // Array of rotation matrices for HPGe detector (2 for front and back)
     
     // Volumes
-    G4LogicalVolume* fHPGEMotherLV[2] = {nullptr, nullptr}; // Array of logical volumes for HPGe detector (2 for front and back)  
-    G4LogicalVolume* fCryostatLV        = nullptr;
-    G4LogicalVolume* fVacuum2LV         = nullptr;
-    G4LogicalVolume* fDetectorCupLV     = nullptr;
-    G4LogicalVolume* fVacuum1LV         = nullptr;
+    G4LogicalVolume* fHPGEMotherLV[2] = {nullptr, nullptr}; // Array of logical volumes for HPGe detector (2 for front and back)
+    G4LogicalVolume* fInnerStructLV[2] = {nullptr, nullptr};
+    G4LogicalVolume* fCryoLV        = nullptr;
+    G4LogicalVolume* fCryoCapLV     = nullptr;
+    G4LogicalVolume* fAlSheetLV     = nullptr;
+    G4LogicalVolume* fMylarSheetLV     = nullptr;
+    G4LogicalVolume* fDetCupLV     = nullptr;
+    G4LogicalVolume* fDetCupCapLV         = nullptr;
     G4LogicalVolume* fOuterDeadLayerLV  = nullptr;
+    G4LogicalVolume* fOuterDeadLayerCapLV  = nullptr;
     G4LogicalVolume* fActiveCrystalLV   = nullptr;
     G4LogicalVolume* fInnerDeadLayerLV  = nullptr;
-    G4LogicalVolume* fCentralContactLV  = nullptr;
+    G4LogicalVolume* fInnerDeadLayerCapLV  = nullptr;
 
     G4VPhysicalVolume* fHPGEMotherPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector mother volumes (2 for front and back)
 
@@ -176,8 +181,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Solids
     G4Tubs* fAbsorberAssemblyTube = nullptr;
-    G4Tubs* fGoldFrontTube = nullptr;
-    G4Tubs* fGoldBackTube = nullptr;
+    // G4Tubs* fGoldFrontTube = nullptr;
+    // G4Tubs* fGoldBackTube = nullptr;
+    G4Tubs* fGoldTube = nullptr;
     G4Tubs* fAbsorberTube = nullptr;
 
     // Volumes
@@ -185,11 +191,13 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     // G4LogicalVolume* fGoldFrontLV = nullptr;
     // G4LogicalVolume* fGoldBackLV = nullptr;
     G4LogicalVolume* fGoldLV = nullptr;
+    // G4LogicalVolume* fGoldLV = nullptr;
     G4LogicalVolume* fAbsorberLV = nullptr;
     
     G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
-    G4VPhysicalVolume* fGoldFrontPV = nullptr;
-    G4VPhysicalVolume* fGoldBackPV = nullptr;
+    // G4VPhysicalVolume* fGoldFrontPV = nullptr;
+    // G4VPhysicalVolume* fGoldBackPV = nullptr;
+    G4VPhysicalVolume* fGoldPV[2] = {nullptr, nullptr};
     // G4VPhysicalVolume* fAbsorberPV = nullptr;
 
   private:
