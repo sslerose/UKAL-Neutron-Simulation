@@ -40,12 +40,7 @@ class BiasedRDPhysics : public G4VPhysicsConstructor
 
     ~BiasedRDPhysics() override = default;
 
-    // This is a dummy method for physics
     void ConstructParticle() override;
-
-    // This method will be invoked in the Construct() method.
-    // each physics process will be instantiated and
-    // registered to the process manager of each particle type
     void ConstructProcess() override;
 };
 

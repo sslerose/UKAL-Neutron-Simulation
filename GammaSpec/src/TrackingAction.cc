@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
@@ -23,12 +41,11 @@
 // * acceptance of all terms of the Geant4 Software license.          *
 // ********************************************************************
 //
+
+//
 /// \file TrackingAction.cc
 /// \brief Implementation of the TrackingAction class
 //
-//
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "TrackingAction.hh"
 
@@ -38,12 +55,10 @@
 #include "Run.hh"
 
 #include "G4IonTable.hh"
-#include "G4ParticleTypes.hh"
 #include "G4RunManager.hh"
-#include "G4StepStatus.hh"
+#include "G4AnalysisManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Track.hh"
-#include "G4UnitsTable.hh"
 #include "G4HadronicProcessType.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -54,6 +69,9 @@ TrackingAction::TrackingAction(DetectorConstruction* det, EventAction* event)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Record emission data and cache decay-product inventory data
+//------------------------------------------------------------------------//
 void TrackingAction::PreUserTrackingAction(const G4Track* track)
 {
   // Get the current run and analysis manager
@@ -100,20 +118,6 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
   // Get decay-product inventory
   //========================================================================//
 
-  // Check if the track is within the absorber assembly (including daughter volumes)
-  // auto* touchable = track->GetTouchable();
-  // G4bool inAbsorberRegion = false;
-
-  // for (G4int depth = 0; depth < touchable->GetHistoryDepth() + 1; ++depth) {
-  //   if (touchable->GetVolume(depth)->GetLogicalVolume()->GetName() == "AbsorberAssembly") {
-  //       inAbsorberRegion = true;
-  //       break;
-  //   }
-  // }
-
-  // Flag unstable ions
-  // G4bool unstableIon = (charge > 2.) && !particle->GetPDGStable();
-  
   // If ion in absorber region, record its properties for later use in PostUserTrackingAction
   if (isIon && track->GetTrackID() != 1) {
     G4LogicalVolume* lv = track->GetVolume()->GetLogicalVolume();
@@ -124,7 +128,6 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
       fTrackPID = pdgCode;
       fTrackZ = particle->GetAtomicNumber();
       fTrackA = particle->GetAtomicMass();
-      // fTrackKineticEnergy = kineticEnergy;
       fTrackExcitationEnergy = excitationEnergy;
       fTrackWeight = weight;
       fTimeBirth = time;
@@ -134,13 +137,13 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track)
       run->ParticleCount(name, fTrackZ, fTrackA);
     }
   }
-
-  // count secondary particles (with meanLife > 0)
-  // if ((track->GetTrackID() > 1) && !(particle->GetPDGStable())) run->ParticleCount(name, kineticEnergy, meanLife);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Record chached decay product inventory
+//------------------------------------------------------------------------//
 void TrackingAction::PostUserTrackingAction(const G4Track* track)
 {
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
@@ -152,8 +155,8 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
 
   // Record decay product information for unstable ions originally born in absorber region
   G4ParticleDefinition* particle = track->GetDefinition();
-  G4double timeEnd = track->GetGlobalTime();  // death time
-  G4double kineticEnergy = track->GetKineticEnergy();  // kinetic energy
+  G4double timeEnd = track->GetGlobalTime();            // Death time
+  G4double kineticEnergy = track->GetKineticEnergy();   // Kinetic energy
 
   // If the track is stable and has zero kinetic energy, set death time to "infinity"
   if ((particle->GetPDGStable()) && (kineticEnergy == 0.)) timeEnd = DBL_MAX;
@@ -162,7 +165,6 @@ void TrackingAction::PostUserTrackingAction(const G4Track* track)
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayZ, fTrackZ);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayA, fTrackA);
   analysisManager->FillNtupleSColumn(2, HistoManager::kNT_DecayCreatorProcess, fTrackCreatorProcess);
-  // analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayKineticEnergy, fTrackKineticEnergy);
   analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayExcitationEnergy, fTrackExcitationEnergy);
   analysisManager->FillNtupleDColumn(2, HistoManager::kNT_DecayWeight, fTrackWeight);
   analysisManager->FillNtupleIColumn(2, HistoManager::kNT_DecayIsStable, particle->GetPDGStable() ? 1 : 0);

@@ -19,6 +19,8 @@
 /// \brief ROOT macro for generating a pulse-height spectrum from GammaSpec output.
 ///
 /// Usage (in ROOT):
+///
+/// Single-run PHS:
 ///   .L AnalyzePHS.C
 ///   analyzePHS("path/to/GammaSpec.root", window_us, nBins, eMax)
 ///
@@ -33,28 +35,68 @@
 /// Outputs:
 ///   <stem>_PHS_<window_us>us.png  - pulse-height spectrum plot
 ///   <stem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
+///   <stem>_GammaEnergy.png        - emitted gamma energy spectrum plot
+///   <stem>_GammaEnergy.csv        - bin-center (MeV) and counts
+///   <stem>_EmittedParticles.csv   - sampled emitted-particle rows
+///   <stem>_DecayProducts.csv      - sampled decay-product rows
 ///
 /// Algorithm:
-///   Each row in EnergyDeposition is assigned to a time window
-///   idx = floor(Time / window_us).  Within each window, the
-///   weighted energy deposits are summed: pulse[idx] += EnergyDep * Weight.
-///   One histogram entry is filled per occupied window.  Empty windows
-///   are skipped entirely to avoid a spurious zero-energy peak.
+///   Energy deposit data is organized into time windows indexed by
+///   idx = floor(Time / window_us). Within each window, the energy
+///   deposits and weights are summed: E[idk] += EnergyDep and
+///   W[idk] += Weight. One histogram entry is filled per occupied window at
+///   E with pulse height W. Empty windows are skipped.
+///
+///
+/// Multi-run total PHS: reads a run info file and processes PHS and gamma emission
+/// in present ROOT files, scaling each file's contributions by P_i/N_i and summing
+/// them into combined PHS and gamma emission spectra
+///
+/// Usage (in ROOT):
+///   .L AnalyzePHS.C
+///   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax, toPlot)
+///
+/// Required arguments:
+///   infoPath  - path to the run info file (stem, P_i, N_i per line)
+///
+/// Optional arguements:
+///   rootDir   - directory containing the .root files (default = ".")
+///   outStem   - output filename stem for the combined PHS (default = "Total")
+///   window_us - charge-collection window length in microseconds (default = 1.0)
+///   nBins     - number of histogram bins (default = 3000)
+///   eMax      - histogram upper edge in MeV (default = 3.0)
+///   toPlot    - also save the per-run PHS and gamma plots/CSVs (default = false)
+///
+/// Outputs:
+///   <outStem>_PHS_<window_us>us.png  - combined pulse-height spectrum plot
+///   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
+///   <outStem>_GammaEnergy.png        - combined gamma emission spectrum plot
+///   <outStem>_GammaEnergy.csv        - bin-center (MeV) and counts
+///
+///   The combined outputs above are always written. When toPlot is true, the
+///   per-run <stem>_PHS_<window_us>us.* and <stem>_GammaEnergy.* files are
+///   written as well.
+///
+/// Algorithm:
+///   Each .root file in rootDir is passed to the processPHS and processGamma
+///   helpers, and their histograms scaled by f_i = P_i / N_i, where P_i is
+///   the true initial parent radioisotope population from NeutronActivation
+///   and N_i is the parent population simulated in GammaSpec. The total PHS
+///   and gamma spectrum are calculated as H_total = sum_i ( f_i * H_i ).
+/// ============================================================
 //
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TH1D.h"
+#include "TH1.h"
 #include "TCanvas.h"
 #include "TStyle.h"
 #include "TAxis.h"
 #include "TString.h"
-#include "TMath.h"
 #include "TDatabasePDG.h"
 #include "TParticlePDG.h"
 
 #include <algorithm>
-#include <cfloat>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -63,17 +105,22 @@
 #include <sstream>
 #include <string>
 
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
 // Run metadata for multi-file total PHS analysis
-// ============================================================
+//------------------------------------------------------------------------//
 struct RunInfo {
     TString file;  // ROOT file stem (no .root extension)
-    double  P;     // true parent population from activation sim
-    double  N;     // simulated parent population used in GammaSpec run
+    double  P;     // True parent population (NeutronActivation)
+    double  N;     // Simulated parent population (GammaSpec)
 };
 
-// Parse a whitespace-delimited run info file into a vector of RunInfo.
-// Lines beginning with '#' are treated as comments and skipped.
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Parse RunInfo file
+//------------------------------------------------------------------------//
 std::vector<RunInfo> parseRunInfo(const char* infoPath)
 {
     std::vector<RunInfo> runs;
@@ -98,9 +145,11 @@ std::vector<RunInfo> parseRunInfo(const char* infoPath)
     return runs;
 }
 
-// ============================================================
-// Helper: apply consistent axis styling to a histogram
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Apply consistent axis styling to a histogram
+//------------------------------------------------------------------------//
 void styleAxis(TH1D* h, const char* xTitle, const char* yTitle)
 {
     h->GetXaxis()->SetTitle(xTitle);
@@ -115,42 +164,22 @@ void styleAxis(TH1D* h, const char* xTitle, const char* yTitle)
     h->GetYaxis()->CenterTitle(true);
 }
 
-// ============================================================
-// Main analysis function
-// ============================================================
-void analyzePHS(const char* filePath,
-                double window_us = 1.0,
-                int    nBins     = 3000,
-                double eMax      = 3.0)
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Build pulse-height spectrum from EnergyDeposition tree
+//
+// Energy deposits are grouped into time windows of length window_us; one
+// histogram entry is filled per occupied window at the summed deposit energy,
+// weighted by the summed biasing weight of that window.
+//
+// The returned histogram is owned by the caller and must be deleted by it.
+// If toPlot is true, <stem>_PHS_<window_us>us.{png,csv} are also written.
+//------------------------------------------------------------------------//
+TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, double eMax, bool toPlot)
 {
-    // ---- derive output filename stem from input path ----
-    TString inputPath(filePath);
-    TString stem = inputPath;
-    // strip leading directory
-    int lastSlash = stem.Last('/');
-    if (lastSlash >= 0) stem = stem(lastSlash + 1, stem.Length() - lastSlash - 1);
-    // strip .root extension
-    if (stem.EndsWith(".root")) stem.Remove(stem.Length() - 5, 5);
+    if (!tree) return nullptr;
 
-    std::ostringstream tagStream;
-    tagStream << std::fixed << std::setprecision(2) << window_us;
-    TString tag = TString(stem) + "_PHS_" + tagStream.str().c_str() + "us";
-
-    // ---- open file and tree ----
-    TFile* f = TFile::Open(filePath, "READ");
-    if (!f || f->IsZombie()) {
-        std::cerr << "Error: cannot open \"" << filePath << "\"\n";
-        return;
-    }
-
-    TTree* tree = dynamic_cast<TTree*>(f->Get("EnergyDeposition"));
-    if (!tree) {
-        std::cerr << "Error: \"EnergyDeposition\" tree not found in \"" << filePath << "\"\n";
-        f->Close();
-        return;
-    }
-
-    // ---- bind branches ----
     Double_t energyDep = 0.0;
     Double_t weight    = 0.0;
     Double_t time      = 0.0;
@@ -159,23 +188,26 @@ void analyzePHS(const char* filePath,
     tree->SetBranchAddress("Weight",    &weight);
     tree->SetBranchAddress("Time",      &time);
 
-    // ---- single-pass accumulation into time windows ----
+
+    //========================================================================//
+    // Data processing
+    //========================================================================//
+
     std::map<long long, double> windowEnergy;
-    std::map<long long, double> windowWeighted;
     std::map<long long, double> windowWeightSum;
 
+    // Accumulate data into time windows
     Long64_t nEntries = tree->GetEntries();
     for (Long64_t i = 0; i < nEntries; ++i) {
         tree->GetEntry(i);
         long long idx = static_cast<long long>(std::floor(time / window_us));
         windowEnergy[idx]    += energyDep;
-        windowWeighted[idx]  += energyDep * weight;
         windowWeightSum[idx] += weight;
     }
 
     long long nWindows = static_cast<long long>(windowEnergy.size());
 
-    // ---- determine energy range of occupied windows for summary ----
+    // Determine energy range of occupied windows for summary
     double minPulse =  1e30;
     double maxPulse = -1e30;
     for (auto& kv : windowEnergy) {
@@ -183,23 +215,28 @@ void analyzePHS(const char* filePath,
         if (kv.second > maxPulse) maxPulse = kv.second;
     }
 
-    // ---- print summary ----
+    // Print summary
     std::cout << "\n=== Pulse-Height Spectrum Analysis ===\n"
-              << "  File         : " << filePath  << "\n"
+              << "  Run          : " << stem      << "\n"
               << "  Window       : " << window_us << " us\n"
               << "  Rows read    : " << nEntries  << "\n"
               << "  Occupied windows: " << nWindows << "\n"
               << "  Pulse range  : [" << minPulse << ", " << maxPulse << "] MeV\n"
               << "=======================================\n\n";
 
-    // ---- fill histogram ----
+
+    //========================================================================//
+    // Fill histogram
+    //========================================================================//
+
     gStyle->SetOptStat(0);
 
-    TH1D* hPHS = new TH1D("hPHS", "Pulse-Height Spectrum",
-                           nBins, 0.0, eMax);
+    TString hName = TString("hPHS_") + stem;    // Create stem-qualified name
+    TH1D* hPHS = new TH1D(hName.Data(), "Pulse-Height Spectrum", nBins, 0.0, eMax);
+    hPHS->SetDirectory(nullptr);
+    hPHS->Sumw2();  // Proper error propogation
 
-    // Pulse magnitude is the unweighted energy sum; the histogram fill weight
-    // is the summed biasing weight of the deposits in the window
+    // Pulse magnitude is unweighted energy sum; fill weight is summed weights of deposits
     for (auto& kv : windowEnergy) {
         double E    = kv.second;
         double Wsum = windowWeightSum[kv.first];
@@ -209,31 +246,168 @@ void analyzePHS(const char* filePath,
         // hPHS->Fill(E, Wavg);
     }
 
+
+    //========================================================================//
+    // Plot histogram and write CSV if prompted
+    //========================================================================//
+
     styleAxis(hPHS, "Pulse Height (MeV)", "Counts");
 
-    // ---- save PNG ----
-    TCanvas* c = new TCanvas("cPHS", "Pulse-Height Spectrum", 800, 600);
-    c->SetLeftMargin(0.12);
-    c->SetBottomMargin(0.12);
-    hPHS->Draw("HIST");
-    TString pngName = tag + ".png";
-    c->SaveAs(pngName.Data());
-    std::cout << "Saved plot : " << pngName.Data() << "\n";
+    if (toPlot) {
+        std::ostringstream tagStream;
+        tagStream << std::fixed << std::setprecision(2) << window_us;
+        TString tag = TString(stem) + "_PHS_" + tagStream.str().c_str() + "us";
 
-    // ---- save CSV ----
-    TString csvName = tag + ".csv";
-    std::ofstream csv(csvName.Data());
-    csv << "BinCenter_MeV,Counts\n";
-    for (int b = 1; b <= hPHS->GetNbinsX(); ++b) {
-        csv << std::fixed << std::setprecision(6)
-            << hPHS->GetBinCenter(b) << ","
-            << hPHS->GetBinContent(b) << "\n";
+        // Save histogram
+        TCanvas* c = new TCanvas("cPHS", "Pulse-Height Spectrum", 800, 600);
+        c->SetLeftMargin(0.12);
+        c->SetBottomMargin(0.12);
+        hPHS->Draw("HIST");
+        TString pngName = tag + ".png";
+        c->SaveAs(pngName.Data());
+        std::cout << "Saved plot : " << pngName.Data() << "\n";
+
+        // Save CSV
+        TString csvName = tag + ".csv";
+        std::ofstream csv(csvName.Data());
+        csv << "BinCenter_MeV,Counts\n";
+        for (int b = 1; b <= hPHS->GetNbinsX(); ++b) {
+            csv << std::fixed << std::setprecision(6)
+                << hPHS->GetBinCenter(b) << ","
+                << hPHS->GetBinContent(b) << "\n";
+        }
+        csv.close();
+        std::cout << "Saved data : " << csvName.Data() << "\n";
+
+        delete c;
     }
-    csv.close();
-    std::cout << "Saved data : " << csvName.Data() << "\n";
 
-    // ---- EmittedParticles CSV + gamma histograms ----
+    return hPHS;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Build emitted-gamma energy spectrum from EmittedParticles tree
+//------------------------------------------------------------------------//
+TH1D* processGamma(TTree* emTree,
+                   const char* stem,
+                   int    nBins,
+                   double eMax,
+                   bool   toPlot)
+{
+    if (!emTree) return nullptr;
+
+    Int_t    emPID    = 0;
+    Double_t emEnergy = 0.0;
+
+    emTree->SetBranchAddress("PID",    &emPID);
+    emTree->SetBranchAddress("Energy", &emEnergy);
+
+
+    //========================================================================//
+    // Fill Histogram
+    //========================================================================//
+
+    gStyle->SetOptStat(0);
+
+    TString hName = TString("hGammaE_") + stem; // Stem-qualified name
+    TH1D* hGammaE = new TH1D(hName.Data(), "Emitted Gamma Energy Spectrum", nBins, 0.0, eMax);
+    hGammaE->SetDirectory(nullptr);
+    hGammaE->Sumw2();   // Proper error propogation
+
+    Long64_t emEntries = emTree->GetEntries();
+    for (Long64_t i = 0; i < emEntries; ++i) {
+        emTree->GetEntry(i);
+        if (emPID == 22) {
+            hGammaE->Fill(emEnergy);
+        }
+    }
+
+
+    //========================================================================//
+    // Plot histogram and write CSV if prompted
+    //========================================================================//
+
+    styleAxis(hGammaE, "Energy (MeV)", "Counts");
+
+    if (toPlot) {
+        TString tag = TString(stem) + "_GammaEnergy";
+
+        // Save histogram
+        TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
+        cGammaE->SetLeftMargin(0.12);
+        cGammaE->SetBottomMargin(0.12);
+        hGammaE->Draw("HIST");
+        TString gammaEPng = tag + ".png";
+        cGammaE->SaveAs(gammaEPng.Data());
+        std::cout << "Saved plot : " << gammaEPng.Data() << "\n";
+
+        // Save CSV
+        TString gammaECsv = tag + ".csv";
+        std::ofstream gammaECsvFile(gammaECsv.Data());
+        gammaECsvFile << "BinCenter_MeV,Counts\n";
+        for (int b = 1; b <= hGammaE->GetNbinsX(); ++b) {
+            gammaECsvFile << std::fixed << std::setprecision(6)
+                          << hGammaE->GetBinCenter(b) << ","
+                          << hGammaE->GetBinContent(b) << "\n";
+        }
+        gammaECsvFile.close();
+        std::cout << "Saved data : " << gammaECsv.Data() << "\n";
+
+        delete cGammaE;
+    }
+
+    return hGammaE;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Single-file analysis
+//------------------------------------------------------------------------//
+void analyzePHS(const char* filePath,
+                double window_us = 1.0,
+                int    nBins     = 3000,
+                double eMax      = 3.0)
+{
+    // Derive output filename stem
+    TString inputPath(filePath);
+    TString stem = inputPath;
+    int lastSlash = stem.Last('/');
+    if (lastSlash >= 0) stem = stem(lastSlash + 1, stem.Length() - lastSlash - 1);
+    if (stem.EndsWith(".root")) stem.Remove(stem.Length() - 5, 5);
+
+    // Open file
+    TFile* f = TFile::Open(filePath, "READ");
+    if (!f || f->IsZombie()) {
+        std::cerr << "Error: cannot open \"" << filePath << "\"\n";
+        return;
+    }
+
+
+    //========================================================================//
+    // Pulse-height spectrum
+    //========================================================================//
+
+    TTree* tree = dynamic_cast<TTree*>(f->Get("EnergyDeposition"));
+
+    if (!tree) {
+        std::cerr << "Error: \"EnergyDeposition\" tree not found in \"" << filePath << "\"\n";
+        f->Close();
+        return;
+    }
+
+    // Build, plot, and save PHS
+    TH1D* hPHS = processPHS(tree, stem.Data(), window_us, nBins, eMax, true);
+
+
+    //========================================================================//
+    // EmittedParticles CSV and gamma spectrum
+    //========================================================================//
+
     TTree* emTree = dynamic_cast<TTree*>(f->Get("EmittedParticles"));
+
     if (!emTree) {
         std::cerr << "Warning: \"EmittedParticles\" tree not found in \"" << filePath << "\"\n";
     } else {
@@ -254,60 +428,35 @@ void analyzePHS(const char* filePath,
         emCsv << "PID,Name,Energy_MeV,Weight,Time_s\n";
 
         Long64_t emEntries  = emTree->GetEntries();
-        // Dump the first 10% of rows, capped at 10000
-        Long64_t emCsvLimit = std::min<Long64_t>((emEntries + 9) / 10, 10000);
+        Long64_t emCsvLimit = std::min<Long64_t>((emEntries + 9) / 10, 10000);  // Limit CSV to first 10% of rows, capped at 10000
 
-        TH1D* hGammaE = new TH1D("hGammaE", "Emitted Gamma Energy Spectrum", nBins, 0.0, eMax);
-
-        for (Long64_t i = 0; i < emEntries; ++i) {
+        for (Long64_t i = 0; i < emCsvLimit; ++i) {
             emTree->GetEntry(i);
-            if (i < emCsvLimit) {
-                TParticlePDG* pdgParticle = pdgDB->GetParticle(emPID);
-                const char* emName = pdgParticle ? pdgParticle->GetName() : "unknown";
-                emCsv << emPID << ","
-                      << emName << ","
-                      << std::fixed << std::setprecision(6)
-                      << emEnergy << ","
-                      << emWeight << ","
-                      << emTime * 1e-6 << "\n";
-            }
-            if (emPID == 22) {
-                hGammaE->Fill(emEnergy);
-            }
+            TParticlePDG* pdgParticle = pdgDB->GetParticle(emPID);
+            const char* emName = pdgParticle ? pdgParticle->GetName() : "unknown";
+            emCsv << emPID << ","
+                  << emName << ","
+                  << std::fixed << std::setprecision(6)
+                  << emEnergy << ","
+                  << emWeight << ","
+                  << emTime * 1e-6 << "\n";
         }
         emCsv.close();
         std::cout << "Saved data : " << emCsvName.Data()
                   << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
 
-        TString gammaETag = TString(stem) + "_GammaEnergy";
-
-        styleAxis(hGammaE, "Energy (MeV)", "Counts");
-
-        TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
-        cGammaE->SetLeftMargin(0.12);
-        cGammaE->SetBottomMargin(0.12);
-        hGammaE->Draw("HIST");
-        TString gammaEPng = gammaETag + ".png";
-        cGammaE->SaveAs(gammaEPng.Data());
-        std::cout << "Saved plot : " << gammaEPng.Data() << "\n";
-
-        TString gammaECsv = gammaETag + ".csv";
-        std::ofstream gammaECsvFile(gammaECsv.Data());
-        gammaECsvFile << "BinCenter_MeV,Counts\n";
-        for (int b = 1; b <= hGammaE->GetNbinsX(); ++b) {
-            gammaECsvFile << std::fixed << std::setprecision(6)
-                          << hGammaE->GetBinCenter(b) << ","
-                          << hGammaE->GetBinContent(b) << "\n";
-        }
-        gammaECsvFile.close();
-        std::cout << "Saved data : " << gammaECsv.Data() << "\n";
-
-        delete cGammaE;
+        // Build, plot, and save the emitted gamma energy spectrum
+        TH1D* hGammaE = processGamma(emTree, stem.Data(), nBins, eMax, true);
         delete hGammaE;
     }
 
-    // ---- DecayProducts CSV ----
+
+    //========================================================================//
+    // DecayProducts CSV
+    //========================================================================//
+
     TTree* dpTree = dynamic_cast<TTree*>(f->Get("DecayProducts"));
+
     if (!dpTree) {
         std::cerr << "Warning: \"DecayProducts\" tree not found in \"" << filePath << "\"\n";
     } else {
@@ -359,46 +508,17 @@ void analyzePHS(const char* filePath,
                   << "  (first " << dpCsvLimit << " of " << dpEntries << " rows)\n";
     }
 
-    // ---- cleanup ----
-    delete c;
+    // Cleanup
     delete hPHS;
     f->Close();
 }
 
-// ============================================================
-// Multi-file total PHS: reads a run info file, scales each
-// file's PHS contribution by P_i/N_i, and sums into a single
-// combined pulse-height spectrum.
-//
-// Usage (in ROOT):
-//   .L AnalyzePHS.C
-//   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax)
-//
-// Arguments:
-//   infoPath  - path to the run info file (stem, P_i, N_i per line)
-//   rootDir   - directory containing the .root files (default = ".")
-//   outStem   - output filename stem for the combined PHS (default = "Total")
-//   window_us - charge-collection window length in microseconds (default = 1.0)
-//   nBins     - number of histogram bins (default = 3000)
-//   eMax      - histogram upper edge in MeV (default = 3.0)
-//
-// Outputs:
-//   <outStem>_PHS_<window_us>us.png  - combined pulse-height spectrum plot
-//   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
-//
-// Scale factor logic:
-//   f_i = P_i / N_i
-//   H_total = sum_i ( f_i * H_i )
-//   This correctly handles both the proportional-population case
-//   (N_i = c*P_i, so f_i = 1/c for all i) and the equal-population
-//   case (N_i = N, so f_i = P_i/N per species).
-// ============================================================
-void analyzePHSTotal(const char* infoPath,
-                     const char* rootDir  = ".",
-                     const char* outStem  = "Total",
-                     double window_us = 1.0,
-                     int    nBins     = 3000,
-                     double eMax      = 3.0)
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Multi-file analysis
+//------------------------------------------------------------------------//
+void analyzePHSTotal(const char* infoPath, const char* rootDir = ".", const char* outStem = "Total", double window_us = 1.0, int nBins = 3000, double eMax = 3.0, bool toPlot = false)
 {
     std::vector<RunInfo> runs = parseRunInfo(infoPath);
     if (runs.empty()) {
@@ -406,15 +526,25 @@ void analyzePHSTotal(const char* infoPath,
         return;
     }
 
-    // Sumw2() ensures correct error propagation through scaling and addition
-    TH1D* hTotal = new TH1D("hTotal", "Combined Pulse-Height Spectrum",
-                             nBins, 0.0, eMax);
-    hTotal->Sumw2();
+    // Create total PHS
+    TH1D* hTotal = new TH1D("hTotal", "Combined Pulse-Height Spectrum", nBins, 0.0, eMax);
+    hTotal->SetDirectory(nullptr);
+    hTotal->Sumw2();    // Proper error propogation
+
+    // Create total gamma spectrum
+    TH1D* hGammaTotal = new TH1D("hGammaTotal", "Combined Emitted Gamma Energy Spectrum", nBins, 0.0, eMax);
+    hGammaTotal->SetDirectory(nullptr);
+    hGammaTotal->Sumw2();   // Proper error propogation
 
     std::cout << "\n=== Total PHS Analysis ===\n"
               << "  Info file : " << infoPath << "\n"
               << "  Root dir  : " << rootDir  << "\n"
               << "  Window    : " << window_us << " us\n\n";
+
+
+    //========================================================================//
+    // Loop through available runs and fill histograms
+    //========================================================================//
 
     for (auto& r : runs) {
         double scaleFactor = r.P / r.N;
@@ -434,55 +564,33 @@ void analyzePHSTotal(const char* infoPath,
             continue;
         }
 
-        // ---- bind branches ----
-        Double_t energyDep = 0.0, weight = 0.0, time = 0.0;
-        tree->SetBranchAddress("EnergyDep", &energyDep);
-        tree->SetBranchAddress("Weight",    &weight);
-        tree->SetBranchAddress("Time",      &time);
-
-        // ---- single-pass accumulation into time windows ----
-        std::map<long long, double> windowEnergy;
-        std::map<long long, double> windowWeighted;
-        std::map<long long, double> windowWeightSum;
-
-        Long64_t nEntries = tree->GetEntries();
-        for (Long64_t i = 0; i < nEntries; ++i) {
-            tree->GetEntry(i);
-            long long idx = static_cast<long long>(std::floor(time / window_us));
-            windowEnergy[idx]    += energyDep;
-            windowWeighted[idx]  += energyDep * weight;
-            windowWeightSum[idx] += weight;
-        }
-
-        // ---- build this file's PHS, then scale and accumulate ----
-        // Pulse magnitude is the unweighted energy sum; the histogram fill
-        // weight is the summed biasing weight of the deposits in the window.
-        TH1D* hThis = new TH1D("hThis", "", nBins, 0.0, eMax);
-        hThis->Sumw2();
-        for (auto& kv : windowEnergy) {
-            double E    = kv.second;
-            double Wsum = windowWeightSum[kv.first];
-            hThis->Fill(E, Wsum);
-            // --- previous implementation: energy-weighted average of the weights ---
-            // double Wavg = windowWeighted[kv.first] / E;
-            // hThis->Fill(E, Wavg);
-        }
+        // Build this file's PHS, then scale and accumulate
+        TH1D* hThis = processPHS(tree, r.file.Data(), window_us, nBins, eMax, toPlot);
         hThis->Scale(scaleFactor);
         hTotal->Add(hThis);
 
         std::cout << "  Processed : " << r.file
                   << "  (P=" << r.P << ", N=" << r.N
-                  << ", scale=" << scaleFactor
-                  << ", windows=" << windowEnergy.size() << ")\n";
+                  << ", scale=" << scaleFactor << ")\n";
 
         delete hThis;
+
+        TTree* emTree = dynamic_cast<TTree*>(f->Get("EmittedParticles"));
+
+        // Build this file's gamma spectrum, then scale and accumulate
+        if (!emTree) {
+            std::cerr << "Warning: \"" << path
+                      << "\" (EmittedParticles tree not found), "
+                      << "no gamma contribution from this run\n";
+        } else {
+            TH1D* hGammaThis = processGamma(emTree, r.file.Data(), nBins, eMax, toPlot);
+            hGammaThis->Scale(scaleFactor);
+            hGammaTotal->Add(hGammaThis);
+            delete hGammaThis;
+        }
+
         f->Close();
     }
-
-    // ---- output tag ----
-    std::ostringstream tagStream;
-    tagStream << std::fixed << std::setprecision(2) << window_us;
-    TString tag = TString(outStem) + "_PHS_" + tagStream.str().c_str() + "us";
 
     long long totalWindows = 0;
     double minPulse =  1e30, maxPulse = -1e30;
@@ -498,7 +606,17 @@ void analyzePHSTotal(const char* infoPath,
               << "  Counts range : [" << minPulse << ", " << maxPulse << "]\n"
               << "==========================\n\n";
 
-    // ---- save PNG ----
+
+    //========================================================================//
+    // Combined PHS
+    //========================================================================//
+
+    // PHS output tag
+    std::ostringstream tagStream;
+    tagStream << std::fixed << std::setprecision(2) << window_us;
+    TString tag = TString(outStem) + "_PHS_" + tagStream.str().c_str() + "us";
+
+    // Save PHS histogram
     gStyle->SetOptStat(0);
     styleAxis(hTotal, "Pulse Height (MeV)", "Counts");
 
@@ -510,7 +628,7 @@ void analyzePHSTotal(const char* infoPath,
     c->SaveAs(pngName.Data());
     std::cout << "Saved plot : " << pngName.Data() << "\n";
 
-    // ---- save CSV ----
+    // Save PHS CSV
     TString csvName = tag + ".csv";
     std::ofstream csv(csvName.Data());
     csv << "BinCenter_MeV,Counts\n";
@@ -522,7 +640,40 @@ void analyzePHSTotal(const char* infoPath,
     csv.close();
     std::cout << "Saved data : " << csvName.Data() << "\n";
 
-    // ---- cleanup ----
+
+    //========================================================================//
+    // Combined gamma spectrum
+    //========================================================================//
+
+    // Gamma spectrum output tag
+    TString gammaTag = TString(outStem) + "_GammaEnergy";
+    styleAxis(hGammaTotal, "Energy (MeV)", "Counts");
+
+    // Save gamma spectrum
+    TCanvas* cGamma = new TCanvas("cGammaTotal",
+                                  "Combined Emitted Gamma Energy Spectrum", 800, 600);
+    cGamma->SetLeftMargin(0.12);
+    cGamma->SetBottomMargin(0.12);
+    hGammaTotal->Draw("HIST");
+    TString gammaPng = gammaTag + ".png";
+    cGamma->SaveAs(gammaPng.Data());
+    std::cout << "Saved plot : " << gammaPng.Data() << "\n";
+
+    // Save gamma spectrum CSV
+    TString gammaCsvName = gammaTag + ".csv";
+    std::ofstream gammaCsv(gammaCsvName.Data());
+    gammaCsv << "BinCenter_MeV,Counts\n";
+    for (int b = 1; b <= hGammaTotal->GetNbinsX(); ++b) {
+        gammaCsv << std::fixed << std::setprecision(6)
+                 << hGammaTotal->GetBinCenter(b) << ","
+                 << hGammaTotal->GetBinContent(b) << "\n";
+    }
+    gammaCsv.close();
+    std::cout << "Saved data : " << gammaCsvName.Data() << "\n";
+
+    // Cleanup
     delete c;
+    delete cGamma;
     delete hTotal;
+    delete hGammaTotal;
 }

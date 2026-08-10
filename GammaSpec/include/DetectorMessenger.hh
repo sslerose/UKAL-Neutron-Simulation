@@ -51,7 +51,6 @@
 #define DetectorMessenger_h 1
 
 #include "G4UImessenger.hh"
-#include "globals.hh"
 
 class DetectorConstruction;
 class G4UIdirectory;
@@ -78,8 +77,8 @@ class DetectorMessenger : public G4UImessenger
 
     G4UIcmdWithAString*         fWorldMaterialCmd = nullptr;
     G4UIcmdWithoutParameter*    fPrintCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit*  fDetectorDistanceCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit*  fDetectorAngleCmd = nullptr;
+    G4UIcommand*                fDetectorDistanceCmd = nullptr;
+    G4UIcommand*                fDetectorAngleCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fSpanningStartAngleCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fSpanningEndAngleCmd = nullptr;
     G4UIcommand*                fAbsorberMaterialCmd = nullptr;

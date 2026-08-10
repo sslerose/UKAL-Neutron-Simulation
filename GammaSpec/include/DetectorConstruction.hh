@@ -53,10 +53,8 @@
 #include "G4VUserDetectorConstruction.hh"
 
 #include "G4Tubs.hh"
-#include "G4SubtractionSolid.hh"
 #include "G4RotationMatrix.hh"
-#include "globals.hh"
-#include "Constants.hh"
+#include "G4SystemOfUnits.hh"
 
 class G4LogicalVolume;
 class G4VPhysicalVolume;
@@ -75,9 +73,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4VPhysicalVolume* Construct() override;
     G4Material* MaterialWithSingleIsotope(G4String, G4String, G4double, G4int, G4int);
 
+    void PrintParameters();
+
     // Setters
-    void SetDetectorDistance(G4double);
-    // void SetDetectorAngle(G4double);
+    void SetDetectorDistance(G4int, G4double);
+    void SetDetectorAngle(G4int, G4double);
     void SetWorldMaterial(G4String);
     void SetSpanningStartAngle(G4double);
     void SetSpanningEndAngle(G4double);
@@ -87,13 +87,12 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Getters
     const G4VPhysicalVolume* GetWorld() const { return fWorldPV; }
-    // G4LogicalVolume* GetHPGELV(G4int i) const { return (i == 0 || i == 1) ? fHPGELV[i] : nullptr; } // Return the i-th HPGe logical volume
     G4LogicalVolume* GetActiveCrystalLV() const { return fActiveCrystalLV; }
     G4LogicalVolume* GetAbsorberLV() const { return fAbsorberLV; }
     G4LogicalVolume* GetGoldLV() const { return fGoldLV; }
 
-    G4double GetDetectorAngle() const { return fHPGEAngle; }
-    G4double GetDetectorDistance() const { return fHPGEDistance; }
+    G4double GetDetectorAngle(G4int detectorID) const { return fHPGEAngle[detectorID]; }
+    G4double GetDetectorDistance(G4int detectorID) const { return fHPGEDistance[detectorID]; }
 
     G4double GetSpanningStartAngle() const { return fStartAngle; }
     G4double GetSpanningEndAngle() const { return fEndAngle; }
@@ -101,8 +100,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double GetAbsorberRadius() const { return fAbsorberRadius; }
     G4Material* GetDetectorMaterial() const { return fHPGEMaterial; }
     G4Material* GetAbsorberMaterial() const { return fAbsorberMaterial; }
-
-    void PrintParameters();
 
   private:
     //========================================================================//
@@ -126,9 +123,9 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //========================================================================//
 
     // Parameters
-    G4double fHPGEDistance = 5.0 * cm;
-    G4double fHPGEDisplacement = 0.;
-    G4double fHPGEAngle = 0. * deg;
+    G4double fHPGEDistance[2] = {5.0 * cm, 5.0 * cm};
+    G4double fHPGEDisplacement[2] = {0., 0.};
+    G4double fHPGEAngle[2] = {0. * deg, 180. * deg};
 
     // Materials
     G4Material* fHPGEMaterial = nullptr;
@@ -138,11 +135,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Misc.
     DetectorMessenger* fDetectorMessenger = nullptr;
-    G4RotationMatrix* fRotationMatrix[2] = {nullptr, nullptr}; // Array of rotation matrices for HPGe detector (2 for front and back)
-    
+    G4RotationMatrix* fRotationMatrix[2] = {nullptr, nullptr};
+
     // Volumes
-    G4LogicalVolume* fHPGEMotherLV[2] = {nullptr, nullptr}; // Array of logical volumes for HPGe detector (2 for front and back)
-    G4LogicalVolume* fInnerStructLV[2] = {nullptr, nullptr};
+    G4LogicalVolume* fHPGEMotherLV[2] = {nullptr, nullptr};
+    G4LogicalVolume* fInnerStructLV[2] = {nullptr, nullptr};  // Separate inner LVs to avoid overlapping
     G4LogicalVolume* fCryoLV        = nullptr;
     G4LogicalVolume* fCryoCapLV     = nullptr;
     G4LogicalVolume* fAlSheetLV     = nullptr;
@@ -155,25 +152,23 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4LogicalVolume* fInnerDeadLayerLV  = nullptr;
     G4LogicalVolume* fInnerDeadLayerCapLV  = nullptr;
 
-    G4VPhysicalVolume* fHPGEMotherPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector mother volumes (2 for front and back)
+    G4VPhysicalVolume* fHPGEMotherPV[2] = {nullptr, nullptr};
 
-    // G4VPhysicalVolume* fHPGEPV[2] = {nullptr, nullptr}; // Array of physical volumes for HPGe detector (2 for front and back)
-    
 
     //========================================================================//
     // Absorber variables and volumes
     //========================================================================//
 
     // Gold foil
-    G4double fGoldThickness = 0.03 * mm;  // Thickness of gold foil
+    G4double fGoldThickness = 0.03 * mm;
 
     // Absorber
-    G4double fAbsorberThickness = 0.03 * mm;  // Thickness of absorber
-    G4double fAbsorberRadius = 18.0 * mm / 2; // Radius of absorber (cylindrical)
+    G4double fAbsorberThickness = 0.03 * mm;
+    G4double fAbsorberRadius = 18.0 * mm / 2;
 
-    // Absorber assembly (includes gold foils)
-    G4double fStartAngle = 0.0 * deg;
-    G4double fEndAngle = 360.0 * deg;
+    // Absorber assembly
+    G4double fStartAngle = 0.0 * deg; // Initial phi angle
+    G4double fEndAngle = 360.0 * deg; // Final phi angle
 
     // Materials
     G4Material* fGoldMaterial = nullptr;
@@ -181,28 +176,20 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
     // Solids
     G4Tubs* fAbsorberAssemblyTube = nullptr;
-    // G4Tubs* fGoldFrontTube = nullptr;
-    // G4Tubs* fGoldBackTube = nullptr;
     G4Tubs* fGoldTube = nullptr;
     G4Tubs* fAbsorberTube = nullptr;
 
     // Volumes
     G4LogicalVolume* fAbsorberAssemblyLV = nullptr;
-    // G4LogicalVolume* fGoldFrontLV = nullptr;
-    // G4LogicalVolume* fGoldBackLV = nullptr;
     G4LogicalVolume* fGoldLV = nullptr;
-    // G4LogicalVolume* fGoldLV = nullptr;
     G4LogicalVolume* fAbsorberLV = nullptr;
-    
+
     G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
-    // G4VPhysicalVolume* fGoldFrontPV = nullptr;
-    // G4VPhysicalVolume* fGoldBackPV = nullptr;
     G4VPhysicalVolume* fGoldPV[2] = {nullptr, nullptr};
-    // G4VPhysicalVolume* fAbsorberPV = nullptr;
 
   private:
     void DefineMaterials();
-    void BuildDetectorStack(G4LogicalVolume* motherLV, G4int detectorID);
+    void BuildDetectorStack(G4LogicalVolume* motherLV, G4LogicalVolume* innerLV, G4int detectorID);
 
     G4VPhysicalVolume* ConstructVolumes();
 };

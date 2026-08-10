@@ -32,7 +32,6 @@
 #define PhysicsList_h 1
 
 #include "G4VModularPhysicsList.hh"
-#include "globals.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

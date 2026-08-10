@@ -38,6 +38,7 @@
 #include "Run.hh"
 
 #include "G4RunManager.hh"
+#include "G4AnalysisManager.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -47,6 +48,9 @@ SteppingAction::SteppingAction(DetectorConstruction* det, EventAction* event)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+//------------------------------------------------------------------------//
+// Count physics processes and record per-step energy deposits
+//------------------------------------------------------------------------//
 void SteppingAction::UserSteppingAction(const G4Step* aStep)
 {
   // Get the current run and analysis manager

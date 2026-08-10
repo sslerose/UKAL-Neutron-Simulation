@@ -49,22 +49,11 @@
 //
 
 #include "EventAction.hh"
-#include "DetectorHit.hh"
 #include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
-#include "HistoManager.hh"
 #include "Run.hh"
 
-#include "G4AnalysisManager.hh"
 #include "G4Event.hh"
-#include "G4EventManager.hh"
-#include "G4HCofThisEvent.hh"
-#include "G4SDManager.hh"
-#include "G4SystemOfUnits.hh"
-#include "G4UnitsTable.hh"
-#include "G4RunManager.hh"
-
-#include <iomanip>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

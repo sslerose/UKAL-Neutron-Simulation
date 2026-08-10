@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
@@ -34,7 +52,6 @@
 
 #include "G4Run.hh"
 #include "G4VProcess.hh"
-#include "globals.hh"
 
 #include <atomic>
 #include <map>
@@ -53,7 +70,6 @@ class Run : public G4Run
   public:
     void SetPrimary(G4ParticleDefinition* particle, G4double energy);
     void CountProcesses(const G4VProcess* process);
-    // void ParticleCount(G4String, G4double, G4double);
     void ParticleCount(G4String, G4int, G4int);
 
     static void InitProgressTracking(G4int totalEvents);
@@ -64,32 +80,13 @@ class Run : public G4Run
     void EndOfRun();
     void WriteActivity(G4int);
 
-  // private:
-  //   struct ParticleData
-  //   {
-  //       ParticleData() : fCount(0), fEmean(0.), fEmin(0.), fEmax(0.), fTmean(-1.) {}
-  //       ParticleData(G4int count, G4double ekin, G4double emin, G4double emax, G4double meanLife)
-  //         : fCount(count), fEmean(ekin), fEmin(emin), fEmax(emax), fTmean(meanLife)
-  //       {}
-  //       G4int fCount;
-  //       G4double fEmean;
-  //       G4double fEmin;
-  //       G4double fEmax;
-  //       G4double fTmean;
-  //   };
-
   private:
-    // utility function
-    // void Merge(std::map<G4String, ParticleData>& destinationMap,
-    //            const std::map<G4String, ParticleData>& sourceMap) const;
-
     DetectorConstruction* fDetector = nullptr;
     G4ParticleDefinition* fParticle = nullptr;
     G4double fEkin = 0.;
     G4int fIonTrackCount = 0;
 
     std::map<G4String, G4int> fProcCounter;
-    // std::map<G4String, ParticleData> fParticleDataMap1;
     std::map<G4String, G4int> fIsomerCounter;
     std::map<G4String, G4int> fNuclideCounter;
 

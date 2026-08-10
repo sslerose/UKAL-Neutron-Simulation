@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
