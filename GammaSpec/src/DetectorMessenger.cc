@@ -123,7 +123,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   // Unit of distance
   G4UIparameter* unitPrm = new G4UIparameter("unit", 's', false);
   unitPrm->SetGuidance("unit of distance");
-  G4String unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("Length"));
+  G4String unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("cm"));
   unitPrm->SetParameterCandidates(unitList);
   fDetectorDistanceCmd->SetParameter(unitPrm);
 
@@ -152,7 +152,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   // Unit of angle
   unitPrm = new G4UIparameter("unit", 's', false);
   unitPrm->SetGuidance("unit of angle");
-  unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("Angle"));
+  unitList = G4UIcommand::UnitsList(G4UIcommand::CategoryOf("deg"));
   unitPrm->SetParameterCandidates(unitList);
   fDetectorAngleCmd->SetParameter(unitPrm);
 

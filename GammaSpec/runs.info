@@ -1,0 +1,12 @@
+################################################################################
+# Scale factors for total PHS
+#
+# Each non-blank, non-comment line must have three whitespace-delimited fields:
+#     <file_stem>  <P>  <N>
+#   where file_stem is the ROOT file name without the .root extension,
+#   P is the true parent population from the NeutronActivation simulation, and
+#   N is the number of parents simulated in the GammaSpec run
+################################################################################
+
+au198 1350 1000000
+fe61 222 1000000

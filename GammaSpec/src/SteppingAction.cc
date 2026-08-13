@@ -84,7 +84,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   G4double time = aStep->GetPreStepPoint()->GetGlobalTime();
   G4double weight = aStep->GetPreStepPoint()->GetWeight();
 
-  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EnergyDep, edep);
+  analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EnergyDep, edep / MeV);
   analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EDepWeight, weight);
   analysisManager->FillNtupleDColumn(0, HistoManager::kNT_EDepTime, time / microsecond);
   analysisManager->AddNtupleRow(0);
