@@ -163,7 +163,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   // Create absorber UI directory
   //========================================================================//
 
-  fAbsorDir = new G4UIdirectory("/gammaSpec/absor/", broadcast);
+  fAbsorDir = new G4UIdirectory("/gammaSpec/abs/", broadcast);
   fAbsorDir->SetGuidance("Absorber construction commands");
 
 

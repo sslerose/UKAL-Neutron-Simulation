@@ -1,5 +1,5 @@
 # ---------------------------------------- #
-# Macro file for Gamma Spectroscopy
+# Test macro file for Gamma Spectroscopy
 # ---------------------------------------- #
 
 # Set verbose levels
@@ -15,15 +15,24 @@
 # Set a very high time threshold to allow all decays to happen
 /process/had/rdm/thresholdForVeryLongDecayTime 1.0e+60 year
 
+# Set analogue decay mode
+/process/had/rdm/analogueMC 1
+
+# Set ion
+/gun/particle ion
+/gun/ion 27 60
+
+/analysis/setFileName co60_an
+
+# Run events
+/run/beamOn 1000000
+
+
 # Set variance reduction decay mode with time profile
 /process/had/rdm/decayBiasProfile measures.data
 /process/had/rdm/analogueMC 0
 
-# Set ion and file name
-/gun/particle ion
-/gun/ion 26 61
-
-/analysis/setFileName fe61
+/analysis/setFileName co60_vr
 
 # Run events
 /run/beamOn 1000000

@@ -21,7 +21,9 @@
 /// Usage (in ROOT):
 ///
 /// Single-run PHS: reads a ROOT file of raw data from a single run and creates
-/// the PHS and gamma emission spectrum of the run
+/// the PHS and gamma emission spectrum of the run as PNGs with bin-center and
+/// counts data saved as CSVs. Also saves a sample of EmittedParticles and
+/// DecayProducts data into CSVs.
 ///
 /// Function call:
 ///   analyzePHS("path/to/data.root", window_us, nBins, eMax, saveRoot)
@@ -163,6 +165,7 @@
 #include "TParameter.h"
 #include "TDatabasePDG.h"
 #include "TParticlePDG.h"
+#include "TSystem.h"
 
 #include <algorithm>
 #include <cmath>
@@ -173,6 +176,24 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+// void AnalyzePHS()
+// {
+//     gROOT->SetBatch(kTRUE);
+//     std::cout << "AnalyzePHS.C loaded. Batch mode enabled.\n";
+// }
+
+namespace {
+    struct AutoInit {
+        AutoInit() {
+            gROOT->SetBatch(kTRUE);
+            std::cout << "Program.C loaded (via static init). Batch mode enabled.\n";
+        }
+    };
+    AutoInit _autoInitInstance;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -195,7 +216,9 @@ void printFuncs()
     std::cout <<
 "\n"
 "Single-run PHS: reads a ROOT file of raw data from a single run and creates\n"
-"the PHS and gamma emission spectrum of the run\n"
+"the PHS and gamma emission spectrum of the run as PNGs with bin-center and\n"
+"counts data saved as CSVs. Also saves a sample of EmittedParticles and\n"
+"DecayProducts data into CSVs.\n"
 "\n"
 "Function call:\n"
 "  analyzePHS(\"path/to/data.root\", window_us, nBins, eMax, saveRoot)\n"
@@ -238,7 +261,7 @@ void printFuncs()
 "\n"
 "Required argument:\n"
 "  filePath   - path to either a raw GammaSpec .root data file or a processed\n"
-"               PHS .root file saved by analyzePHS/analyzePHSTotal\n"
+"               PHS .root file saved by analyzePHS or analyzePHSTotal\n"
 "\n"
 "Optional arguments:\n"
 "  window_us  - charge-collection window length in microseconds (default = 1.0)\n"
@@ -250,7 +273,7 @@ void printFuncs()
 "on a processed PHS and reports the absolute efficiency of each\n"
 "\n"
 "Function call:\n"
-"  analyzePhoto(\"Total_PHS_1.00us.root\", {{0.6,0.7}, {0.85,0.9}})\n"
+"  analyzePhoto(\"path/to/file.root\", {{E_1i, E_1f}, {E_2i, E_2f}})\n"
 "\n"
 "Required arguments:\n"
 "  phsPath   - path to a processed PHS .root file saved by analyzePHS or\n"
@@ -438,7 +461,7 @@ TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, dou
 
 
     //========================================================================//
-    // Plot histogram and write CSV if prompted
+    // Plot histogram and write CSV (if prompted)
     //========================================================================//
 
     styleAxis(hPHS, "Energy (MeV)", "Counts");
@@ -517,7 +540,7 @@ TH1D* processGamma(TTree* emTree,
 
 
     //========================================================================//
-    // Plot histogram and write CSV if prompted
+    // Plot histogram and write CSV (if prompted)
     //========================================================================//
 
     styleAxis(hGammaE, "Energy (MeV)", "Counts");
@@ -888,7 +911,7 @@ void analyzePHSTotal(const char* infoPath, const char* rootDir = ".", const char
 
 
     //========================================================================//
-    // Save combined PHS to its own ROOT file if prompted
+    // Save combined PHS to its own ROOT file (if prompted)
     //========================================================================//
 
     // Total PHS and gamma spectrum are equally scaled prior to photopeak analysis
@@ -957,6 +980,8 @@ void viewPHS(const char* filePath, double window_us = 1.0, int nBins = 3000, dou
     // Draw interactive canvas
     //========================================================================//
 
+    gROOT->SetBatch(kFALSE);
+
     gStyle->SetOptStat(0);
     styleAxis(hPHS, "Energy (MeV)", "Counts");
 
@@ -970,6 +995,14 @@ void viewPHS(const char* filePath, double window_us = 1.0, int nBins = 3000, dou
 
     std::cout << "Viewing      : " << stem.Data() << "\n"
               << "Canvas \"cViewPHS\" is interactive; zoom and inspect as needed.\n\n";
+
+    while (gROOT->GetListOfCanvases()->FindObject("cViewPHS")) {
+        gSystem->ProcessEvents();
+        gSystem->Sleep(50);
+    }
+
+    gROOT->SetBatch(kTRUE);
+    std::cout << "Canvas closed, batch mode restored.\n";
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

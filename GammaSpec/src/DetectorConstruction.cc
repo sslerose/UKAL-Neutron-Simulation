@@ -953,10 +953,10 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  Config: Dual-detector assembly" << G4endl;
   G4cout << "    Detector 1:" << G4endl;
   G4cout << "      Distance to origin: " << G4BestUnit(fHPGEDistance[0], "Length") << G4endl;
-  G4cout << "      Angle: " << -fHPGEAngle[0] / degree << " degrees" << G4endl;
+  G4cout << "      Angle: " << fHPGEAngle[0] / degree << " degrees" << G4endl;
   G4cout << "    Detector 2:" << G4endl;
   G4cout << "      Distance to origin: " << G4BestUnit(fHPGEDistance[1], "Length") << G4endl;
-  G4cout << "      Angle: " << -fHPGEAngle[1] / degree << " degrees" << G4endl;
+  G4cout << "      Angle: " << fHPGEAngle[1] / degree << " degrees" << G4endl;
   G4cout << "  Active Volume:" << G4endl;
   G4cout << "    Material: " << fHPGEMaterial->GetName() << G4endl;
   G4cout << "    Density: " << fHPGEMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
