@@ -1,5 +1,7 @@
 # Gamma Spectroscopy Simulation
 
+The gamma spectroscopy simulation, GammaSpec, tracks radioisotope decays of generated particles and the subsequent interaction of gamma particles within two realistically-modeled high purity germanium (HPGe) detectors. An analysis file is provided to facilitate generation of pulse-height spectra (PHS) from the interaction data and perform subsequent photopeak analysis.
+
 
 ## Building the Project
 
@@ -30,13 +32,12 @@ The steps to run this project are essentially identical to those for the basic e
 
 ### On the MCC
 
-1. Verify that steps (1) and (2) from [running the basic example](../README.md#building-and-running-a-basic-example-1) on the cluster have been performed.
-2. Enter the repo directory:
+1. Enter the repo:
 
 	```bash
-	cd /scratch/user123/UKAL-Neutron-Simulation
+	cd /scratch/user123/Geant4/UKAL-Neutron-Simulation
 	```
-3. Source the build script to create the Makefile and simulation executable:
+2. Source the build script to create the Makefile and simulation executable:
 	```bash
 	. build_UKAL_GammaSpec.sh
 	```
@@ -88,7 +89,7 @@ Add the desired macro file after the execution call:
 ```
 
 **MCC:**  
-Running batch mode on the MCC requires using Slurm (Simple Linux Utility for Resource Management) via a shell script. Any of the `run_nXXX.sh` scripts provides an outline for Slurm jobs with the following structure:
+Running batch mode on the MCC requires using Slurm (Simple Linux Utility for Resource Management) via a shell script. The `Data_Test/run_gSpec.sh` script provides an outline for Slurm jobs with the following structure:
 ```bash
 #!/bin/bash
 #SBATCH --time 00:30:00         # Time limit for the job (REQUIRED)
@@ -118,14 +119,16 @@ Anything after the hashed lines will be executed as if it were in a terminal. On
 sbatch your_slurm.sh
 ```
 
-Note that the execution call `../GammaSpec` in the shell scripts have two leading periods, which directs the terminal to look in the parent directory for the executable. All data written by the simulation will be saved to the directory of script execution. The macro file called by the shell script (and any dependent macro files) must be placed in the same directory as the shell script to execute properly.
+Note that the execution call `../GammaSpec` in the shell scripts have two leading periods, which directs the terminal to look in the parent directory for the executable. All data written by the simulation will be saved to the directory of script execution. It is best practice to keep the macro file called by the shell script (and any dependent macro files) in the same directory as the shell script for execution and organization purposes.
 
 
 ## Test Run, Decay Modes, and Analysis
 
 Before making your own simulation macros, you should test that the simulation is working and understand the sampling methods of the simulated radioactive decays.
 
-Either locally or via MCC, run GammaSpec in batch mode with `run_test.mac` found in `build/Data_Test`. The macro performs two separate runs, each generating 1,000,000 isotopes of Cobalt-60 at rest at the origin within the absorber volume. The first runs in analogue decay mode, saving data to the file `co60_an.root`, and the second in variance reduction decay mode, saving data to `co60_vr.root`.
+### Cobalt-60 Test Run
+
+Either locally or via the MCC, run GammaSpec in batch mode with `Data_Test/run_test.mac`. The macro performs two separate runs, each generating 1,000,000 isotopes of Cobalt-60 at rest at the origin within the absorber volume. The first runs in analogue decay mode, saving data to the file `co60_an.root`, and the second in variance reduction decay mode, saving data to `co60_vr.root`.
 
 ### Analogue Decays
 
@@ -180,17 +183,71 @@ If we perform the same analysis on the VR data, the resulting spectra will depen
 
 Multi-isotope simulations can be performed using a single macro. Each isotope is assigned to a separate run and its data is written to a separate ROOT file, and the collection of ROOT files generated can be analyzed to create a combined PHS.
 
+
 ### Creating a Run Info File
 
 To have good statistics of a multi-isotope run, we want to generate a large population of each isotope. However, the individual PHS of each isotope needs to be scaled proportional to its true initial population before being added to the combined PHS. This PHS scaling is facilitied by a `runs.info` file (the name can be changed).
 
-The info file is built by recording the true initial population and the initial population simulated in GammaSpec for each isotope. By true population, we mean the surviving population determined from a NeutronActivation simulation. Specifically, the surviving *radioactive* species. As an example, a 1-billion-particle run of NeutronActivation with an Iron-60 absorber may yield populations
+The info file is built by recording the true initial population and the initial population simulated in GammaSpec for each isotope. By true population, we mean the surviving population determined from a NeutronActivation simulation. Specifically, the surviving *radioactive* species. As an example, a 1-billion-particle run of NeutronActivation with an Iron-60 absorber, a beam time of 18 minutes, and a cooling time of 6 minutes, may yield populations
+
+- Au-198: 259,427
+- Fe-61: 871
+- Mn-56: 177
+- Mo-101: 125
+
+We can then construct a `runs.info` file with the first column as the species, the second as the true initial population, and the third as the simulated population for GammaSpec:
+```bash
+au198 259427 1000000
+fe61 871 1000000
+mn56 177 1000000
+mo101 125 1000000
+```
+
 
 ### Running the Simulation
 
+Using `Data_Test/run_test.mac` as an outline, a multi-isotope macro can be constructed as
+```bash
+# Set ion (Gold-198)
+/gun/particle ion
+/gun/ion 79 198
 
+/analysis/setFileName au198
 
-**NOTE:** It is recommended to initiate separate runs from within a dedicated folder to keep generated ROOT files separated and organized. To do this yourself, copy the relevant script and its dependent macro files into your new folder and run the simulation from there. All ROOT files generated will remain in that folder.
+# Run events
+/run/beamOn 1000000
+
+# Set ion (Iron-61)
+/gun/particle ion
+/gun/ion 26 61
+
+/analysis/setFileName fe61
+
+# Run events
+/run/beamOn 1000000
+
+...
+```
+Each ion is defined by its atomic number and mass number, and the saved ROOT file is named identically to the `runs.info` population names.
+
+**NOTE 1:** It is recommended to initiate independent runs from within a dedicated folder to keep generated ROOT files separated and organized. To do this yourself, copy the relevant script and its dependent macro files into your new folder and run the simulation from there. All ROOT files generated will remain in that folder.
+
+**NOTE 2:** If you changed the geometry or material properties of the absorber in your preceeding NeutronActivation simulation, make the same changes in your GammaSpec macro using the available commands.
 
 
 ### Analysis
+
+Any individual ROOT file can be analyzed in the same manner as the test run, or the set of ROOT files can be analyzed as a whole by
+```bash
+analyzePHSTotal("runs.info", "/path/to/rootfiles", "outStem", window_us, nBins, eMax, toPlot, saveRoot)
+```
+with all but the info file path being optional arguments:
+- rootDir   - directory containing the .root files (default = ".")
+- outStem   - output filename stem for the combined PHS (default = "Total")
+- window_us - charge-collection window length in microseconds (default = 1.0)
+- nBins     - number of histogram bins (default = 3000)
+- eMax      - histogram upper edge in MeV (default = 3.0)
+- toPlot    - also save the per-run PHS and gamma plots/CSVs (default = false)
+- saveRoot  - also save the combined PHS as its own .root file (default = false)
+
+Photopeak analysis can be further conducted on the combined PHS if one saves the resulting ROOT file (`saveRoot=true`).

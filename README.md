@@ -278,20 +278,22 @@ If you're using the remote desktop, open a terminal in that instance. If you're 
    ```bash
    source ~/.bashrc
    ```
-   **NOTE:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session.  
+   **NOTE 1:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session.
+
    **NOTE 2:** If `setup_geant4` already exists, change that command (and the corresponding alias) to `geant4_singularity` .
 
 
 ### Building and Running a Basic Example
 
-Before importing any Neutron Simulation project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future projects run into issues.
+Before importing any UKAL project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future projects run into issues.
 
 1. Enter your scratch directory:
 
    ```bash
    cd /scratch/user123
    ```
-   where `user123` is your LinkBlue ID.  
+   where `user123` is your LinkBlue ID.
+
    **NOTE:** Each user of the MCC has four possible directories to work in, each with different storage allocation and use cases. Familiarize yourself [here](https://ukyrcd.atlassian.net/wiki/spaces/RCDDocs/pages/162104005/File+System+Basics).
 2. Make and enter a directory to house your Geant4 projects:	
 	```bash
@@ -313,3 +315,12 @@ Before importing any Neutron Simulation project, you should test that the basic 
 	$BUILD_RUN ./exampleB1
 	```
 The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in an interactive session or `nano` in the terminal) and verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (5).
+
+
+### Cloning the UKAL Repository
+
+The process itself is identical to the local case, but the repo should be explicitly placed in your scratch directory from above:
+```bash
+cd /scratch/user123/Geant4
+git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
+```

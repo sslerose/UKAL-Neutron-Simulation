@@ -189,7 +189,7 @@ namespace {
     struct AutoInit {
         AutoInit() {
             gROOT->SetBatch(kTRUE);
-            std::cout << "Program.C loaded (via static init). Batch mode enabled.\n";
+            std::cout << "AnalyzePHS.C loaded (via static init). Batch mode enabled.\n";
         }
     };
     AutoInit _autoInitInstance;
@@ -1124,17 +1124,7 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
         hPHS->Fit(&peakFit, "RQ");    // "R" restricts the fit to the window
 
         double mean  = peakFit.GetParameter(1);
-//
-// Operates on a processed PHS file saved by analyzePHS/analyzePHSTotal with
-// saveRoot = true. For each energy window a coarse peak search seeds a
-// Gaussian fit over that same window; the fitted centroid and width then
-// define a +/-2 sigma integration region whose counts, divided by the total
-// number of emitted gammas stored in the file, give the absolute photopeak
-// efficiency.
-//
-// Outputs:
-//   <stem>_Photopeak_<mean>keV.png - per-peak spectrum with fit and legend
-//   <stem>_Photopeaks.csv          - summary row per fitted window
+
         double sigma = std::fabs(peakFit.GetParameter(2));
 
 

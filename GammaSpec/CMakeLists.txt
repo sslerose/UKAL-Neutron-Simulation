@@ -64,9 +64,9 @@ endforeach()
 
 # Copy test scripts from source root into build/Data_Test/
 set(GammaSpec_RUN_SCRIPTS
-  run.mac
-  beam.data
-  measures.data
+  Data_Test/run_test.mac
+  Data_Test/measures.data
+  Data_Test/run_gSpec.sh
   )
 
 foreach(_script ${GammaSpec_RUN_SCRIPTS})
