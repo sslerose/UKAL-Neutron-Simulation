@@ -211,7 +211,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Absorber thickness
   //========================================================================//
-  fAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/abs/setAbsorberThickness", this);
+  fAbsorberThicknessCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/absor/setAbsorberThickness", this);
   fAbsorberThicknessCmd->SetGuidance("Set thickness of the absorber in micrometers.");
   fAbsorberThicknessCmd->SetParameterName("thickness", false);
   fAbsorberThicknessCmd->SetRange("thickness > 0");
@@ -221,7 +221,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Absorber radius
   //========================================================================//
-  fAbsorberRadiusCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/abs/setAbsorberRadius", this);
+  fAbsorberRadiusCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/absor/setAbsorberRadius", this);
   fAbsorberRadiusCmd->SetGuidance("Set radius of the absorber in micrometers.");
   fAbsorberRadiusCmd->SetParameterName("radius", false);
   fAbsorberRadiusCmd->SetRange("radius > 0");
@@ -231,7 +231,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Initial spanning angle of absorber
   //========================================================================//
-  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/abs/setAbsorberSpanningStartAngle", this);
+  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/absor/setAbsorberSpanningStartAngle", this);
   fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
   fSpanningStartAngleCmd->SetParameterName("spanningStartAngle", false);
   fSpanningStartAngleCmd->SetUnitCategory("Angle");
@@ -241,7 +241,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   //========================================================================//
   // Final spanning angle of absorber
   //========================================================================//
-  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/abs/setAbsorberSpanningEndAngle", this);
+  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/gammaSpec/absor/setAbsorberSpanningEndAngle", this);
   fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
   fSpanningEndAngleCmd->SetParameterName("spanningEndAngle", false);
   fSpanningEndAngleCmd->SetUnitCategory("Angle");

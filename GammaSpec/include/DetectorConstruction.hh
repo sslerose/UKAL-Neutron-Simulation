@@ -98,7 +98,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double GetSpanningEndAngle() const { return fEndAngle; }
     G4double GetAbsorberThickness() const { return fAbsorberThickness; }
     G4double GetAbsorberRadius() const { return fAbsorberRadius; }
-    G4Material* GetDetectorMaterial() const { return fHPGEMaterial; }
     G4Material* GetAbsorberMaterial() const { return fAbsorberMaterial; }
 
   private:
@@ -116,6 +115,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4LogicalVolume* fWorldLV = nullptr;
 
     G4VPhysicalVolume* fWorldPV = nullptr;
+
+    G4VPhysicalVolume* fAbsorberAssemblyPV = nullptr;
+    G4VPhysicalVolume* fGoldFrontPV = nullptr;
+    G4VPhysicalVolume* fGoldBackPV = nullptr;
+    G4VPhysicalVolume* fAbsorberPV = nullptr;
 
 
     //========================================================================//
@@ -192,6 +196,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     void BuildDetectorStack(G4LogicalVolume* motherLV, G4LogicalVolume* innerLV, G4int detectorID);
 
     G4VPhysicalVolume* ConstructVolumes();
+    G4LogicalVolume* BuildDetector(G4int index);
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -18,6 +18,7 @@
 /// \file AnalyzePHS.C
 /// \brief ROOT macro for generating a pulse-height spectrum (PHS) from GammaSpec output.
 ///
+/// -- analyzePHS -------------------------------------------------------------
 /// Usage (in ROOT):
 ///
 /// Single-run PHS: reads a ROOT file of raw data from a single run and creates
@@ -29,7 +30,7 @@
 ///   analyzePHS("path/to/data.root", window_us, nBins, eMax, saveRoot)
 ///
 /// Required argument:
-///   filePath   - path to the .root data file
+///   filePath   - path to the GammaSpec .root output file
 ///
 /// Optional arguments:
 ///   window_us  - charge-collection window length in microseconds (default = 1.0)

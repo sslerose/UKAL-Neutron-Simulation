@@ -27,3 +27,11 @@
 
 # Run events
 /run/beamOn 1000000
+
+# Set ion to au198
+/gun/ion 79 198
+
+/analysis/setFileName au198
+
+# Run events
+/run/beamOn 1000000
