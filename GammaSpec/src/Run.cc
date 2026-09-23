@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
@@ -32,14 +50,11 @@
 #include "Run.hh"
 
 #include "DetectorConstruction.hh"
-#include "HistoManager.hh"
 #include "PrimaryGeneratorAction.hh"
-#include "Constants.hh"
 
 #include "G4ProcessTable.hh"
 #include "G4Radioactivation.hh"
-#include "G4SystemOfUnits.hh"
-#include "G4UnitsTable.hh"
+#include "G4AnalysisManager.hh"
 
 #include <cmath>
 #include <ctime>
@@ -85,23 +100,17 @@ void Run::CountProcesses(const G4VProcess* process)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Run::ParticleCount(G4String name, G4double Ekin, G4double meanLife)
+void Run::ParticleCount(G4String name, G4int Z, G4int A)
 {
-  std::map<G4String, ParticleData>::iterator it = fParticleDataMap1.find(name);
-  if (it == fParticleDataMap1.end()) {
-    fParticleDataMap1[name] = ParticleData(1, Ekin, Ekin, Ekin, meanLife);
-  }
-  else {
-    ParticleData& data = it->second;
-    data.fCount++;
-    data.fEmean += Ekin;
-    // update min max
-    G4double emin = data.fEmin;
-    if (Ekin < emin) data.fEmin = Ekin;
-    G4double emax = data.fEmax;
-    if (Ekin > emax) data.fEmax = Ekin;
-    data.fTmean = meanLife;
-  }
+  // Increment total ion count
+  fIonTrackCount++;
+
+  // Increment distinct isomer count, keyed by full name (includes excitation state)
+  fIsomerCounter[name]++;
+
+  // Increment distinct nuclide count, keyed by Z and A (collapse isomers)
+  G4String nuclideKey = std::to_string(Z) + "_" + std::to_string(A);
+  fNuclideCounter[nuclideKey]++;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -172,29 +181,9 @@ void Run::RecordEvent(G4int /*eventID*/)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Run::Merge(std::map<G4String, ParticleData>& destinationMap,
-                const std::map<G4String, ParticleData>& sourceMap) const
-{
-  for (const auto& particleData : sourceMap) {
-    G4String name = particleData.first;
-    const ParticleData& localData = particleData.second;
-    if (destinationMap.find(name) == destinationMap.end()) {
-      destinationMap[name] = ParticleData(localData.fCount, localData.fEmean, localData.fEmin,
-                                          localData.fEmax, localData.fTmean);
-    }
-    else {
-      ParticleData& data = destinationMap[name];
-      data.fCount += localData.fCount;
-      data.fEmean += localData.fEmean;
-      G4double emin = localData.fEmin;
-      if (emin < data.fEmin) data.fEmin = emin;
-      G4double emax = localData.fEmax;
-      if (emax > data.fEmax) data.fEmax = emax;
-      data.fTmean = localData.fTmean;
-    }
-  }
-}
-
+//------------------------------------------------------------------------//
+// Merge counters from the local run into the global run
+//------------------------------------------------------------------------//
 void Run::Merge(const G4Run* run)
 {
   const Run* localRun = static_cast<const Run*>(run);
@@ -203,20 +192,32 @@ void Run::Merge(const G4Run* run)
   fParticle = localRun->fParticle;
   fEkin = localRun->fEkin;
 
-  // map: processes count
+  // Ion track totals
+  fIonTrackCount += localRun->fIonTrackCount;
+
+  // Processes
   for (const auto& procCounter : localRun->fProcCounter) {
     G4String procName = procCounter.first;
     G4int localCount = procCounter.second;
-    if (fProcCounter.find(procName) == fProcCounter.end()) {
-      fProcCounter[procName] = localCount;
-    }
-    else {
-      fProcCounter[procName] += localCount;
-    }
+
+    fProcCounter[procName] += localCount;
   }
 
-  // map: created particles count
-  Merge(fParticleDataMap1, localRun->fParticleDataMap1);
+  // Nuclides
+  for (const auto& nuclideCounter : localRun->fNuclideCounter) {
+    G4String nuclideKey = nuclideCounter.first;
+    G4int localCount = nuclideCounter.second;
+
+    fNuclideCounter[nuclideKey] += localCount;
+  }
+
+  // Isomers
+  for (const auto& isomerCounter : localRun->fIsomerCounter) {
+    G4String isomerName = isomerCounter.first;
+    G4int localCount = isomerCounter.second;
+
+    fIsomerCounter[isomerName] += localCount;
+  }
 
   G4Run::Merge(run);
 }
@@ -228,18 +229,10 @@ void Run::EndOfRun()
   G4int prec = 5, wid = prec + 2;
   G4int dfprec = G4cout.precision(prec);
 
-  // run condition
-  // G4Material* material = fDetector->GetAbsorberMaterial();
-
   if (numberOfEvent == 0) {
     G4cout.precision(dfprec);
     return;
   }
-
-  // G4String Particle = fParticle ? fParticle->GetParticleName() : "unknown";
-  // G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
-        //  << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
-        //  << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
 
   // frequency of processes
   G4cout << G4endl;
@@ -258,39 +251,37 @@ void Run::EndOfRun()
   G4cout << "dynamic_cast G4Radioactivation*: "
         << dynamic_cast<G4Radioactivation*>(p) << G4endl;
 
-  // particles count
+  // Ion track summary
   G4cout << G4endl;
   G4cout << "============================================================" << G4endl;
-  G4cout << "      List of generated particles (with meanLife != 0)      " << G4endl;
+  G4cout << "                      Ion Track Summary                     " << G4endl;
   G4cout << "============================================================" << G4endl;
+  G4cout << "   Total ion tracks recorded: " << fIonTrackCount << G4endl;
+  G4cout << "   Distinct nuclides generated: " << fNuclideCounter.size() << G4endl;
+  G4cout << "   Distinct isomers generated: " << fIsomerCounter.size() << G4endl;
 
-  for (const auto& particleData : fParticleDataMap1) {
-    G4String name = particleData.first;
-    ParticleData data = particleData.second;
-    G4int count = data.fCount;
-    G4double eMean = data.fEmean / count;
-    G4double eMin = data.fEmin;
-    G4double eMax = data.fEmax;
-    G4double meanLife = data.fTmean;
+  G4cout << G4endl;
+  G4cout << "   Top " << std::min(5, (int)fNuclideCounter.size()) << " nuclides generated:" << G4endl;
 
-    if (meanLife > 0.)
-    {
-      G4cout << "  " << std::setw(13) << name << ": " << std::setw(7) << count
-            << "  Emean = " << std::setw(wid) << G4BestUnit(eMean, "Energy") << "\t( "
-            << G4BestUnit(eMin, "Energy") << " --> " << G4BestUnit(eMax, "Energy") << ")";
-      G4cout << "\tmean life = " << G4BestUnit(meanLife, "Time") << G4endl;
-    }
+  std::vector<std::pair<G4String, G4int>> sortedNuclides(fNuclideCounter.begin(), fNuclideCounter.end());
+  std::sort(sortedNuclides.begin(), sortedNuclides.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+
+  for (size_t i = 0; i < std::min<size_t>(5, sortedNuclides.size()); ++i) {
+    const auto& nuclide = sortedNuclides[i];
+    G4cout << "      " << nuclide.first << ": " << nuclide.second << G4endl;
   }
+
+  G4cout << G4endl;
+  G4cout << "   Full per-track breakdown available in ROOT output." << G4endl;
 
   WriteActivity(numberOfEvent);
 
-  // remove all contents in fProcCounter, fCount
+  // Remove contents in counters
   fProcCounter.clear();
-  // fParticleDataMap.clear();
-  fParticleDataMap1.clear();
-  // fParticleDataMap2.clear();
+  fNuclideCounter.clear();
+  fIsomerCounter.clear();
 
-  // restore default format
+  // Restore default format
   G4cout.precision(dfprec);
 }
 

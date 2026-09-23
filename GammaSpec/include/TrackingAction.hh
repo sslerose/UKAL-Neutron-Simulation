@@ -1,5 +1,23 @@
 //
 // ********************************************************************
+// * Q-SNAC License and Disclaimer                                    *
+// *                                                                  *
+// * This file is part of a Geant4-based simulation of neutron        *
+// * capture experiments via scintillation developed by Sam LeRose    *
+// * under the supervision of Dr. Ruchi Mahajan at the University of  *
+// * Kentucky Accelerator Laboratory.                                 *
+// *                                                                  *
+// * This code is provided under the terms and conditions of the MIT  *
+// * License, a copy of which is available at                         *
+// * https://opensource.org/license/mit .                             *
+// *                                                                  *
+// * Portions of this work are based on existing Geant4 examples and  *
+// * tutorials.  Their respective license and disclaimer statements   *
+// * are included below.                                              *
+// *                                                                  *
+// ********************************************************************
+//
+// ********************************************************************
 // * License and Disclaimer                                           *
 // *                                                                  *
 // * The  Geant4 software  is  copyright of the Copyright Holders  of *
@@ -36,6 +54,7 @@
 #include "G4UserTrackingAction.hh"
 #include "globals.hh"
 
+class DetectorConstruction;
 class EventAction;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -43,19 +62,22 @@ class EventAction;
 class TrackingAction : public G4UserTrackingAction
 {
   public:
-    TrackingAction(EventAction*);
+    TrackingAction(DetectorConstruction*, EventAction*);
     ~TrackingAction() override = default;
 
     void PreUserTrackingAction(const G4Track*) override;
     void PostUserTrackingAction(const G4Track*) override;
 
   private:
+    DetectorConstruction* fDetectorConstruction = nullptr;
     EventAction* fEventAction = nullptr;
 
     G4bool fRecordTrack = false;  // Flag to indicate whether to record track information
     G4int fTrackPID = 0, fTrackZ = 0, fTrackA = 0;  // Particle ID, charge, and mass number of the track
-    G4double fTrackEnergy = 0., fTrackWeight = 0.;  // Energy and weight of the track
-    G4double fTimeBirth = 0., fTimeEnd = 0.;        // Birth and death times of the track
+    G4double fTrackKineticEnergy = 0., fTrackExcitationEnergy = 0.; // Kinetic and excitation energy of the track
+    G4double fTrackWeight = 0.;  // Weight of the track
+    G4double fTimeBirth = 0., fTimeEnd = 0.;  // Birth and death times of the track
+    G4String fTrackCreatorProcess = "";  // Name of the process that created the track
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

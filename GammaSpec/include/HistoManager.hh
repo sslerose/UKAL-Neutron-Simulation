@@ -50,7 +50,6 @@
 #ifndef HistoManager_h
 #define HistoManager_h 1
 
-#include "G4AnalysisManager.hh"
 #include "globals.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -80,10 +79,13 @@ class HistoManager
     static constexpr G4int kNT_DecayPID = 0;
     static constexpr G4int kNT_DecayZ = 1;
     static constexpr G4int kNT_DecayA = 2;
-    static constexpr G4int kNT_DecayEnergy = 3;
-    static constexpr G4int kNT_DecayWeight = 4;
-    static constexpr G4int kNT_DecayTimeBirth = 5;
-    static constexpr G4int kNT_DecayTimeDeath = 6;
+    static constexpr G4int kNT_DecayCreatorProcess = 3;
+    // static constexpr G4int kNT_DecayKineticEnergy = 4;
+    static constexpr G4int kNT_DecayExcitationEnergy = 4;
+    static constexpr G4int kNT_DecayWeight = 5;
+    static constexpr G4int kNT_DecayIsStable = 6;
+    static constexpr G4int kNT_DecayTimeBirth = 7;
+    static constexpr G4int kNT_DecayTimeDeath = 8;
 
   private:
     void Book();

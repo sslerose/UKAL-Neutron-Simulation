@@ -48,13 +48,7 @@
 //
 
 #include "HistoManager.hh"
-#include "DetectorConstruction.hh"
-#include "PrimaryGeneratorAction.hh"
-
-#include "G4UnitsTable.hh"
-#include "G4SystemOfUnits.hh"
-
-#include <string>
+#include "G4AnalysisManager.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -105,13 +99,15 @@ void HistoManager::Book()
 
   // Decay product information (id = 2)
   analysisManager->CreateNtuple("DecayProducts", "Decay products in the sample");
-  analysisManager->CreateNtupleIColumn("PID");        // Column 0: Particle ID (PDG code)
-  analysisManager->CreateNtupleIColumn("Z");          // Column 1: Atomic number of the decay product
-  analysisManager->CreateNtupleIColumn("A");          // Column 2: Mass number of the decay product
-  analysisManager->CreateNtupleDColumn("Energy");     // Column 3: Energy of the decay product (MeV)
-  analysisManager->CreateNtupleDColumn("Weight");     // Column 4: Weight associated with the decay product (for weighted events)
-  analysisManager->CreateNtupleDColumn("TimeBirth");  // Column 5: Global time of the decay product's birth (us)
-  analysisManager->CreateNtupleDColumn("TimeDeath");  // Column 6: Global time of the decay product's death (us)
+  analysisManager->CreateNtupleIColumn("PID");              // Column 0: Particle ID (PDG code)
+  analysisManager->CreateNtupleIColumn("Z");                // Column 1: Atomic number of the decay product
+  analysisManager->CreateNtupleIColumn("A");                // Column 2: Mass number of the decay product
+  analysisManager->CreateNtupleSColumn("CreatorProcess");   // Column 3: Name of the process that created the decay product
+  analysisManager->CreateNtupleDColumn("ExcitationEnergy"); // Column 5: Excitation energy of the decay product (MeV)
+  analysisManager->CreateNtupleDColumn("Weight");           // Column 6: Weight associated with the decay product (for weighted events)
+  analysisManager->CreateNtupleIColumn("IsStable");         // Column 7: Flag indicating if the decay product is stable (1 for stable, 0 for unstable)
+  analysisManager->CreateNtupleDColumn("TimeBirth");        // Column 7: Global time of the decay product's birth (us)
+  analysisManager->CreateNtupleDColumn("TimeDeath");        // Column 8: Global time of the decay product's death (us)
   analysisManager->FinishNtuple();  // Finalize
 
 }

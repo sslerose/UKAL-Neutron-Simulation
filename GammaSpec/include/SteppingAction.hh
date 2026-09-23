@@ -34,7 +34,6 @@
 #define SteppingAction_h 1
 
 #include "G4UserSteppingAction.hh"
-#include "globals.hh"
 
 class G4LogicalVolume;
 class DetectorConstruction;
@@ -54,7 +53,7 @@ class SteppingAction : public G4UserSteppingAction
     DetectorConstruction* fDetector = nullptr;
     EventAction* fEventAction = nullptr;
 
-    G4LogicalVolume* fActiveHPGELV[2] = {nullptr, nullptr};
+    G4LogicalVolume* fActiveCrystalLV = nullptr;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

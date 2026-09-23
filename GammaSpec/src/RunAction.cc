@@ -55,12 +55,7 @@
 
 #include "G4Run.hh"
 #include "G4AnalysisManager.hh"
-#include "G4SystemOfUnits.hh"
-#include "G4UnitsTable.hh"
-#include "G4UIcommand.hh"
 #include "Randomize.hh"
-
-#include <iomanip>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -88,9 +83,6 @@ G4Run* RunAction::GenerateRun()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-//------------------------------------------------------------------------//
-// Actions to perform at the beginning of each run
-//------------------------------------------------------------------------//
 void RunAction::BeginOfRunAction(const G4Run* run)
 {
   // Show random number engine status
@@ -106,20 +98,13 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     fRun->SetPrimary(particle, energy);
   }
 
-  
-  //========================================================================//
   // Set up analysis manager and open output file
-  //========================================================================//
-
   auto analysisManager = G4AnalysisManager::Instance();
   analysisManager->OpenFile();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-//------------------------------------------------------------------------//
-// Actions to perform at the end of each run
-//------------------------------------------------------------------------//
 void RunAction::EndOfRunAction(const G4Run*)
 {
   // Print neutron transport statistics (from Hadr04 Run class)

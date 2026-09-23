@@ -48,30 +48,19 @@
 //
 
 #include "PrimaryGeneratorAction.hh"
-#include "DetectorConstruction.hh"
-#include "Constants.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleGun.hh"
 #include "G4ParticleTable.hh"
 #include "G4ParticleDefinition.hh"
-#include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
-#include "G4UnitsTable.hh"
-#include "G4PhysicalConstants.hh"
 #include "G4IonTable.hh"
 #include "G4Geantino.hh"
-
-#include <cmath>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
 {
-  //========================================================================//
-  // Initialize particle gun
-  //========================================================================//
-
   // Create particle gun with one particle per event
   G4int nParticle = 1;
   fParticleGun = new G4ParticleGun(nParticle);

@@ -51,8 +51,6 @@
 #define EventAction_h 1
 
 #include "G4UserEventAction.hh"
-#include "DetectorHit.hh"
-#include "globals.hh"
 
 class G4Event;
 class DetectorConstruction;
