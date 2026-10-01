@@ -1,16 +1,13 @@
-# Establish cluster variables
-. mcc_variables.sh
-
 # Escape from shell on command fail
 set -e
 
 # Build directory
-if [ -d NeutronActivation/build ]; then
+if [ -d ../NeutronTOF/build ]; then
 	echo "build directory exists, entering.."
-	cd NeutronActivation/build
+	cd ../NeutronTOF/build
 else
 	echo "Creating and entering build directory..."
-	cd NeutronActivation && mkdir build && cd build
+	cd ../NeutronTOF && mkdir build && cd build
 fi
 
 # Prepare build files

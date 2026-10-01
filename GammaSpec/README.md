@@ -32,10 +32,10 @@ The steps to run this project are essentially identical to those for the basic e
 
 ### On the MCC
 
-1. Enter the repo:
+1. Enter the repo `Scripts` folder:
 
 	```bash
-	cd /scratch/user123/Geant4/UKAL-Neutron-Simulation
+	cd /scratch/user123/Geant4/UKAL-Neutron-Simulation/Scripts
 	```
 2. Source the build script to create the Makefile and simulation executable:
 	```bash

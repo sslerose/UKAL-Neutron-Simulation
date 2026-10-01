@@ -1,3 +1,4 @@
+
 # <<< geant4 scripts >>>
 setup_geant4() {
     # Set environment variables
@@ -16,6 +17,8 @@ setup_geant4() {
     export SING_RUN="singularity run --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf"
 
     export BUILD_RUN="singularity run -B /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY,XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR,QT_X11_NO_MITSHM=$QT_X11_NO_MITSHM,LIBGL_ALWAYS_INDIRECT=$LIBGL_ALWAYS_INDIRECT,LIBGL_DIR3_DISABLE=$LIBGL_DIR3_DISABLE --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf"
+
+    echo "Geant4 environment active"
 }
 alias geant4make="setup_geant4"
 # <<< geant4 scripts >>>
