@@ -10,7 +10,7 @@ Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight
   - [Building and Running a Basic Example](#building-and-running-a-basic-example)
 - [Running Projects on the MCC](#running-projects-on-the-morgan-compute-cluster-uky-users-only)
   - [Connecting to the Cluster](#connecting-to-the-cluster)
-  - [Cloning the Repository](#cloning-the-repository)
+  - [Cloning the Repository](#cloning-the-repository-1)
   - [Setup a Geant4 Environment Script](#setup-a-geant4-environment-script-1)
   - [Building and Running a Basic Example](#building-and-running-a-basic-example-1)
 
