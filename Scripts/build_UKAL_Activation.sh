@@ -1,16 +1,13 @@
-# Establish cluster variables
-. mcc_variables.sh
-
 # Escape from shell on command fail
 set -e
 
 # Build directory
-if [ -d GammaSpec/build ]; then
+if [ -d ../NeutronActivation/build ]; then
 	echo "build directory exists, entering.."
-	cd GammaSpec/build
+	cd ../NeutronActivation/build
 else
 	echo "Creating and entering build directory..."
-	cd GammaSpec && mkdir build && cd build
+	cd ../NeutronActivation && mkdir build && cd build
 fi
 
 # Prepare build files

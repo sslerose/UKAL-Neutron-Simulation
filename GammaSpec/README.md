@@ -2,6 +2,23 @@
 
 The gamma spectroscopy simulation, GammaSpec, tracks radioisotope decays of generated particles and the subsequent interaction of gamma particles within two realistically-modeled high purity germanium (HPGe) detectors. An analysis file is provided to facilitate generation of pulse-height spectra (PHS) from the interaction data and perform subsequent photopeak analysis.
 
+## Table of Contents
+- [Building the Project](#building-the-project)
+  - [Locally](#locally)
+  - [MCC](#on-the-mcc)
+- [Running the Project](#running-the-project)
+  - [Interactive Mode](#interactive-mode)
+  - [Batch Mode](#batch-mode)
+  - [Available Commands](#available-commands)
+- [Test Run, Decay Modes, and Analysis](#test-run-decay-modes-and-analysis)
+  - [Cobalt-60 Test Run](#cobalt-60-test-run)
+  - [Analogue Decays](#analogue-decays)
+  - [Variance Reduction Decays](#variance-reduction-vr-decays)
+  - [Analysis](#analysis)
+- [Multi-Isotope Simulation](#multi-isotope-simulation)
+  - [Creating a Run Info File](#creating-a-run-info-file)
+  - [Running the Simulation](#running-the-simulation)
+  - [Analysis](#analysis-1)
 
 ## Building the Project
 
@@ -32,10 +49,10 @@ The steps to run this project are essentially identical to those for the basic e
 
 ### On the MCC
 
-1. Enter the repo:
+1. Enter the repo `Scripts` folder:
 
 	```bash
-	cd /scratch/user123/Geant4/UKAL-Neutron-Simulation
+	cd /scratch/user123/Geant4/UKAL-Neutron-Simulation/Scripts
 	```
 2. Source the build script to create the Makefile and simulation executable:
 	```bash
@@ -44,27 +61,6 @@ The steps to run this project are essentially identical to those for the basic e
 
 
 ## Running the Project
-
-
-### Commands
-
-**General:**  
-`/gammaSpec/setWorldMaterial` : set the world material.  
-`/gammaSpec/printParameters` : print the current world, absorber, and detector parameters.
-
-**Detector:**  
-`/gammaSpec/det/setDetectorDistance` : set the radial distance of the detector from the origin.  
-`/gammaSpec/det/setDetectorAngle` : set the angle of the detector about the y-axis.  
-`/gammaSpec/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the initial spanning angle of the cylindrical detector assembly.  
-`/gammaSpec/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the final spanning angle of the cylindrical detector assembly.
-
-**Absorber:**  
-`/gammaSpec/abs/setAbsorberMaterial` : set the isotopic material of the absorber by specifying the atomic number, mass number, and density of the isotope.  
-`/gammaSpec/abs/setAbsorberThickness` : set the thickness of the absorber (does not change gold foils).  
-`/gammaSpec/abs/setAbsorberRadius` : set the radius of the absorber and gold foils.  
-`/gammaSpec/abs/setAbsorberSpanningStartAngle` : set the initial spanning angle of the absorber and gold foils.  
-`/gammaSpec/abs/setAbsorberSpanningEndAngle` : set the final spanning angle of the absorber and gold foils.
-
 
 ### Interactive Mode
 
@@ -120,6 +116,28 @@ sbatch your_slurm.sh
 ```
 
 Note that the execution call `../GammaSpec` in the shell scripts have two leading periods, which directs the terminal to look in the parent directory for the executable. All data written by the simulation will be saved to the directory of script execution. It is best practice to keep the macro file called by the shell script (and any dependent macro files) in the same directory as the shell script for execution and organization purposes.
+
+
+### Available Commands
+
+The following are commands available to use in an interactive session or as part of a macro. For information on parameters, open an interactive session and check command descriptions using the dropdowns in the left pane.
+
+**General:**  
+`/gammaSpec/setWorldMaterial` : set the world material.  
+`/gammaSpec/printParameters` : print the current world, absorber, and detector parameters.
+
+**Detector:**  
+`/gammaSpec/det/setDetectorDistance` : set the radial distance of the detector from the origin.  
+`/gammaSpec/det/setDetectorAngle` : set the angle of the detector about the y-axis.  
+`/gammaSpec/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the initial spanning angle of the cylindrical detector assembly.  
+`/gammaSpec/det/setSpanningStartAngle` : *(for cross-section visualization only)* set the final spanning angle of the cylindrical detector assembly.
+
+**Absorber:**  
+`/gammaSpec/abs/setAbsorberMaterial` : set the isotopic material of the absorber by specifying the atomic number, mass number, and density of the isotope.  
+`/gammaSpec/abs/setAbsorberThickness` : set the thickness of the absorber (does not change gold foils).  
+`/gammaSpec/abs/setAbsorberRadius` : set the radius of the absorber and gold foils.  
+`/gammaSpec/abs/setAbsorberSpanningStartAngle` : set the initial spanning angle of the absorber and gold foils.  
+`/gammaSpec/abs/setAbsorberSpanningEndAngle` : set the final spanning angle of the absorber and gold foils.
 
 
 ## Test Run, Decay Modes, and Analysis

@@ -1,16 +1,13 @@
-# Establish cluster variables
-. mcc_variables.sh
-
 # Escape from shell on command fail
 set -e
 
 # Build directory
-if [ -d NeutronTOF/build ]; then
+if [ -d ../GammaSpec/build ]; then
 	echo "build directory exists, entering.."
-	cd NeutronTOF/build
+	cd ../GammaSpec/build
 else
 	echo "Creating and entering build directory..."
-	cd NeutronTOF && mkdir build && cd build
+	cd ../GammaSpec && mkdir build && cd build
 fi
 
 # Prepare build files

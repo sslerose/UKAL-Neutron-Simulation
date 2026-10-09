@@ -1,11 +1,25 @@
 # University of Kentucky Accelerator Lab (UKAL) Quasi-Stellar Neutron Activation (Q-SNAc) Simulations
 
-Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight (TOF) analysis, and activation experiments. Simulated neutrons are generated via SimLiT, a Monte Carlo neutron generation simulation developed by M. Friedman, et. al. (see [here](https://doi.org/10.1016/j.nima.2012.09.027)). Resultant event-by-event output neutron data are used as the particle source for Geant4 simulations to track neutrons into a scintillation detection assembly for TOF analysis and activation in sample isotopes.
+Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight (TOF) analysis, and activation experiments. Simulated neutrons are generated via SimLiT, a Monte Carlo neutron generation simulation developed by M. Friedman, et. al. (see [here](https://doi.org/10.1016/j.nima.2012.09.027)). Resultant event-by-event output neutron data are used as the particle source for Geant4 simulations to track neutrons into a scintillation detection assembly for TOF analysis and as the source for activation of sample isotopes.
+
+## Table of Contents
+- [Cloning the Repository](#cloning-the-repository)
+- [Installing Geant4](#installing-geant4)
+- [Running Projects Locally](#running-projects-locally)
+  - [Setup a Geant4 Environment Script](#setup-a-geant4-environment-script)
+  - [Building and Running a Basic Example](#building-and-running-a-basic-example)
+- [Running Projects on the MCC](#running-projects-on-the-morgan-compute-cluster-uky-users-only)
+  - [Connecting to the Cluster](#connecting-to-the-cluster)
+  - [Cloning the Repository](#cloning-the-repository-1)
+  - [Setup a Geant4 Environment Script](#setup-a-geant4-environment-script-1)
+  - [Building and Running a Basic Example](#building-and-running-a-basic-example-1)
+
+
 
 
 ## Cloning the Repository
 
-**Windows Users:**
+**Windows:**
 1. Download the zip file (under the green Code dropdown at the top).
 2. Extract the repository to your desired location.
 
@@ -23,7 +37,7 @@ Geant4 particle simulations for quasi-stellar neutron generation, time-of-flight
 
 ## Installing Geant4
 
-**Windows Users:**
+**Windows:**
 
 **Linux:**  
 A shell file for easy installation of version 11.4.1 is included in the [Scripts](Scripts) directory. You can source (i.e., execute) the script as
@@ -150,7 +164,7 @@ Before you can build or run any Geant4 simulations, you must source the Geant4 l
 Although you should have received an error if any of the above failed, it is best to check that everything is working by building and running a basic example, B1. Source the Geant4 libraries before starting (i.e., call `geant4make`).
 
 **Linux:**  
-I could offer a script for this section, but this particular set of actions must be repeated when building any project from source, so it is best to perform the steps manually as practice:
+I could offer a script for this section, but this set of actions must be repeated when building any project from source, so it is best to perform them manually as practice:
 1. Navigate to the B1 project in the basic examples directory:  
 
    ```bash
@@ -213,54 +227,9 @@ Using terminal:
 2. (WIP)
 
 
-### Setup a Geant4 Environment Script
+### Cloning the Repository
 
-Geant4 is provided by a Singularity container with all libraries, datasets, visualization drivers, ROOT, and official examples. We will make a bash script to expedite this process.
-
-If you're using the remote desktop, open a terminal in that instance. If you're accessing via SSH, you're ready to go.
-
-1. Open `.bashrc` :
-
-   ```bash
-   nano ~/.bashrc
-   ```
-2. At the end of the bash file, create a setup function and alias:
-   ```bash
-   # <<< geant4 scripts >>>
-   setup_geant4() {
-      # Set environment variables
-      export XDG_RUNTIME_DIR=/tmp/$UID
-      if [ ! -d $XDG_RUNTIME_DIR ]; then
-         mkdir -p $XDG_RUNTIME_DIR
-      fi
-      chmod 700 $XDG_RUNTIME_DIR
-
-      # Set default visualization driver and display variables
-      export G4VIS_DEFAULT_DRIVER=TSG_QT_ZB
-
-      export QT_X11_NO_MITSHM=1 && export LIBGL_ALWAYS_INDIRECT=1 && export LIBGL_DIR3_DISABLE=1
-
-      # Create singularity variables
-      export SING_RUN="singularity run --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf"
-
-      export BUILD_RUN="singularity run -B /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY,XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR,QT_X11_NO_MITSHM=$QT_X11_NO_MITSHM,LIBGL_ALWAYS_INDIRECT=$LIBGL_ALWAYS_INDIRECT,LIBGL_DIR3_DISABLE=$LIBGL_DIR3_DISABLE --app geant41132root6344 /share/singularity/images/ccs/conda/amd-conda26-rocky9.sinf"
-   }
-   alias geant4make="setup_geant4"
-   # <<< geant4 scripts >>>
-   ```
-3. Source the bash file:
-   ```bash
-   source ~/.bashrc
-   ```
-   **NOTE 1:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session.
-
-   **NOTE 2:** If `setup_geant4` already exists, change that command (and the corresponding alias) to `geant4_singularity` .
-
-
-### Building and Running a Basic Example
-
-Before importing any UKAL project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future projects run into issues.
-
+The process itself is identical to the local case, but the repo should be explicitly placed in your scratch directory:
 1. Enter your scratch directory:
 
    ```bash
@@ -269,32 +238,55 @@ Before importing any UKAL project, you should test that the basic B1 example wor
    where `user123` is your LinkBlue ID.
 
    **NOTE:** Each user of the MCC has four possible directories to work in, each with different storage allocation and use cases. Familiarize yourself [here](https://ukyrcd.atlassian.net/wiki/spaces/RCDDocs/pages/162104005/File+System+Basics).
-2. Make and enter a directory to house your Geant4 projects:	
-	```bash
-	mkdir Geant4 && cd Geant4
-	```
-3. Copy the B1 project folder and create a build folder:
+
+2. Make a Geant4 directory and clone the repo:
+   ```bash
+   mkdir Geant4
+   git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
+   ```
+
+
+### Setup a Geant4 Environment Script
+
+Geant4 is provided by a Singularity container with all libraries, datasets, visualization drivers, ROOT, and official examples. We will make a bash script to expedite this process.
+
+If you're using the remote desktop, open a terminal in that instance. If you're accessing via SSH, you're ready to go.
+
+1. Append the setup function and alias to the end of the `~/.bashrc` file:
+   ```bash
+   cat /scratch/user123/Geant4/UKAL-Neutron-Simulation/Scripts/mcc_bash_cmd.txt >> ~/.bashrc
+   ```
+2. Source the bash file:
+   ```bash
+   source ~/.bashrc
+   ```
+   **NOTE 1:** Sourcing the `.bashrc` file and calling the alias `geant4make` must be done at the beginning of every new Geant4 session.
+
+   **NOTE 2:** If `setup_geant4` already exists in `~/.bashrc`, change that command (and the corresponding alias call) to `geant4_singularity` .
+
+
+### Building and Running a Basic Example
+
+Before importing any UKAL project, you should test that the basic B1 example works as expected. This will also give you a sanity check if future projects run into issues.
+
+1. Enter your Geant4 scratch directory:
+
+   ```bash
+   cd /scratch/user123/Geant4
+   ```
+2. Copy the B1 project folder and create a build folder:
 	```bash
 	$SING_RUN bash -c 'cp -r $CONDA_PREFIX/share/Geant4/examples/basic/B1 ./B1'
 	cd B1
 	mkdir build && cd build
 	```
-4. Make the example:
+3. Make the example:
 	```bash
 	$SING_RUN cmake .. -DGeant4_DIR=$CONDA_PREFIX/lib/Geant4-11.4.1/cmake
 	$SING_RUN make
 	```
-5. Run the example:
+4. Run the example:
 	```bash
 	$BUILD_RUN ./exampleB1
 	```
-The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, open the `vis.mac` file in the build folder (either using the file explorer in an interactive session or `nano` in the terminal) and verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (5).
-
-
-### Cloning the UKAL Repository
-
-The process itself is identical to the local case, but the repo should be explicitly placed in your scratch directory from above:
-```bash
-cd /scratch/user123/Geant4
-git clone https://github.com/sslerose/UKAL-Neutron-Simulation.git
-```
+The same window seen when testing the basic example on your personal computer should pop up. If you experience a GLX (or other visualization) error, close Geant4, then open `build/vis.mac` (either using the file explorer in an interactive session or `nano` in the terminal) and verify `/vis/open` near the top of the file does *not* have a driver tag (like OGL or TSGQt), and retry step (4).
