@@ -757,7 +757,14 @@ void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, 
 //------------------------------------------------------------------------//
 // Multi-file analysis
 //------------------------------------------------------------------------//
-void analyzePHSTotal(const char* infoPath, const char* rootDir = ".", const char* outStem = "Total", double window_us = 1.0, int nBins = 3000, double eMax = 3.0, bool toPlot = false, bool saveRoot = false)
+void analyzePHSTotal(const char* infoPath,
+                     const char* rootDir = ".",
+                     const char* outStem = "Total",
+                     double window_us = 1.0,
+                     int nBins = 3000,
+                     double eMax = 3.0,
+                     bool toPlot = false,
+                     bool saveRoot = false)
 {
     std::vector<RunInfo> runs = parseRunInfo(infoPath);
     if (runs.empty()) {
