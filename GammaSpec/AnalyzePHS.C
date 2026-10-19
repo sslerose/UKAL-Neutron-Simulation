@@ -159,6 +159,8 @@
 #include "TF1.h"
 #include "TCanvas.h"
 #include "TLegend.h"
+#include "TGraphErrors.h"
+#include "TMath.h"
 #include "TStyle.h"
 #include "TRandom.h"
 #include "TAxis.h"
@@ -174,6 +176,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -362,6 +365,29 @@ void writePHSFile(const TString& tag, TH1D* hPHS, Long64_t nEvents)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
+// Write an emitted-gamma energy spectrum to its own ROOT file
+//------------------------------------------------------------------------//
+void writeGammaFile(const TString& tag, TH1D* hGammaE)
+{
+    if (!hGammaE) return;
+
+    TString rootName = tag + ".root";
+    TFile fOut(rootName.Data(), "RECREATE");
+    if (fOut.IsZombie()) {
+        std::cerr << "Error: cannot write \"" << rootName << "\"\n";
+        return;
+    }
+
+    // Apply fixed key to histogram
+    hGammaE->Write("hGammaE");
+
+    fOut.Close();
+    std::cout << "Saved data : " << rootName.Data() << "\n";
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
 // Retrieve a processed PHS histogram from an already-open ROOT file
 //------------------------------------------------------------------------//
 TH1D* getPHSFromFile(TFile* f)
@@ -509,15 +535,17 @@ TH1D* processGamma(TTree* emTree,
                    const char* stem,
                    int    nBins,
                    double eMax,
-                   bool   toPlot)
+                   bool   saveRoot)
 {
     if (!emTree) return nullptr;
 
     Int_t    emPID    = 0;
     Double_t emEnergy = 0.0;
+    Double_t emWeight = 0.0;
 
     emTree->SetBranchAddress("PID",    &emPID);
     emTree->SetBranchAddress("Energy", &emEnergy);
+    emTree->SetBranchAddress("Weight", &emWeight);
 
 
     //========================================================================//
@@ -535,43 +563,32 @@ TH1D* processGamma(TTree* emTree,
     for (Long64_t i = 0; i < emEntries; ++i) {
         emTree->GetEntry(i);
         if (emPID == 22) {
-            hGammaE->Fill(emEnergy);
+            hGammaE->Fill(emEnergy, emWeight);  // Fill weight is the weight of the data point
         }
     }
 
 
     //========================================================================//
-    // Plot histogram and write CSV (if prompted)
+    // Plot histogram and write ROOT file (if prompted)
     //========================================================================//
 
     styleAxis(hGammaE, "Energy (MeV)", "Counts");
 
-    if (toPlot) {
-        TString tag = TString(stem) + "_GammaEnergy";
+    TString tag = TString(stem) + "_GammaEnergy";
 
-        // Save histogram
-        TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
-        cGammaE->SetLeftMargin(0.12);
-        cGammaE->SetBottomMargin(0.12);
-        hGammaE->Draw("HIST");
-        TString gammaEPng = tag + ".png";
-        cGammaE->SaveAs(gammaEPng.Data());
-        std::cout << "Saved plot : " << gammaEPng.Data() << "\n";
+    // Save histogram
+    TCanvas* cGammaE = new TCanvas("cGammaE", "Emitted Gamma Energy", 800, 600);
+    cGammaE->SetLeftMargin(0.12);
+    cGammaE->SetBottomMargin(0.12);
+    hGammaE->Draw("HIST");
+    TString gammaEPng = tag + ".png";
+    cGammaE->SaveAs(gammaEPng.Data());
+    std::cout << "Saved plot : " << gammaEPng.Data() << "\n";
 
-        // Save CSV
-        TString gammaECsv = tag + ".csv";
-        std::ofstream gammaECsvFile(gammaECsv.Data());
-        gammaECsvFile << "BinCenter_MeV,Counts\n";
-        for (int b = 1; b <= hGammaE->GetNbinsX(); ++b) {
-            gammaECsvFile << std::fixed << std::setprecision(6)
-                          << hGammaE->GetBinCenter(b) << ","
-                          << hGammaE->GetBinContent(b) << "\n";
-        }
-        gammaECsvFile.close();
-        std::cout << "Saved data : " << gammaECsv.Data() << "\n";
+    delete cGammaE;
 
-        delete cGammaE;
-    }
+    // Save ROOT file
+    if (saveRoot) writeGammaFile(tag, hGammaE);
 
     // Return gamma spectrum
     return hGammaE;
@@ -662,7 +679,7 @@ void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, 
                   << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
 
         // Build, plot, and save the emitted gamma energy spectrum
-        TH1D* hGammaE = processGamma(emTree, stem.Data(), nBins, eMax, true);
+        TH1D* hGammaE = processGamma(emTree, stem.Data(), nBins, eMax, saveRoot);
 
         // Integrate gamma spectrum to get total gammas emitted
         nGammas = llround(hGammaE->Integral());
@@ -829,7 +846,7 @@ void analyzePHSTotal(const char* infoPath,
                       << "\" (EmittedParticles tree not found), "
                       << "no gamma contribution from this run\n";
         } else {
-            TH1D* hGammaThis = processGamma(emTree, r.file.Data(), nBins, eMax, toPlot);
+            TH1D* hGammaThis = processGamma(emTree, r.file.Data(), nBins, eMax, false);
             hGammaThis->Scale(scaleFactor);
             hGammaTotal->Add(hGammaThis);
             delete hGammaThis;
@@ -905,26 +922,16 @@ void analyzePHSTotal(const char* infoPath,
     cGamma->SaveAs(gammaPng.Data());
     std::cout << "Saved plot : " << gammaPng.Data() << "\n";
 
-    // Save gamma spectrum CSV
-    TString gammaCsvName = gammaTag + ".csv";
-    std::ofstream gammaCsv(gammaCsvName.Data());
-    gammaCsv << "BinCenter_MeV,Counts\n";
-    for (int b = 1; b <= hGammaTotal->GetNbinsX(); ++b) {
-        gammaCsv << std::fixed << std::setprecision(6)
-                 << hGammaTotal->GetBinCenter(b) << ","
-                 << hGammaTotal->GetBinContent(b) << "\n";
-    }
-    gammaCsv.close();
-    std::cout << "Saved data : " << gammaCsvName.Data() << "\n";
 
 
     //========================================================================//
-    // Save combined PHS to its own ROOT file (if prompted)
+    // Save combined PHS and gamma spectrum to their own ROOT files (if prompted)
     //========================================================================//
 
     // Total PHS and gamma spectrum are equally scaled prior to photopeak analysis
     if (saveRoot) {
         writePHSFile(tag, hTotal, llround(hGammaTotal->Integral()));
+        writeGammaFile(gammaTag, hGammaTotal);
     }
 
     // Cleanup
@@ -1016,74 +1023,34 @@ void viewPHS(const char* filePath, double window_us = 1.0, int nBins = 3000, dou
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 //------------------------------------------------------------------------//
-// Photopeak and efficiency analysis over user-supplied energy windows
+// Photopeak fit result for one energy window
 //------------------------------------------------------------------------//
-void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
+struct PhotoResult {
+    bool   valid = false;
+    std::unique_ptr<TF1> fit;           // Gaussian fit over the window
+    double windowLow  = 0.0;
+    double windowHigh = 0.0;
+    double seed       = 0.0;            // Center of the highest bin in the window
+    double mean       = 0.0;
+    double sigma      = 0.0;
+    double peakLow    = 0.0;            // Integration range: mean +/- 2 sigma
+    double peakHigh   = 0.0;
+    double peakCounts = 0.0;            // PHS counts over the integration range
+};
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Fit photopeaks of a processed PHS over user-supplied energy windows
+//------------------------------------------------------------------------//
+std::vector<PhotoResult> processPhoto(TH1D* hPHS, const std::vector<std::vector<double>>& windows)
 {
-    if (windows.empty()) {
-        std::cerr << "Error: no energy windows supplied\n";
-        return;
-    }
+    // One result per window so indices stay aligned with the input; skipped
+    // windows are left with valid = false
+    std::vector<PhotoResult> results(windows.size());
+    if (!hPHS) return results;
 
-    // Derive output filename stem
-    TString inputPath(phsPath);
-    TString stem = inputPath;
-    int lastSlash = stem.Last('/');
-    if (lastSlash >= 0) stem = stem(lastSlash + 1, stem.Length() - lastSlash - 1);
-    if (stem.EndsWith(".root")) stem.Remove(stem.Length() - 5, 5);
-
-    // Open file
-    TFile* f = TFile::Open(phsPath, "READ");
-    if (!f || f->IsZombie()) {
-        std::cerr << "Error: cannot open \"" << phsPath << "\"\n";
-        return;
-    }
-
-
-    //========================================================================//
-    // Verify input is a processed PHS and resolve the efficiency denominator
-    //========================================================================//
-
-    TH1D* hPHS = getPHSFromFile(f);
-    if (!hPHS) {
-        std::cerr << "Error: \"" << phsPath << "\" is not a processed PHS file "
-                  << "(no \"hPHS\" key). Produce one with analyzePHS or "
-                  << "analyzePHSTotal using saveRoot = true.\n";
-        f->Close();
-        return;
-    }
-
-    TParameter<Long64_t>* nEventsParam =
-        dynamic_cast<TParameter<Long64_t>*>(f->Get("nEvents"));
-
-    if (!nEventsParam || nEventsParam->GetVal() <= 0) {
-        std::cerr << "Error: \"" << phsPath << "\" has no valid \"nEvents\" "
-                  << "(emitted-gamma count); cannot compute efficiencies\n";
-        f->Close();
-        delete hPHS;
-        return;
-    }
-
-    Long64_t nEvents = nEventsParam->GetVal();
-    f->Close();
-
-    std::cout << "\n=== Photopeak Analysis ===\n"
-              << "  Spectrum : " << stem.Data() << "\n"
-              << "  nEvents  : " << nEvents << " emitted gammas\n"
-              << "  Windows  : " << windows.size() << "\n"
-              << "==========================\n";
-
-    gStyle->SetOptStat(0);
-
-    // Summary CSV
-    TString csvName = stem + "_Photopeaks.csv";
-    std::ofstream csv(csvName.Data());
-    csv << "WindowLow_MeV,WindowHigh_MeV,Mean_MeV,Sigma_MeV,ppCount,Efficiency_percent\n";
-
-
-    //========================================================================//
-    // Calculate photopeaks for given windows
-    //========================================================================//
+    static int fitCounter = 0;
 
     for (size_t w = 0; w < windows.size(); ++w) {
         if (windows[w].size() != 2) {
@@ -1109,7 +1076,7 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
         int binMin = hPHS->FindBin(windowLow);
         int binMax = hPHS->FindBin(windowHigh);
 
-        double maxCount    = 0.0;
+        double maxCount     = 0.0;
         int    photopeakBin = 0;
         for (int b = binMin; b <= binMax; ++b) {
             double binContent = hPHS->GetBinContent(b);
@@ -1127,17 +1094,17 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
 
         double photopeak = hPHS->GetBinCenter(photopeakBin);
 
-        TF1 peakFit("peakFit", "gaus", windowLow, windowHigh);
-        peakFit.SetParameters(hPHS->GetMaximum(), photopeak, 0.01);
-        hPHS->Fit(&peakFit, "RQ");    // "R" restricts the fit to the window
+        TString fitName = TString::Format("peakFit_%d", fitCounter++);
+        std::unique_ptr<TF1> peakFit(new TF1(fitName.Data(), "gaus", windowLow, windowHigh));
+        peakFit->SetParameters(hPHS->GetMaximum(), photopeak, 0.01);
+        hPHS->Fit(peakFit.get(), "RQ");    // "R" restricts the fit to the window
 
-        double mean  = peakFit.GetParameter(1);
-
-        double sigma = std::fabs(peakFit.GetParameter(2));
+        double mean  = peakFit->GetParameter(1);
+        double sigma = std::fabs(peakFit->GetParameter(2));
 
 
         //========================================================================//
-        // Integrate and calculate absolute photopeak efficiency
+        // Integrate the peak
         //========================================================================//
 
         double peakLow  = mean - 2.0 * sigma;
@@ -1145,24 +1112,100 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
 
         double ppCount = hPHS->Integral(hPHS->FindBin(peakLow), hPHS->FindBin(peakHigh));
 
-        double ppEfficiency = (ppCount / static_cast<double>(nEvents)) * 100.0;
-
         std::cout << "\n=== Photopeak [" << windowLow << ", " << windowHigh << "] MeV ===\n"
                   << "  Seed energy  : " << photopeak << " MeV\n"
                   << "  Mean         : " << mean      << " MeV\n"
                   << "  Sigma        : " << sigma     << " MeV\n"
                   << "  Integration  : [" << peakLow << ", " << peakHigh << "] MeV (+/-2 sigma)\n"
                   << "  Peak counts  : " << ppCount   << "\n"
-                  << "  Efficiency   : " << ppEfficiency << " %\n"
                   << "==========================================\n";
 
+        PhotoResult& res = results[w];
+        res.valid      = true;
+        res.fit        = std::move(peakFit);
+        res.windowLow  = windowLow;
+        res.windowHigh = windowHigh;
+        res.seed       = photopeak;
+        res.mean       = mean;
+        res.sigma      = sigma;
+        res.peakLow    = peakLow;
+        res.peakHigh   = peakHigh;
+        res.peakCounts = ppCount;
+    }
+
+    return results;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Photopeak analysis over user-supplied energy windows
+//------------------------------------------------------------------------//
+void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
+{
+    if (windows.empty()) {
+        std::cerr << "Error: no energy windows supplied\n";
+        return;
+    }
+
+    // Derive output filename stem
+    TString inputPath(phsPath);
+    TString stem = inputPath;
+    int lastSlash = stem.Last('/');
+    if (lastSlash >= 0) stem = stem(lastSlash + 1, stem.Length() - lastSlash - 1);
+    if (stem.EndsWith(".root")) stem.Remove(stem.Length() - 5, 5);
+
+    // Open file
+    TFile* f = TFile::Open(phsPath, "READ");
+    if (!f || f->IsZombie()) {
+        std::cerr << "Error: cannot open \"" << phsPath << "\"\n";
+        return;
+    }
+
+
+    //========================================================================//
+    // Verify input is a processed PHS
+    //========================================================================//
+
+    TH1D* hPHS = getPHSFromFile(f);
+    if (!hPHS) {
+        std::cerr << "Error: \"" << phsPath << "\" is not a processed PHS file "
+                  << "(no \"hPHS\" key). Produce one with analyzePHS or "
+                  << "analyzePHSTotal using saveRoot = true.\n";
+        f->Close();
+        return;
+    }
+
+    f->Close();
+
+    std::cout << "\n=== Photopeak Analysis ===\n"
+              << "  Spectrum : " << stem.Data() << "\n"
+              << "  Windows  : " << windows.size() << "\n"
+              << "==========================\n";
+
+    gStyle->SetOptStat(0);
+
+    // Summary CSV
+    TString csvName = stem + "_Photopeaks.csv";
+    std::ofstream csv(csvName.Data());
+    csv << "WindowLow_MeV,WindowHigh_MeV,Mean_MeV,Sigma_MeV,ppCount\n";
+
+
+    //========================================================================//
+    // Calculate photopeaks for given windows
+    //========================================================================//
+
+    std::vector<PhotoResult> results = processPhoto(hPHS, windows);
+
+    for (const PhotoResult& res : results) {
+        if (!res.valid) continue;
+
         csv << std::fixed << std::setprecision(6)
-            << windowLow    << ","
-            << windowHigh   << ","
-            << mean         << ","
-            << sigma        << ","
-            << ppCount      << ","
-            << ppEfficiency << "\n";
+            << res.windowLow  << ","
+            << res.windowHigh << ","
+            << res.mean       << ","
+            << res.sigma      << ","
+            << res.peakCounts << "\n";
 
 
         //========================================================================//
@@ -1170,9 +1213,9 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
         //========================================================================//
 
         // Display range is the fit window widened by 10% of its width per side
-        double margin    = 0.1 * (windowHigh - windowLow);
-        double plotLow   = windowLow  - margin;
-        double plotHigh  = windowHigh + margin;
+        double margin    = 0.1 * (res.windowHigh - res.windowLow);
+        double plotLow   = res.windowLow  - margin;
+        double plotHigh  = res.windowHigh + margin;
 
         TH1D* hPeak = dynamic_cast<TH1D*>(hPHS->Clone("hPeak"));
         hPeak->SetDirectory(nullptr);
@@ -1184,18 +1227,17 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
         cPeak->SetLeftMargin(0.12);
         cPeak->SetBottomMargin(0.12);
         hPeak->Draw("HIST");
-        peakFit.Draw("SAME");
+        res.fit->Draw("SAME");
 
         // Fit results, upper right
-        TLegend* leg = new TLegend(0.60, 0.70, 0.88, 0.88);
+        TLegend* leg = new TLegend(0.60, 0.74, 0.88, 0.88);
         leg->SetFillStyle(0);
         leg->SetBorderSize(0);
-        leg->AddEntry(hPeak, TString::Format("Mean = %.2f keV", mean * 1000.0), "");
-        leg->AddEntry(hPeak, TString::Format("Sigma = %.2f keV", sigma * 1000.0), "");
-        leg->AddEntry(hPeak, TString::Format("Efficiency = %.4f %%", ppEfficiency), "");
+        leg->AddEntry(hPeak, TString::Format("Mean = %.2f keV", res.mean * 1000.0), "");
+        leg->AddEntry(hPeak, TString::Format("Sigma = %.2f keV", res.sigma * 1000.0), "");
         leg->Draw();
 
-        TString pngName = stem + TString::Format("_Photopeak_%.1fkeV.png", mean * 1000.0);
+        TString pngName = stem + TString::Format("_Photopeak_%.1fkeV.png", res.mean * 1000.0);
         cPeak->SaveAs(pngName.Data());
         std::cout << "Saved plot : " << pngName.Data() << "\n";
 
@@ -1209,4 +1251,338 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
 
     // Cleanup
     delete hPHS;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Absolute efficiency curve from several sources' PHS and gamma spectra
+//------------------------------------------------------------------------//
+void getEffCurve(const char* dir, const char* windowCsv)
+{
+    TString dirStr(dir);
+    while (dirStr.Length() > 1 && dirStr.EndsWith("/")) dirStr.Chop();
+
+
+    //========================================================================//
+    // Scan directory for the PHS and gamma spectrum files
+    //========================================================================//
+
+    void* dirp = gSystem->OpenDirectory(dirStr.Data());
+    if (!dirp) {
+        std::cerr << "Error: cannot open directory \"" << dir << "\"\n";
+        return;
+    }
+    std::vector<std::string> files;
+    while (const char* entry = gSystem->GetDirEntry(dirp)) files.push_back(entry);
+    gSystem->FreeDirectory(dirp);
+    std::sort(files.begin(), files.end());
+
+    auto endsWith = [](const std::string& s, const std::string& suffix) {
+        return s.size() >= suffix.size() &&
+               s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+    };
+
+    const std::string csvFile = windowCsv ? windowCsv : "";
+    if (csvFile.empty()) {
+        std::cerr << "Error: no window CSV provided\n";
+        return;
+    }
+
+
+    //========================================================================//
+    // Parse CSV rows (ID, window low, window high in MeV) grouped by ID
+    //========================================================================//
+
+    std::vector<std::string> ids;
+    std::map<std::string, std::vector<std::vector<double>>> idWindows;
+
+    std::ifstream fin(csvFile);
+    if (!fin.is_open()) {
+        std::cerr << "Error: cannot open \"" << csvFile << "\"\n";
+        return;
+    }
+    std::string line;
+    while (std::getline(fin, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::replace(line.begin(), line.end(), ',', ' ');
+        std::istringstream ss(line);
+        std::string id;
+        double eLow, eHigh;
+        if (!(ss >> id >> eLow >> eHigh)) continue;     // Also skips a header row
+
+        if (idWindows.find(id) == idWindows.end()) ids.push_back(id);
+        idWindows[id].push_back({eLow, eHigh});
+    }
+    fin.close();
+
+    if (ids.empty()) {
+        std::cerr << "Error: no valid rows found in \"" << csvFile << "\"\n";
+        return;
+    }
+
+    std::cout << "\n=== Efficiency Curve ===\n"
+              << "  Directory : " << dir << "\n"
+              << "  Window CSV: " << csvFile << "\n"
+              << "  Sources   : " << ids.size() << "\n"
+              << "========================\n";
+
+    gStyle->SetOptStat(0);
+
+    std::ostringstream report;      // Per-window results, written to the .txt
+    report << std::fixed << std::setprecision(6)
+           << "ID,WindowLow_MeV,WindowHigh_MeV,Mean_MeV,Sigma_MeV,PeakLow_MeV,PeakHigh_MeV,"
+              "PeakCounts,FitArea,GammaWeightSum,Efficiency,EfficiencyErr,Efficiency_percent\n";
+
+    std::vector<double> energies, effs, effErrs;
+    const double kSqrt2Pi = std::sqrt(2.0 * TMath::Pi());
+
+
+    //========================================================================//
+    // Efficiency of every window of every source
+    //========================================================================//
+
+    for (const std::string& id : ids) {
+        // Locate this source's PHS and gamma spectrum files
+        std::string phsFile;
+        const std::string phsPrefix = id + "_PHS_";
+        for (const std::string& name : files) {
+            if (name.compare(0, phsPrefix.size(), phsPrefix) != 0 || !endsWith(name, ".root")) continue;
+            if (phsFile.empty()) {
+                phsFile = name;
+            } else {
+                std::cerr << "Warning: multiple PHS files for \"" << id
+                          << "\"; using \"" << phsFile << "\"\n";
+                break;
+            }
+        }
+        std::string gammaFile = id + "_GammaEnergy.root";
+
+        if (phsFile.empty() ||
+            std::find(files.begin(), files.end(), gammaFile) == files.end()) {
+            std::cerr << "Warning: skipping \"" << id << "\" (missing PHS or "
+                      << gammaFile << " file)\n";
+            continue;
+        }
+
+        TFile* fPHS = TFile::Open((dirStr + "/" + phsFile.c_str()).Data(), "READ");
+        TFile* fGamma = TFile::Open((dirStr + "/" + gammaFile.c_str()).Data(), "READ");
+        TH1D* hPHS = nullptr;
+        TH1D* hGammaE = nullptr;
+
+        if (fPHS && !fPHS->IsZombie()) hPHS = getPHSFromFile(fPHS);
+        if (fGamma && !fGamma->IsZombie()) {
+            TH1* hStored = dynamic_cast<TH1*>(fGamma->Get("hGammaE"));
+            if (hStored) {
+                hGammaE = dynamic_cast<TH1D*>(hStored->Clone("hGammaE_loaded"));
+                if (hGammaE) hGammaE->SetDirectory(nullptr);
+            }
+        }
+        if (fPHS) fPHS->Close();
+        if (fGamma) fGamma->Close();
+
+        if (!hPHS || !hGammaE) {
+            std::cerr << "Warning: skipping \"" << id << "\" (no \"hPHS\" key in "
+                      << phsFile << " or no \"hGammaE\" key in " << gammaFile << ")\n";
+            delete hPHS;
+            delete hGammaE;
+            continue;
+        }
+
+        std::cout << "\nSource " << id << "  (" << phsFile << ")\n";
+        std::vector<PhotoResult> results = processPhoto(hPHS, idWindows[id]);
+        double binWidth = hPHS->GetBinWidth(1);
+
+        for (const PhotoResult& res : results) {
+            if (!res.valid) continue;
+
+            // Full area of the fitted Gaussian, in counts
+            double amp    = res.fit->GetParameter(0);
+            double area   = amp * res.sigma * kSqrt2Pi / binWidth;
+            double relErr = 0.0;    // Parameter errors added in quadrature
+            if (amp > 0.0 && res.sigma > 0.0) {
+                double rA = res.fit->GetParError(0) / amp;
+                double rS = res.fit->GetParError(2) / res.sigma;
+                relErr = std::sqrt(rA * rA + rS * rS);
+            }
+
+            // Weights of the emitted gammas whose energy falls within the peak
+            double gammaSum = hGammaE->Integral(hGammaE->FindBin(res.peakLow),
+                                                hGammaE->FindBin(res.peakHigh));
+
+            if (gammaSum <= 0.0 || area <= 0.0) {
+                std::cerr << "Warning: skipping window [" << res.windowLow << ", "
+                          << res.windowHigh << "] MeV of \"" << id
+                          << "\" (fit area = " << area << ", emitted weight = "
+                          << gammaSum << ")\n";
+                continue;
+            }
+
+            double eff    = area / gammaSum;
+            double effErr = eff * relErr;
+
+            std::cout << "  Peak " << res.mean * 1000.0 << " keV : area = " << area
+                      << ", emitted = " << gammaSum
+                      << ", efficiency = " << eff * 100.0 << " %\n";
+
+            report << id << ","
+                   << res.windowLow  << "," << res.windowHigh << ","
+                   << res.mean       << "," << res.sigma      << ","
+                   << res.peakLow    << "," << res.peakHigh   << ","
+                   << res.peakCounts << "," << area << "," << gammaSum << ","
+                   << eff << "," << effErr << "," << eff * 100.0 << "\n";
+
+            energies.push_back(res.mean);
+            effs.push_back(eff);
+            effErrs.push_back(effErr);
+        }
+
+        delete hPHS;
+        delete hGammaE;
+    }
+
+    const int nPts = static_cast<int>(energies.size());
+    if (nPts < 3) {
+        std::cerr << "Error: " << nPts << " efficiency point(s) available; "
+                  << "at least 3 are needed for a fit with >= 2 degrees of freedom\n";
+        return;
+    }
+
+
+    //========================================================================//
+    // Log-log fit: ln(eff) = sum_k p_k ln(E)^k
+    //========================================================================//
+
+    // NDF = nPts - (degree + 1) must stay >= 2
+    const int degree = std::min(4, nPts - 3);
+
+    // Weight the fit by the relative errors only if every point has a usable one
+    bool useErrors = true;
+    for (int i = 0; i < nPts; ++i) {
+        double rel = effErrs[i] / effs[i];
+        if (!std::isfinite(rel) || rel <= 0.0) useErrors = false;
+    }
+
+    TGraphErrors gLog(nPts);
+    double eMin = *std::min_element(energies.begin(), energies.end());
+    double eMax = *std::max_element(energies.begin(), energies.end());
+    for (int i = 0; i < nPts; ++i) {
+        gLog.SetPoint(i, std::log(energies[i]), std::log(effs[i]));
+        gLog.SetPointError(i, 0.0, useErrors ? effErrs[i] / effs[i] : 0.0);
+    }
+
+    TF1 fLog("fLog", TString::Format("pol%d", degree).Data(),
+             std::log(eMin) - 1.0, std::log(eMax) + 1.0);
+    gLog.Fit(&fLog, "Q0");
+
+    // Curve in linear energy: eff(E) = exp( sum_k p_k ln(E)^k )
+    TString formula = "exp([0]";
+    for (int k = 1; k <= degree; ++k) formula += TString::Format("+[%d]*pow(log(x),%d)", k, k);
+    formula += ")";
+
+    TF1* effCurve = new TF1("effCurveFit", formula.Data(), 0.8 * eMin, 1.25 * eMax);
+    for (int k = 0; k <= degree; ++k) {
+        effCurve->SetParameter(k, fLog.GetParameter(k));
+        effCurve->SetParError(k, fLog.GetParError(k));
+    }
+    effCurve->SetNpx(1000);
+    effCurve->SetLineColor(kRed);
+
+    TGraphErrors* gEff = new TGraphErrors(nPts);
+    gEff->SetName("gEffPoints");
+    for (int i = 0; i < nPts; ++i) {
+        gEff->SetPoint(i, energies[i], effs[i]);
+        gEff->SetPointError(i, 0.0, effErrs[i]);
+    }
+
+
+    //========================================================================//
+    // Write results text file
+    //========================================================================//
+
+    std::ostringstream fitReport;
+    fitReport << "\nLog-log fit: ln(eff) = sum_k p_k ln(E[MeV])^k, degree " << degree
+              << (useErrors ? " (weighted)" : " (unweighted)") << "\n"
+              << "  chi2/ndf = " << fLog.GetChisquare() << " / " << fLog.GetNDF() << "\n";
+    for (int k = 0; k <= degree; ++k) {
+        fitReport << "  p" << k << " = " << fLog.GetParameter(k)
+                  << " +/- " << fLog.GetParError(k) << "\n";
+    }
+
+    const char* txtName = "effCurveResults.txt";
+    std::ofstream txt(txtName);
+    txt << report.str() << fitReport.str();
+    txt.close();
+    std::cout << "\n" << report.str() << fitReport.str();
+    std::cout << "\nSaved data : " << txtName << "\n";
+
+
+    //========================================================================//
+    // Save fit function and points to ROOT file
+    //========================================================================//
+
+    const char* rootName = "effCurveFit.root";
+    TFile fOut(rootName, "RECREATE");
+    if (fOut.IsZombie()) {
+        std::cerr << "Error: cannot write \"" << rootName << "\"\n";
+    } else {
+        effCurve->Write("effCurveFit");
+        gEff->Write("gEffPoints");
+        fOut.Close();
+        std::cout << "Saved data : " << rootName << "\n";
+    }
+
+
+    //========================================================================//
+    // Plot efficiency points and fitted curve
+    //========================================================================//
+
+    double effMin = *std::min_element(effs.begin(), effs.end());
+    double effMax = *std::max_element(effs.begin(), effs.end());
+
+    TCanvas* cEff = new TCanvas("cEff", "Absolute Efficiency Curve", 800, 600);
+    cEff->SetLeftMargin(0.12);
+    cEff->SetBottomMargin(0.12);
+    cEff->SetLogx();
+    cEff->SetLogy();
+
+    gEff->SetTitle("Absolute Efficiency Curve");
+    gEff->SetMarkerStyle(20);
+    gEff->SetMarkerSize(1.0);
+    gEff->Draw("AP");
+    gEff->GetXaxis()->SetLimits(0.8 * eMin, 1.25 * eMax);
+    gEff->SetMinimum(0.5 * effMin);
+    gEff->SetMaximum(2.0 * effMax);
+
+    TAxis* xAx = gEff->GetXaxis();
+    TAxis* yAx = gEff->GetYaxis();
+    xAx->SetTitle("Energy (MeV)");
+    yAx->SetTitle("Absolute Efficiency");
+    xAx->SetTitleOffset(1.3);
+    yAx->SetTitleOffset(1.5);
+    xAx->SetLabelSize(0.04);
+    yAx->SetLabelSize(0.04);
+    xAx->SetTitleSize(0.04);
+    yAx->SetTitleSize(0.04);
+    xAx->CenterTitle(true);
+    yAx->CenterTitle(true);
+
+    effCurve->Draw("SAME");
+
+    TLegend* leg = new TLegend(0.60, 0.74, 0.88, 0.88);
+    leg->SetFillStyle(0);
+    leg->SetBorderSize(0);
+    leg->AddEntry(gEff, "Photopeak efficiency", "pe");
+    leg->AddEntry(effCurve, TString::Format("Log-log fit (deg %d)", degree), "l");
+    leg->Draw();
+
+    const char* pngName = "effCurve.png";
+    cEff->SaveAs(pngName);
+    std::cout << "Saved plot : " << pngName << "\n\n";
+
+    // Cleanup
+    delete leg;
+    delete cEff;
+    delete effCurve;
+    delete gEff;
 }
