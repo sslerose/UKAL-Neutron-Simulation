@@ -77,10 +77,10 @@ class PrimaryGeneratorMessenger : public G4UImessenger
 
     // UI commands
     G4UIcmdWithABool*          fUseSimLiTCmd = nullptr;
-    G4UIcmdWithADouble*        fBeamEnergyCmd = nullptr;
-    G4UIcmdWithADouble*        fBeamSigmaCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fBeamEnergyCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fBeamSigmaCmd = nullptr;
     G4UIcmdWithAString*        fTargetMaterialCmd = nullptr;
-    G4UIcmdWithADouble*        fTargetThicknessCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fTargetThicknessCmd = nullptr;
     G4UIcmdWithoutParameter*   fPrintCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fExposureTimeCmd = nullptr;
 

@@ -87,22 +87,26 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Proton beam energy (keV)
   //========================================================================//
-  fBeamEnergyCmd = new G4UIcmdWithADouble("/neutronAct/gun/beamEnergy", this);
-  fBeamEnergyCmd->SetGuidance("Set proton beam energy for SimLiT source (in keV).");
+  fBeamEnergyCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/gun/beamEnergy", this);
+  fBeamEnergyCmd->SetGuidance("Set proton beam energy for SimLiT source.");
   fBeamEnergyCmd->SetGuidance("  Threshold: 1880.4 keV");
   fBeamEnergyCmd->SetGuidance("  Typical values: 1912-2500 keV");
   fBeamEnergyCmd->SetParameterName("beamEnergy", false);
   fBeamEnergyCmd->SetRange("beamEnergy >= 1880.4");
+  fBeamEnergyCmd->SetUnitCategory("Energy");
+  fBeamEnergyCmd->SetDefaultUnit("keV");
   fBeamEnergyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
   // Proton beam energy spread (keV)
   //========================================================================//
-  fBeamSigmaCmd = new G4UIcmdWithADouble("/neutronAct/gun/beamSigma", this);
-  fBeamSigmaCmd->SetGuidance("Set proton beam energy spread (1-sigma) in keV.");
+  fBeamSigmaCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/gun/beamSigma", this);
+  fBeamSigmaCmd->SetGuidance("Set proton beam energy spread (1-sigma).");
   fBeamSigmaCmd->SetGuidance("  Typical values: 5-50 keV");
   fBeamSigmaCmd->SetParameterName("beamSigma", false);
   fBeamSigmaCmd->SetRange("beamSigma > 0");
+  fBeamSigmaCmd->SetUnitCategory("Energy");
+  fBeamSigmaCmd->SetDefaultUnit("keV");
   fBeamSigmaCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -124,11 +128,13 @@ PrimaryGeneratorMessenger::PrimaryGeneratorMessenger()
   //========================================================================//
   // Target thickness (micrometers)
   //========================================================================//
-  fTargetThicknessCmd = new G4UIcmdWithADouble("/neutronAct/gun/targetThickness", this);
+  fTargetThicknessCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/gun/targetThickness", this);
   fTargetThicknessCmd->SetGuidance("Set lithium target thickness in micrometers.");
   fTargetThicknessCmd->SetGuidance("  Typical values: 5-50 um");
   fTargetThicknessCmd->SetParameterName("thickness", false);
   fTargetThicknessCmd->SetRange("thickness > 0");
+  fTargetThicknessCmd->SetUnitCategory("Length");
+  fTargetThicknessCmd->SetDefaultUnit("um");
   fTargetThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//

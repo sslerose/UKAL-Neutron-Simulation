@@ -107,6 +107,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorDistanceCmd->SetParameterName("DetectorDistance", false);
   fDetectorDistanceCmd->SetRange("DetectorDistance > 0.");
   fDetectorDistanceCmd->SetUnitCategory("Length");
+  fDetectorDistanceCmd->SetDefaultUnit("cm");
   fDetectorDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -116,6 +117,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fDetectorAngleCmd->SetGuidance("Set angle of detector around y-axis (neutron source)");
   fDetectorAngleCmd->SetParameterName("DetectorAngle", false);
   fDetectorAngleCmd->SetUnitCategory("Angle");
+  fDetectorAngleCmd->SetDefaultUnit("deg");
   fDetectorAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -164,6 +166,8 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fAbsorberDistanceCmd->SetGuidance("Set distance from origin (neutron source) to absorber face");
   fAbsorberDistanceCmd->SetParameterName("distance", false);
   fAbsorberDistanceCmd->SetRange("distance > 0");
+  fAbsorberDistanceCmd->SetUnitCategory("Length");
+  fAbsorberDistanceCmd->SetDefaultUnit("cm");
   fAbsorberDistanceCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -173,6 +177,8 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fAbsorberThicknessCmd->SetGuidance("Set thickness of the absorber in micrometers.");
   fAbsorberThicknessCmd->SetParameterName("thickness", false);
   fAbsorberThicknessCmd->SetRange("thickness > 0");
+  fAbsorberThicknessCmd->SetUnitCategory("Length");
+  fAbsorberThicknessCmd->SetDefaultUnit("um");
   fAbsorberThicknessCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -182,6 +188,8 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fAbsorberRadiusCmd->SetGuidance("Set radius of the absorber in micrometers.");
   fAbsorberRadiusCmd->SetParameterName("radius", false);
   fAbsorberRadiusCmd->SetRange("radius > 0");
+  fAbsorberRadiusCmd->SetUnitCategory("Length");
+  fAbsorberRadiusCmd->SetDefaultUnit("mm");
   fAbsorberRadiusCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -191,6 +199,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
   fSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
   fSpanningStartAngleCmd->SetUnitCategory("Angle");
+  fSpanningEndAngleCmd->SetDefaultUnit("deg");
   fSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
   //========================================================================//
@@ -200,6 +209,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
   fSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
   fSpanningEndAngleCmd->SetUnitCategory("Angle");
+  fSpanningEndAngleCmd->SetDefaultUnit("deg");
   fSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
