@@ -22,12 +22,12 @@
 /// Usage (in ROOT):
 ///
 /// Single-run PHS: reads a ROOT file of raw data from a single run and creates
-/// the PHS and gamma emission spectrum of the run as PNGs with bin-center and
-/// counts data saved as CSVs. Also saves a sample of EmittedParticles and
-/// DecayProducts data into CSVs.
+/// the PHS and gamma emission spectrum of the run as PNGs and ROOT files. The
+/// PHS bin-center and counts data and a sample of EmittedParticles data can
+/// optionally be saved as CSVs.
 ///
 /// Function call:
-///   analyzePHS("path/to/data.root", window_us, nBins, eMax, saveRoot)
+///   analyzePHS("path/to/data.root", window_us, nBins, eMax, saveCSV)
 ///
 /// Required argument:
 ///   filePath   - path to the GammaSpec .root output file
@@ -36,18 +36,18 @@
 ///   window_us  - charge-collection window length in microseconds (default = 1.0)
 ///   nBins      - number of histogram bins (default = 3000)
 ///   eMax       - histogram upper edge in MeV (default = 3.0)
-///   saveRoot   - also save the PHS as its own .root file (default = false)
+///   saveCSV    - also save the PHS and a sample of EmittedParticles as CSVs
+///                (default = false)
 ///
 /// Outputs:
 ///   <stem>_PHS_<window_us>us.png  - pulse-height spectrum plot
-///   <stem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
-///   <stem>_PHS_<window_us>us.root - PHS histogram, written when saveRoot is true
+///   <stem>_PHS_<window_us>us.root - PHS histogram
 ///   <stem>_GammaEnergy.png        - emitted gamma energy spectrum plot
-///   <stem>_GammaEnergy.csv        - bin-center (MeV) and counts
-///   <stem>_EmittedParticles.csv   - sampled emitted-particle rows
-///   <stem>_DecayProducts.csv      - sampled decay-product rows
+///   <stem>_GammaEnergy.root       - emitted gamma energy histogram
+///   <stem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts, written when saveCSV is true
+///   <stem>_EmittedParticles.csv   - sampled emitted-particle rows, written when saveCSV is true
 ///
-///   The .root output stores the spectrum under the fixed key "hPHS" together
+///   The PHS .root output stores the spectrum under the fixed key "hPHS" together
 ///   with an "nEvents" parameter holding the total number of gammas emitted by
 ///   the source over all energies, taken from the emitted-gamma spectrum. That
 ///   count is the denominator used for photopeak efficiencies in analyzePhoto.
@@ -65,7 +65,7 @@
 /// them into combined PHS and gamma emission spectra
 ///
 /// Function call:
-///   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax, toPlot, saveRoot)
+///   analyzePHSTotal("runs.info", "/path/to/rootfiles", "Total", window_us, nBins, eMax, toPlot, saveCSV)
 ///
 /// Required arguments:
 ///   infoPath  - path to the run info file (stem, P_i, N_i per line)
@@ -76,21 +76,22 @@
 ///   window_us - charge-collection window length in microseconds (default = 1.0)
 ///   nBins     - number of histogram bins (default = 3000)
 ///   eMax      - histogram upper edge in MeV (default = 3.0)
-///   toPlot    - also save the per-run PHS and gamma plots/CSVs (default = false)
-///   saveRoot  - also save the combined PHS as its own .root file (default = false)
+///   toPlot    - also save the per-run PHS and gamma plots (default = false)
+///   saveCSV   - also save the PHS as CSVs (default = false)
 ///
 /// Outputs:
 ///   <outStem>_PHS_<window_us>us.png  - combined pulse-height spectrum plot
-///   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts
-///   <outStem>_PHS_<window_us>us.root - combined PHS, written when saveRoot is true
+///   <outStem>_PHS_<window_us>us.root - combined PHS
 ///   <outStem>_GammaEnergy.png        - combined gamma emission spectrum plot
-///   <outStem>_GammaEnergy.csv        - bin-center (MeV) and counts
+///   <outStem>_GammaEnergy.root       - combined gamma emission spectrum
+///   <outStem>_PHS_<window_us>us.csv  - bin-center (MeV) and counts, written when saveCSV is true
 ///
-///   The combined outputs above are always written. When toPlot is true, the
-///   per-run <stem>_PHS_<window_us>us.* and <stem>_GammaEnergy.* files are
-///   written as well.
+///   The combined outputs above are always written (except the CSV). When
+///   toPlot is true, the per-run <stem>_PHS_<window_us>us.png and
+///   <stem>_GammaEnergy.png files are written as well, along with the per-run
+///   PHS CSV when saveCSV is also true. Per-run .root files are never written.
 ///
-///   As in analyzePHS, the .root output stores the spectrum under the key
+///   As in analyzePHS, the PHS .root output stores the spectrum under the key
 ///   "hPHS" plus an "nEvents" parameter. Here nEvents comes from the combined
 ///   gamma spectrum, which is scaled by f_i per run, so it is the true total
 ///   emitted-gamma count implied by the activation populations and matches the
@@ -135,7 +136,7 @@
 ///
 /// Required arguments:
 ///   phsPath   - path to a processed PHS .root file saved by analyzePHS or
-///               analyzePHSTotal with saveRoot = true
+///               analyzePHSTotal
 ///   windows   - 2D array of {low, high} energy-window pairs in MeV
 ///
 /// Outputs:
@@ -220,12 +221,12 @@ void printFuncs()
     std::cout <<
 "\n"
 "Single-run PHS: reads a ROOT file of raw data from a single run and creates\n"
-"the PHS and gamma emission spectrum of the run as PNGs with bin-center and\n"
-"counts data saved as CSVs. Also saves a sample of EmittedParticles and\n"
-"DecayProducts data into CSVs.\n"
+"the PHS and gamma emission spectrum of the run as PNGs and ROOT files. The\n"
+"PHS bin-center and counts data and a sample of EmittedParticles data can\n"
+"optionally be saved as CSVs.\n"
 "\n"
 "Function call:\n"
-"  analyzePHS(\"path/to/data.root\", window_us, nBins, eMax, saveRoot)\n"
+"  analyzePHS(\"path/to/data.root\", window_us, nBins, eMax, saveCSV)\n"
 "\n"
 "Required argument:\n"
 "  filePath   - path to the .root data file\n"
@@ -234,7 +235,7 @@ void printFuncs()
 "  window_us  - charge-collection window length in microseconds (default = 1.0)\n"
 "  nBins      - number of histogram bins (default = 3000)\n"
 "  eMax       - histogram upper edge in MeV (default = 3.0)\n"
-"  saveRoot   - also save the PHS as its own .root file (default = false)\n"
+"  saveCSV    - also save the PHS and a sample of EmittedParticles as CSVs (default = false)\n"
 "\n"
 "\n"
 "Multi-run total PHS: reads a run info file and processes PHS and gamma emission\n"
@@ -242,7 +243,7 @@ void printFuncs()
 "them into combined PHS and gamma emission spectra\n"
 "\n"
 "Function call:\n"
-"  analyzePHSTotal(\"runs.info\", \"/path/to/rootfiles\", \"Total\", window_us, nBins, eMax, toPlot, saveRoot)\n"
+"  analyzePHSTotal(\"runs.info\", \"/path/to/rootfiles\", \"Total\", window_us, nBins, eMax, toPlot, saveCSV)\n"
 "\n"
 "Required arguments:\n"
 "  infoPath  - path to the run info file (stem, P_i, N_i per line)\n"
@@ -253,8 +254,8 @@ void printFuncs()
 "  window_us - charge-collection window length in microseconds (default = 1.0)\n"
 "  nBins     - number of histogram bins (default = 3000)\n"
 "  eMax      - histogram upper edge in MeV (default = 3.0)\n"
-"  toPlot    - also save the per-run PHS and gamma plots/CSVs (default = false)\n"
-"  saveRoot  - also save the combined PHS as its own .root file (default = false)\n"
+"  toPlot    - also save the per-run PHS and gamma plots (default = false)\n"
+"  saveCSV   - also save the PHS as CSVs (default = false)\n"
 "\n"
 "\n"
 "Interactive PHS viewer: draws a spectrum into a live canvas for panning,\n"
@@ -281,7 +282,7 @@ void printFuncs()
 "\n"
 "Required arguments:\n"
 "  phsPath   - path to a processed PHS .root file saved by analyzePHS or\n"
-"              analyzePHSTotal with saveRoot = true\n"
+"              analyzePHSTotal\n"
 "  windows   - 2D array of {low, high} energy-window pairs in MeV\n"
 "\n"
 << std::endl;
@@ -409,7 +410,7 @@ TH1D* getPHSFromFile(TFile* f)
 //------------------------------------------------------------------------//
 // Build pulse-height spectrum from EnergyDeposition tree
 //------------------------------------------------------------------------//
-TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, double eMax, bool toPlot)
+TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, double eMax, bool toPlot, bool saveCSV)
 {
     if (!tree) return nullptr;
 
@@ -427,15 +428,15 @@ TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, dou
     //========================================================================//
 
     std::map<long long, double> windowEnergy;
-    std::map<long long, double> windowWeightSum;
+    std::map<long long, double> windowWeightE;
 
     // Accumulate data into time windows
     Long64_t nEntries = tree->GetEntries();
     for (Long64_t i = 0; i < nEntries; ++i) {
         tree->GetEntry(i);
         long long idx = static_cast<long long>(std::floor(time / window_us));
-        windowEnergy[idx]    += energyDep;
-        windowWeightSum[idx] += weight;
+        windowEnergy[idx]  += energyDep;
+        windowWeightE[idx] += weight * energyDep;
     }
 
     long long nWindows = static_cast<long long>(windowEnergy.size());
@@ -475,29 +476,26 @@ TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, dou
     hPHS->Sumw2();  // Proper error propogation
 
     // Pulse magnitude is unweighted energy sum, smeared by the detector resolution
-    // Fill weight is summed weights of deposits
+    // Fill weight is energy-weighted average of the weights
     for (auto& kv : windowEnergy) {
         double E    = kv.second;
         double Esm  = gRandom->Gaus(E, kSigma_MeV);  // Apply detector resolution
-        double Wsum = windowWeightSum[kv.first];
-        hPHS->Fill(Esm, Wsum);
-        // --- previous implementation: energy-weighted average of the weights ---
-        // double Wavg = windowWeighted[kv.first] / E;
-        // hPHS->Fill(E, Wavg);
+        double Wavg = windowWeightE[kv.first] / E;
+        hPHS->Fill(Esm, Wavg);
     }
 
 
     //========================================================================//
-    // Plot histogram and write CSV (if prompted)
+    // Plot histogram (if prompted) and write CSV (if prompted)
     //========================================================================//
 
     styleAxis(hPHS, "Energy (MeV)", "Counts");
 
-    if (toPlot) {
-        std::ostringstream tagStream;
-        tagStream << std::fixed << std::setprecision(2) << window_us;
-        TString tag = TString(stem) + "_PHS_" + tagStream.str().c_str() + "us";
+    std::ostringstream tagStream;
+    tagStream << std::fixed << std::setprecision(2) << window_us;
+    TString tag = TString(stem) + "_PHS_" + tagStream.str().c_str() + "us";
 
+    if (toPlot) {
         // Save histogram
         TCanvas* c = new TCanvas("cPHS", "Pulse-Height Spectrum", 800, 600);
         c->SetLeftMargin(0.12);
@@ -507,6 +505,10 @@ TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, dou
         c->SaveAs(pngName.Data());
         std::cout << "Saved plot : " << pngName.Data() << "\n";
 
+        delete c;
+    }
+
+    if (saveCSV) {
         // Save CSV
         TString csvName = tag + ".csv";
         std::ofstream csv(csvName.Data());
@@ -518,8 +520,6 @@ TH1D* processPHS(TTree* tree, const char* stem, double window_us, int nBins, dou
         }
         csv.close();
         std::cout << "Saved data : " << csvName.Data() << "\n";
-
-        delete c;
     }
 
     // Return PHS
@@ -599,7 +599,7 @@ TH1D* processGamma(TTree* emTree,
 //------------------------------------------------------------------------//
 // Single-file analysis
 //------------------------------------------------------------------------//
-void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, double eMax = 3.0, bool saveRoot = false)
+void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, double eMax = 3.0, bool saveCSV = false)
 {
     // Derive output filename stem
     TString inputPath(filePath);
@@ -629,11 +629,11 @@ void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, 
     }
 
     // Build, plot, and save PHS
-    TH1D* hPHS = processPHS(tree, stem.Data(), window_us, nBins, eMax, true);
+    TH1D* hPHS = processPHS(tree, stem.Data(), window_us, nBins, eMax, true, saveCSV);
 
 
     //========================================================================//
-    // EmittedParticles CSV and gamma spectrum
+    // EmittedParticles CSV (if prompted) and gamma spectrum
     //========================================================================//
 
     TTree* emTree = dynamic_cast<TTree*>(f->Get("EmittedParticles"));
@@ -644,42 +644,44 @@ void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, 
     if (!emTree) {
         std::cerr << "Warning: \"EmittedParticles\" tree not found in \"" << filePath << "\"\n";
     } else {
-        Int_t    emPID    = 0;
-        Double_t emEnergy = 0.0;
-        Double_t emWeight = 0.0;
-        Double_t emTime   = 0.0;
+        if (saveCSV) {
+            Int_t    emPID    = 0;
+            Double_t emEnergy = 0.0;
+            Double_t emWeight = 0.0;
+            Double_t emTime   = 0.0;
 
-        emTree->SetBranchAddress("PID",    &emPID);
-        emTree->SetBranchAddress("Energy", &emEnergy);
-        emTree->SetBranchAddress("Weight", &emWeight);
-        emTree->SetBranchAddress("Time",   &emTime);
+            emTree->SetBranchAddress("PID",    &emPID);
+            emTree->SetBranchAddress("Energy", &emEnergy);
+            emTree->SetBranchAddress("Weight", &emWeight);
+            emTree->SetBranchAddress("Time",   &emTime);
 
-        TDatabasePDG* pdgDB = TDatabasePDG::Instance();
+            TDatabasePDG* pdgDB = TDatabasePDG::Instance();
 
-        TString emCsvName = TString(stem) + "_EmittedParticles.csv";
-        std::ofstream emCsv(emCsvName.Data());
-        emCsv << "PID,Name,Energy_MeV,Weight,Time_s\n";
+            TString emCsvName = TString(stem) + "_EmittedParticles.csv";
+            std::ofstream emCsv(emCsvName.Data());
+            emCsv << "PID,Name,Energy_MeV,Weight,Time_s\n";
 
-        Long64_t emEntries  = emTree->GetEntries();
-        Long64_t emCsvLimit = std::min<Long64_t>((emEntries + 9) / 10, 10000);  // Limit CSV to first 10% of rows, capped at 10000
+            Long64_t emEntries  = emTree->GetEntries();
+            Long64_t emCsvLimit = std::min<Long64_t>((emEntries + 9) / 10, 10000);  // Limit CSV to first 10% of rows, capped at 10000
 
-        for (Long64_t i = 0; i < emCsvLimit; ++i) {
-            emTree->GetEntry(i);
-            TParticlePDG* pdgParticle = pdgDB->GetParticle(emPID);
-            const char* emName = pdgParticle ? pdgParticle->GetName() : "unknown";
-            emCsv << emPID << ","
-                  << emName << ","
-                  << std::fixed << std::setprecision(6)
-                  << emEnergy << ","
-                  << emWeight << ","
-                  << emTime * 1e-6 << "\n";
+            for (Long64_t i = 0; i < emCsvLimit; ++i) {
+                emTree->GetEntry(i);
+                TParticlePDG* pdgParticle = pdgDB->GetParticle(emPID);
+                const char* emName = pdgParticle ? pdgParticle->GetName() : "unknown";
+                emCsv << emPID << ","
+                      << emName << ","
+                      << std::fixed << std::setprecision(6)
+                      << emEnergy << ","
+                      << emWeight << ","
+                      << emTime * 1e-6 << "\n";
+            }
+            emCsv.close();
+            std::cout << "Saved data : " << emCsvName.Data()
+                      << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
         }
-        emCsv.close();
-        std::cout << "Saved data : " << emCsvName.Data()
-                  << "  (first " << emCsvLimit << " of " << emEntries << " rows)\n";
 
         // Build, plot, and save the emitted gamma energy spectrum
-        TH1D* hGammaE = processGamma(emTree, stem.Data(), nBins, eMax, saveRoot);
+        TH1D* hGammaE = processGamma(emTree, stem.Data(), nBins, eMax, true);
 
         // Integrate gamma spectrum to get total gammas emitted
         nGammas = llround(hGammaE->Integral());
@@ -690,79 +692,21 @@ void analyzePHS(const char* filePath, double window_us = 1.0, int nBins = 3000, 
 
 
     //========================================================================//
-    // Save PHS to its own ROOT file (if prompted)
+    // Save PHS to its own ROOT file
     //========================================================================//
 
-    if (saveRoot) {
-        if (nGammas < 0) {
-            std::cerr << "Warning: no emitted-gamma count available; "
-                      << "skipping PHS ROOT output for \"" << stem << "\"\n";
-        } else {
-            // Same tag as the PHS plot so the .root and .png names agree
-            std::ostringstream tagStream;
-            tagStream << std::fixed << std::setprecision(2) << window_us;
-            TString tag = stem + "_PHS_" + tagStream.str().c_str() + "us";
-
-            writePHSFile(tag, hPHS, nGammas);
-        }
-    }
-
-
-    //========================================================================//
-    // DecayProducts CSV
-    //========================================================================//
-
-    TTree* dpTree = dynamic_cast<TTree*>(f->Get("DecayProducts"));
-
-    if (!dpTree) {
-        std::cerr << "Warning: \"DecayProducts\" tree not found in \"" << filePath << "\"\n";
+    if (nGammas < 0) {
+        std::cerr << "Warning: no emitted-gamma count available; "
+                  << "skipping PHS ROOT output for \"" << stem << "\"\n";
     } else {
-        Int_t    dpPID        = 0;
-        Int_t    dpZ          = 0;
-        Int_t    dpA          = 0;
-        Char_t   dpCreator[256] = {0};
-        Double_t dpExcitation = 0.0;
-        Double_t dpWeight     = 0.0;
-        Int_t    dpIsStable   = 0;
-        Double_t dpTimeBirth  = 0.0;
-        Double_t dpTimeDeath  = 0.0;
+        // Same tag as the PHS plot so the .root and .png names agree
+        std::ostringstream tagStream;
+        tagStream << std::fixed << std::setprecision(2) << window_us;
+        TString tag = stem + "_PHS_" + tagStream.str().c_str() + "us";
 
-        dpTree->SetBranchAddress("PID",              &dpPID);
-        dpTree->SetBranchAddress("Z",                &dpZ);
-        dpTree->SetBranchAddress("A",                &dpA);
-        dpTree->SetBranchAddress("CreatorProcess",   dpCreator);   // array: no &
-        dpTree->SetBranchAddress("ExcitationEnergy", &dpExcitation);
-        dpTree->SetBranchAddress("Weight",           &dpWeight);
-        dpTree->SetBranchAddress("IsStable",         &dpIsStable);
-        dpTree->SetBranchAddress("TimeBirth",        &dpTimeBirth);
-        dpTree->SetBranchAddress("TimeDeath",        &dpTimeDeath);
-
-        TString dpCsvName = TString(stem) + "_DecayProducts.csv";
-        std::ofstream dpCsv(dpCsvName.Data());
-        dpCsv << "PID,Z,A,CreatorProcess,ExcitationEnergy_MeV,Weight,IsStable,"
-                 "TimeBirth_s,TimeDeath_s\n";
-
-        Long64_t dpEntries  = dpTree->GetEntries();
-        // Dump the first 10% of rows, capped at 10000
-        Long64_t dpCsvLimit = std::min<Long64_t>((dpEntries + 9) / 10, 10000);
-        for (Long64_t i = 0; i < dpCsvLimit; ++i) {
-            dpTree->GetEntry(i);
-            dpCsv << dpPID << ","
-                  << dpZ   << ","
-                  << dpA   << ","
-                  << "\"" << dpCreator << "\","
-                  << std::fixed << std::setprecision(6)
-                  << dpExcitation << ","
-                  << dpWeight     << ","
-                  << dpIsStable   << ","
-                  << dpTimeBirth * 1e-6 << ",";
-            if (dpIsStable) dpCsv << "inf\n";   // Stable particles have "inf" death time
-            else dpCsv << dpTimeDeath * 1e-6 << "\n";
-        }
-        dpCsv.close();
-        std::cout << "Saved data : " << dpCsvName.Data()
-                  << "  (first " << dpCsvLimit << " of " << dpEntries << " rows)\n";
+        writePHSFile(tag, hPHS, nGammas);
     }
+
 
     // Cleanup
     delete hPHS;
@@ -781,7 +725,7 @@ void analyzePHSTotal(const char* infoPath,
                      int nBins = 3000,
                      double eMax = 3.0,
                      bool toPlot = false,
-                     bool saveRoot = false)
+                     bool saveCSV = false)
 {
     std::vector<RunInfo> runs = parseRunInfo(infoPath);
     if (runs.empty()) {
@@ -828,7 +772,7 @@ void analyzePHSTotal(const char* infoPath,
         }
 
         // Build this file's PHS, then scale and accumulate
-        TH1D* hThis = processPHS(tree, r.file.Data(), window_us, nBins, eMax, toPlot);
+        TH1D* hThis = processPHS(tree, r.file.Data(), window_us, nBins, eMax, toPlot, toPlot && saveCSV);
         hThis->Scale(scaleFactor);
         hTotal->Add(hThis);
 
@@ -891,17 +835,19 @@ void analyzePHSTotal(const char* infoPath,
     c->SaveAs(pngName.Data());
     std::cout << "Saved plot : " << pngName.Data() << "\n";
 
-    // Save PHS CSV
-    TString csvName = tag + ".csv";
-    std::ofstream csv(csvName.Data());
-    csv << "BinCenter_MeV,Counts\n";
-    for (int b = 1; b <= hTotal->GetNbinsX(); ++b) {
-        csv << std::fixed << std::setprecision(6)
-            << hTotal->GetBinCenter(b) << ","
-            << hTotal->GetBinContent(b) << "\n";
+    // Save PHS CSV (if prompted)
+    if (saveCSV) {
+        TString csvName = tag + ".csv";
+        std::ofstream csv(csvName.Data());
+        csv << "BinCenter_MeV,Counts\n";
+        for (int b = 1; b <= hTotal->GetNbinsX(); ++b) {
+            csv << std::fixed << std::setprecision(6)
+                << hTotal->GetBinCenter(b) << ","
+                << hTotal->GetBinContent(b) << "\n";
+        }
+        csv.close();
+        std::cout << "Saved data : " << csvName.Data() << "\n";
     }
-    csv.close();
-    std::cout << "Saved data : " << csvName.Data() << "\n";
 
 
     //========================================================================//
@@ -925,14 +871,12 @@ void analyzePHSTotal(const char* infoPath,
 
 
     //========================================================================//
-    // Save combined PHS and gamma spectrum to their own ROOT files (if prompted)
+    // Save combined PHS and gamma spectrum to their own ROOT files
     //========================================================================//
 
     // Total PHS and gamma spectrum are equally scaled prior to photopeak analysis
-    if (saveRoot) {
-        writePHSFile(tag, hTotal, llround(hGammaTotal->Integral()));
-        writeGammaFile(gammaTag, hGammaTotal);
-    }
+    writePHSFile(tag, hTotal, llround(hGammaTotal->Integral()));
+    writeGammaFile(gammaTag, hGammaTotal);
 
     // Cleanup
     delete c;
@@ -975,7 +919,7 @@ void viewPHS(const char* filePath, double window_us = 1.0, int nBins = 3000, dou
         TTree* tree = dynamic_cast<TTree*>(f->Get("EnergyDeposition"));
         if (tree) {
             std::cout << "\nInput type   : raw data (\"EnergyDeposition\" tree found)\n";
-            hPHS = processPHS(tree, stem.Data(), window_us, nBins, eMax, false);
+            hPHS = processPHS(tree, stem.Data(), window_us, nBins, eMax, false, false);
         }
     }
 
@@ -1171,7 +1115,7 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
     if (!hPHS) {
         std::cerr << "Error: \"" << phsPath << "\" is not a processed PHS file "
                   << "(no \"hPHS\" key). Produce one with analyzePHS or "
-                  << "analyzePHSTotal using saveRoot = true.\n";
+                  << "analyzePHSTotal.\n";
         f->Close();
         return;
     }
@@ -1454,7 +1398,12 @@ void getEffCurve(const char* dir, const char* windowCsv)
     //========================================================================//
 
     // NDF = nPts - (degree + 1) must stay >= 2
-    const int degree = std::min(4, nPts - 3);
+    const int degree = std::max(1, std::min(4, nPts - 3));
+    if (nPts - (degree + 1) < 2)
+    {
+        std::cerr << "Warning: only " << nPts - (degree + 1)
+                  << " degree(s) of freedom; curve is weakly constrained\n";
+    }
 
     // Weight the fit by the relative errors only if every point has a usable one
     bool useErrors = true;
