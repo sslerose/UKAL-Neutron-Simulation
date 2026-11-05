@@ -51,8 +51,7 @@
 #include "TLegend.h"
 #include "TStyle.h"
 #include "TAxis.h"
-#include "TString.h"
-#include "TMath.h"
+#include "TROOT.h"
 
 #include <algorithm>
 #include <fstream>
@@ -65,9 +64,23 @@
 #include <tuple>
 #include <vector>
 
-// ============================================================
-// Helper: apply consistent axis styling to a histogram
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+namespace {
+    struct AutoInit {
+        AutoInit() {
+            gROOT->SetBatch(kTRUE);
+            std::cout << "AnalyzeAct.C loaded (via static init). Batch mode enabled.\n";
+        }
+    };
+    AutoInit _autoInitInstance;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Apply consistent axis styling to a histogram
+//------------------------------------------------------------------------//
 void styleAxis(TH1D* h, const char* xTitle, const char* yTitle) {
     h->GetXaxis()->SetTitle(xTitle);
     h->GetYaxis()->SetTitle(yTitle);
@@ -81,9 +94,11 @@ void styleAxis(TH1D* h, const char* xTitle, const char* yTitle) {
     h->GetYaxis()->CenterTitle(true);
 }
 
-// ============================================================
-// Helper: apply consistent axis styling to a TGraph
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Apply consistent axis styling to a TGraph
+//------------------------------------------------------------------------//
 void styleAxis(TGraph* g, const char* xTitle, const char* yTitle) {
     g->GetXaxis()->SetTitle(xTitle);
     g->GetYaxis()->SetTitle(yTitle);
@@ -97,9 +112,11 @@ void styleAxis(TGraph* g, const char* xTitle, const char* yTitle) {
     g->GetYaxis()->CenterTitle(true);
 }
 
-// ============================================================
-// Diagnostic: print a summary of all ion species in PopulationData
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Print a summary of all ion species in PopulationData
+//------------------------------------------------------------------------//
 void printSpeciesInfo(const char* filePath)
 {
     TFile* f = TFile::Open(filePath, "READ");
@@ -201,22 +218,41 @@ void printSpeciesInfo(const char* filePath)
     delete f;
 }
 
-// ============================================================
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
 // Main analysis function
-// ============================================================
+//------------------------------------------------------------------------//
 void analyzeAct(const char* filePath,
                 Double_t     beamTime,
                 const char*  timeScale,
                 Double_t     coolingTime = 0.0,
                 Bool_t       plotAll     = false)
 {
-    // ----------------------------------------------------------
-    // 1. Parse time scale
-    // ----------------------------------------------------------
+    // Open file
+    TFile* f = TFile::Open(filePath, "READ");
+    if (!f || f->IsZombie()) {
+        std::cerr << "Error: cannot open file \"" << filePath << "\"\n";
+        return;
+    }
+
+    // Apply global style
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(1);
+    gStyle->SetTitleFontSize(0.045);
+    gStyle->SetFrameLineWidth(1);
+    gStyle->SetTickLength(0.03, "Y");
+
+
+    //========================================================================//
+    // Parse time scale and derive time limits
+    //========================================================================//
+
     Double_t timeScaleFactor = 1.0;
     std::string timeUnit     = "s";
 
     std::string ts(timeScale);
+
     // Convert to lowercase for case-insensitive comparison
     std::transform(ts.begin(), ts.end(), ts.begin(),
                    [](unsigned char c){ return std::tolower(c); });
@@ -236,9 +272,6 @@ void analyzeAct(const char* filePath,
         return;
     }
 
-    // ----------------------------------------------------------
-    // 2. Derived time limits (all in display units)
-    // ----------------------------------------------------------
     Double_t tBeam     = beamTime;
     Double_t tCool     = coolingTime;
     Double_t tEnd      = tBeam + tCool;
@@ -251,28 +284,12 @@ void analyzeAct(const char* filePath,
               << "  Cooling time: " << tCool      << " " << timeUnit << "\n"
               << "  t_end       : " << tEnd       << " " << timeUnit << "\n"
               << "  t_max (axis): " << tMax       << " " << timeUnit << "\n\n";
+    
 
-    // ----------------------------------------------------------
-    // 3. Open ROOT file
-    // ----------------------------------------------------------
-    TFile* f = TFile::Open(filePath, "READ");
-    if (!f || f->IsZombie()) {
-        std::cerr << "Error: cannot open file \"" << filePath << "\"\n";
-        return;
-    }
+    //========================================================================//
+    // Capture-time histogram (detector data)
+    //========================================================================//
 
-    // ----------------------------------------------------------
-    // 4. Global style
-    // ----------------------------------------------------------
-    gStyle->SetOptStat(0);
-    gStyle->SetOptTitle(1);
-    gStyle->SetTitleFontSize(0.045);
-    gStyle->SetFrameLineWidth(1);
-    gStyle->SetTickLength(0.03, "Y");
-
-    // ============================================================
-    // SECTION A: Detector data — capture time histogram
-    // ============================================================
     TTree* detTree = dynamic_cast<TTree*>(f->Get("DetectorData"));
     if (!detTree) {
         std::cerr << "Error: \"DetectorData\" tree not found in file.\n";
@@ -320,9 +337,11 @@ void analyzeAct(const char* filePath,
     cCapture->SaveAs("CaptureTimes.png");
     std::cout << "Saved: CaptureTimes.png\n";
 
-    // ============================================================
-    // SECTION B: Population data — per-species step plots
-    // ============================================================
+
+    //========================================================================//
+    // Per-species step plots (population data)
+    //========================================================================//
+
     TTree* popTree = dynamic_cast<TTree*>(f->Get("PopulationData"));
     if (!popTree) {
         std::cerr << "Error: \"PopulationData\" tree not found in file.\n";
@@ -331,8 +350,6 @@ void analyzeAct(const char* filePath,
     }
 
     // Branch variables
-    // NOTE: Geant4's CreateNtupleSColumn writes strings as Char_t[] in ROOT.
-    //       Use a char array and pass the raw pointer (no &) to SetBranchAddress.
     char     ionName[256] = {};
     Double_t timeBirth    = 0.0;
     Double_t timeDeath    = 0.0;
@@ -344,12 +361,16 @@ void analyzeAct(const char* filePath,
     popTree->SetBranchAddress("Weight",    &weight);
 
     // Collect rows grouped by species: map<name, vector<(birth, death, weight)>>
+    // NOTE: birth/death times are stored in the DISPLAY unit (already divided
+    // by timeScaleFactor), not in seconds
     std::map<std::string, std::vector<std::tuple<Double_t, Double_t, Double_t>>> speciesData;
 
     Long64_t nPopEntries = popTree->GetEntries();
     for (Long64_t i = 0; i < nPopEntries; ++i) {
         popTree->GetEntry(i);
-        speciesData[std::string(ionName)].emplace_back(timeBirth, timeDeath, weight);
+        speciesData[std::string(ionName)].emplace_back(timeBirth / timeScaleFactor,
+                                                       timeDeath / timeScaleFactor,
+                                                       weight);
     }
 
     std::cout << "Found " << speciesData.size() << " ion species.\n\n";
@@ -381,17 +402,55 @@ void analyzeAct(const char* filePath,
         printBoth(hdr.str());
     }
 
+    // Reusable canvas for all population plots (created once, cleared per species)
+    TCanvas* cPop = new TCanvas("cPop", "Population", 800, 600);
+    cPop->SetLeftMargin(0.13);
+    cPop->SetRightMargin(0.05);
+    cPop->SetBottomMargin(0.12);
+
     // Per-species step plot + surviving population lookup
     for (const auto& kv : speciesData) {
         const std::string& species = kv.first;
         const auto& rows = kv.second;
 
+        // Population snapshots in a single pass over the rows:
+        // population(t) = sum of birth weights with tb <= t
+        //               - sum of death weights with td <= t
+        Double_t popHalfBeam  = 0.0;
+        Double_t popAtBeam    = 0.0;
+        Double_t survivingPop = 0.0;
+        for (const auto& row : rows) {
+            const Double_t tb = std::get<0>(row);
+            const Double_t td = std::get<1>(row);
+            const Double_t w  = std::get<2>(row);
+            if (tb <= tHalfBeam) popHalfBeam  += w;
+            if (td <= tHalfBeam) popHalfBeam  -= w;
+            if (tb <= tBeam)     popAtBeam    += w;
+            if (td <= tBeam)     popAtBeam    -= w;
+            if (tb <= tEnd)      survivingPop += w;
+            if (td <= tEnd)      survivingPop -= w;
+        }
+
+        // Write to text file (every species, plotted or not)
+        {
+            std::ostringstream row;
+            row << std::left  << std::setw(16) << species
+                << std::right << std::setw(20) << std::fixed << std::setprecision(4)
+                << popHalfBeam
+                << std::right << std::setw(20) << popAtBeam
+                << std::right << std::setw(19) << survivingPop << "\n";
+            printBoth(row.str());
+        }
+
+        // Skip plotting if plotAll is false and surviving population is zero
+        if (!plotAll && survivingPop <= 0.0) continue;
+
         // Build event list: (time_display, delta_weight)
         std::vector<std::pair<Double_t, Double_t>> events;
         events.reserve(rows.size() * 2);
         for (const auto& row : rows) {
-            Double_t tb = std::get<0>(row) / timeScaleFactor;
-            Double_t td = std::get<1>(row) / timeScaleFactor;
+            Double_t tb = std::get<0>(row);
+            Double_t td = std::get<1>(row);
             Double_t w  = std::get<2>(row);
             events.emplace_back(tb, +w);
             events.emplace_back(td, -w);
@@ -405,55 +464,36 @@ void analyzeAct(const char* filePath,
                   });
 
         // Build cumulative population arrays (step representation)
-        // For a true step appearance we insert two points per event:
+        // For a true step appearance, insert two points per distinct event time:
         //   (t, popBefore) then (t, popAfter)
-        std::vector<Double_t> grTimes;
-        std::vector<Double_t> grPops;
+        // Events sharing the same timestamp are merged into one summed delta.
+        std::vector<Double_t> grTimes, grPops;
+        grTimes.reserve(2 * events.size() + 2);
+        grPops.reserve(2 * events.size() + 2);
         grTimes.push_back(0.0);
         grPops.push_back(0.0);
 
         Double_t cumPop = 0.0;
+        Double_t yMax   = 0.0;
         for (const auto& ev : events) {
-            Double_t t     = ev.first;
-            Double_t delta = ev.second;
-            // Hold the old value up to this time
-            grTimes.push_back(t);
-            grPops.push_back(cumPop);
-            // Then jump to new value
-            cumPop += delta;
-            grTimes.push_back(t);
-            grPops.push_back(cumPop);
+            // Clip plotting to tMax
+            const Double_t t = ev.first;
+            if (t > tMax) break;
+
+            // Hold the population just before event time
+            grTimes.push_back(t); grPops.push_back(cumPop);
+            cumPop += ev.second;
+
+            // Jump to new value at event time (step)
+            grTimes.push_back(t); grPops.push_back(cumPop);
+            yMax = std::max(yMax, cumPop);
         }
 
-        // Population snapshots: last grPops value at grTimes <= query time
-        Double_t popHalfBeam = 0.0;
-        Double_t popAtBeam   = 0.0;
-        Double_t survivingPop = 0.0;
-        for (std::size_t k = 0; k < grTimes.size(); ++k) {
-            if (grTimes[k] <= tHalfBeam) popHalfBeam  = grPops[k];
-            if (grTimes[k] <= tBeam)     popAtBeam     = grPops[k];
-            if (grTimes[k] <= tEnd)      survivingPop  = grPops[k];
-        }
-
-        // Write to text file
-        {
-            std::ostringstream row;
-            row << std::left  << std::setw(16) << species
-                << std::right << std::setw(20) << std::fixed << std::setprecision(4)
-                << popHalfBeam
-                << std::right << std::setw(20) << popAtBeam
-                << std::right << std::setw(19) << survivingPop << "\n";
-            printBoth(row.str());
-        }
-
-        // Determine y-axis range
-        Double_t yMax = 0.0;
-        for (Double_t p : grPops) { if (p > yMax) yMax = p; }
+        // Extend the graph to the axis edge (tMax) with the last population value
+        grTimes.push_back(tMax);
+        grPops.push_back(cumPop);
         if (yMax <= 0.0) yMax = 1.0;
         Double_t yPad = 1.3 * yMax;
-
-        // Skip plotting if plotAll is false and surviving population is zero
-        if (!plotAll && survivingPop <= 0.0) continue;
 
         // Create TGraph
         Int_t nPts = static_cast<Int_t>(grTimes.size());
@@ -464,12 +504,10 @@ void analyzeAct(const char* filePath,
         gPop->SetLineColor(kRed + 1);
         gPop->SetLineWidth(2);
 
-        // Canvas
-        std::string canvName = "cPop_" + species;
-        TCanvas* cPop = new TCanvas(canvName.c_str(), graphTitle.c_str(), 800, 600);
-        cPop->SetLeftMargin(0.13);
-        cPop->SetRightMargin(0.05);
-        cPop->SetBottomMargin(0.12);
+        // Reuse the shared canvas
+        cPop->cd();
+        cPop->Clear();
+        cPop->SetTitle(graphTitle.c_str());
 
         // Draw graph with axis frame
         gPop->Draw("AL");
@@ -501,12 +539,6 @@ void analyzeAct(const char* filePath,
         // Legend for dashed lines
         TLegend* leg = new TLegend();
         leg->AddEntry(gPop,  "Population", "l");
-        // leg->AddEntry(lBeam, ("Beam end (t = " + std::to_string(tBeam).substr(0,6)
-        //                        + " " + timeUnit + ")").c_str(), "l");
-        // if (lEnd) {
-        //     leg->AddEntry(lEnd, ("Cool end (t = " + std::to_string(tEnd).substr(0,6)
-        //                           + " " + timeUnit + ")").c_str(), "l");
-        // }
         leg->AddEntry(lBeam, "Beam end", "l");
         if (lEnd) {
             leg->AddEntry(lEnd, "Cool end", "l");
@@ -525,13 +557,15 @@ void analyzeAct(const char* filePath,
         cPop->SaveAs(outPng.c_str());
         std::cout << "Saved: " << outPng << "\n";
 
-        // Cleanup per-iteration heap objects
+        // Cleanup per-iteration heap objects. Clear the pad first so it holds
+        // no dangling pointers to the objects deleted below.
+        cPop->Clear();
         delete gPop;
         delete lBeam;
         if (lEnd) delete lEnd;
         delete leg;
-        delete cPop;
     }
+    delete cPop;
 
     // Close text file and ROOT file
     {
