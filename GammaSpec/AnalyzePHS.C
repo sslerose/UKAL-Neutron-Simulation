@@ -132,26 +132,43 @@
 /// on a processed PHS and reports the absolute efficiency of each
 ///
 /// Function call:
-///   analyzePhoto("Total_PHS_1.00us.root", {{0.6,0.7}, {0.85,0.9}})
+///   analyzePhoto("Total_PHS_1.00us.root", {{0.6,0.7}, {0.85,0.9}}, "Total_GammaEnergy.root")
 ///
 /// Required arguments:
 ///   phsPath   - path to a processed PHS .root file saved by analyzePHS or
 ///               analyzePHSTotal
 ///   windows   - 2D array of {low, high} energy-window pairs in MeV
 ///
+/// Optional argument:
+///   gammaPath - path to the matching emitted-gamma energy .root file saved by
+///               analyzePHS or analyzePHSTotal; when given, the absolute
+///               efficiency of each peak is computed (default = none)
+///
 /// Outputs:
-///   <stem>_Photopeak_<mean>keV.png - peak spectrum with its fit
-///   <stem>_Photopeaks.csv          - one summary row per fitted window
+///   <stem>_Photopeak_<mean>keV.png - peak spectrum with its fit (and efficiency
+///                                    in the legend when gammaPath is given)
+///   <stem>_Photopeaks.csv          - one summary row per fitted window; when
+///                                    gammaPath is given, also the integration
+///                                    range, fit area, emitted gamma weight, and
+///                                    efficiency (fraction, error, and percent)
+///   Terminal                       - per-peak and summary efficiency table when
+///                                    gammaPath is given
 ///
 /// Algorithm:
 ///   The input is verified to be a processed PHS by the presence of the "hPHS"
-///   key, and the efficiency denominator is read from its stored "nEvents"
-///   parameter. For each window, the highest-content bin between its bounds
-///   seeds a Gaussian fit restricted to that same window. The fitted mean and
-///   sigma then define a +/-2 sigma integration region; its counts divided by
-///   nEvents give the absolute photopeak efficiency as a percentage. Each peak
-///   is plotted over its window widened by 10% of the window width per side.
-///   Windows that are malformed, inverted, or empty are skipped with a warning.
+///   key. For each window, the highest-content bin between its bounds seeds a
+///   Gaussian fit restricted to that same window. The fitted mean and sigma
+///   then define a +/-2 sigma integration region, whose PHS counts are reported.
+///   Each peak is plotted over its window widened by 10% of the window width
+///   per side. Windows that are malformed, inverted, or empty are skipped with
+///   a warning.
+///
+///   When gammaPath is given, the absolute efficiency of each peak is the full
+///   area of its fitted Gaussian divided by the emitted-gamma weight (read from
+///   the "hGammaE" key) within the same +/-2 sigma region, as in getEffCurve.
+///   Its error comes from the fit amplitude and sigma errors added in
+///   quadrature. A window with a non-positive fit area or emitted weight is
+///   reported without an efficiency.
 //
 
 #include "TFile.h"
@@ -278,12 +295,17 @@ void printFuncs()
 "on a processed PHS and reports the absolute efficiency of each\n"
 "\n"
 "Function call:\n"
-"  analyzePhoto(\"path/to/file.root\", {{E_1i, E_1f}, {E_2i, E_2f}})\n"
+"  analyzePhoto(\"path/to/file.root\", {{E_1i, E_1f}, {E_2i, E_2f}}, \"path/to/gamma.root\")\n"
 "\n"
 "Required arguments:\n"
 "  phsPath   - path to a processed PHS .root file saved by analyzePHS or\n"
 "              analyzePHSTotal\n"
 "  windows   - 2D array of {low, high} energy-window pairs in MeV\n"
+"\n"
+"Optional argument:\n"
+"  gammaPath - path to the matching emitted-gamma energy .root file saved by\n"
+"              analyzePHS or analyzePHSTotal; when given, the absolute\n"
+"              efficiency of each peak is computed (default = none)\n"
 "\n"
 << std::endl;
 }
@@ -403,6 +425,25 @@ TH1D* getPHSFromFile(TFile* f)
     hPHS->SetDirectory(nullptr);
 
     return hPHS;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Retrieve an emitted-gamma energy spectrum from an already-open ROOT file
+//------------------------------------------------------------------------//
+TH1D* getGammaFromFile(TFile* f)
+{
+    if (!f) return nullptr;
+
+    TH1* hStored = dynamic_cast<TH1*>(f->Get("hGammaE"));
+    if (!hStored) return nullptr;
+
+    TH1D* hGammaE = dynamic_cast<TH1D*>(hStored->Clone("hGammaE_loaded"));
+    if (!hGammaE) return nullptr;
+    hGammaE->SetDirectory(nullptr);
+
+    return hGammaE;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -1085,8 +1126,10 @@ std::vector<PhotoResult> processPhoto(TH1D* hPHS, const std::vector<std::vector<
 //------------------------------------------------------------------------//
 // Photopeak analysis over user-supplied energy windows
 //------------------------------------------------------------------------//
-void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
+void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows, const char* gammaPath = "")
 {
+    const bool doEff = gammaPath && gammaPath[0] != '\0';
+
     if (windows.empty()) {
         std::cerr << "Error: no energy windows supplied\n";
         return;
@@ -1122,9 +1165,36 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
 
     f->Close();
 
+
+    //========================================================================//
+    // Load emitted-gamma spectrum for efficiency (if supplied)
+    //========================================================================//
+
+    TH1D* hGammaE = nullptr;
+    if (doEff) {
+        TFile* fGamma = TFile::Open(gammaPath, "READ");
+        if (!fGamma || fGamma->IsZombie()) {
+            std::cerr << "Error: cannot open \"" << gammaPath << "\"\n";
+            delete hPHS;
+            return;
+        }
+
+        hGammaE = getGammaFromFile(fGamma);
+        fGamma->Close();
+
+        if (!hGammaE) {
+            std::cerr << "Error: \"" << gammaPath << "\" is not an emitted-gamma "
+                      << "spectrum file (no \"hGammaE\" key). Produce one with "
+                      << "analyzePHS or analyzePHSTotal.\n";
+            delete hPHS;
+            return;
+        }
+    }
+
     std::cout << "\n=== Photopeak Analysis ===\n"
-              << "  Spectrum : " << stem.Data() << "\n"
-              << "  Windows  : " << windows.size() << "\n"
+              << "  Spectrum : " << stem.Data() << "\n";
+    if (doEff) std::cout << "  Gamma    : " << gammaPath << "\n";
+    std::cout << "  Windows  : " << windows.size() << "\n"
               << "==========================\n";
 
     gStyle->SetOptStat(0);
@@ -1132,7 +1202,12 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
     // Summary CSV
     TString csvName = stem + "_Photopeaks.csv";
     std::ofstream csv(csvName.Data());
-    csv << "WindowLow_MeV,WindowHigh_MeV,Mean_MeV,Sigma_MeV,ppCount\n";
+    csv << "WindowLow_MeV,WindowHigh_MeV,Mean_MeV,Sigma_MeV,ppCount";
+    if (doEff) {
+        csv << ",PeakLow_MeV,PeakHigh_MeV,FitArea,GammaWeightSum,"
+               "Efficiency,EfficiencyErr,Efficiency_percent";
+    }
+    csv << "\n";
 
 
     //========================================================================//
@@ -1141,15 +1216,79 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
 
     std::vector<PhotoResult> results = processPhoto(hPHS, windows);
 
-    for (const PhotoResult& res : results) {
+    // Efficiency of one window; ok stays false when it could not be determined
+    struct EffResult {
+        bool   ok       = false;
+        double area     = 0.0;
+        double gammaSum = 0.0;
+        double eff      = 0.0;
+        double effErr   = 0.0;
+    };
+    std::vector<EffResult> effResults(results.size());
+
+    const double kSqrt2Pi = std::sqrt(2.0 * TMath::Pi());
+    const double binWidth = hPHS->GetBinWidth(1);
+
+    for (size_t w = 0; w < results.size(); ++w) {
+        const PhotoResult& res = results[w];
         if (!res.valid) continue;
+
+        EffResult& er = effResults[w];
+
+
+        //========================================================================//
+        // Absolute efficiency: fitted peak area / emitted gamma weight
+        //========================================================================//
+
+        if (doEff) {
+            // Full area of the fitted Gaussian, in counts
+            double amp    = res.fit->GetParameter(0);
+            double area   = amp * res.sigma * kSqrt2Pi / binWidth;
+            double relErr = 0.0;    // Parameter errors added in quadrature
+            if (amp > 0.0 && res.sigma > 0.0) {
+                double rA = res.fit->GetParError(0) / amp;
+                double rS = res.fit->GetParError(2) / res.sigma;
+                relErr = std::sqrt(rA * rA + rS * rS);
+            }
+
+            // Weights of the emitted gammas whose energy falls within the peak
+            double gammaSum = hGammaE->Integral(hGammaE->FindBin(res.peakLow),
+                                                hGammaE->FindBin(res.peakHigh));
+
+            if (gammaSum <= 0.0 || area <= 0.0) {
+                std::cerr << "Warning: no efficiency for window [" << res.windowLow << ", "
+                          << res.windowHigh << "] MeV (fit area = " << area
+                          << ", emitted weight = " << gammaSum << ")\n";
+            } else {
+                er.ok       = true;
+                er.area     = area;
+                er.gammaSum = gammaSum;
+                er.eff      = area / gammaSum;
+                er.effErr   = er.eff * relErr;
+
+                std::cout << "  Peak " << res.mean * 1000.0 << " keV : area = " << area
+                          << ", emitted = " << gammaSum
+                          << ", efficiency = " << er.eff * 100.0
+                          << " +/- " << er.effErr * 100.0 << " %\n";
+            }
+        }
 
         csv << std::fixed << std::setprecision(6)
             << res.windowLow  << ","
             << res.windowHigh << ","
             << res.mean       << ","
             << res.sigma      << ","
-            << res.peakCounts << "\n";
+            << res.peakCounts;
+        if (doEff) {
+            csv << "," << res.peakLow << "," << res.peakHigh;
+            if (er.ok) {
+                csv << "," << er.area << "," << er.gammaSum << ","
+                    << er.eff << "," << er.effErr << "," << er.eff * 100.0;
+            } else {
+                csv << ",,,,,";     // Efficiency columns left empty
+            }
+        }
+        csv << "\n";
 
 
         //========================================================================//
@@ -1174,11 +1313,15 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
         res.fit->Draw("SAME");
 
         // Fit results, upper right
-        TLegend* leg = new TLegend(0.60, 0.74, 0.88, 0.88);
+        TLegend* leg = new TLegend(0.58, er.ok ? 0.70 : 0.74, 0.88, 0.88);
         leg->SetFillStyle(0);
         leg->SetBorderSize(0);
         leg->AddEntry(hPeak, TString::Format("Mean = %.2f keV", res.mean * 1000.0), "");
         leg->AddEntry(hPeak, TString::Format("Sigma = %.2f keV", res.sigma * 1000.0), "");
+        if (er.ok) {
+            leg->AddEntry(hPeak, TString::Format("Efficiency = %.3g #pm %.2g %%",
+                                                 er.eff * 100.0, er.effErr * 100.0), "");
+        }
         leg->Draw();
 
         TString pngName = stem + TString::Format("_Photopeak_%.1fkeV.png", res.mean * 1000.0);
@@ -1191,10 +1334,47 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows)
     }
 
     csv.close();
+
+
+    //========================================================================//
+    // Efficiency summary
+    //========================================================================//
+
+    if (doEff) {
+        std::cout << "\n=== Photopeak Efficiency ===\n"
+                  << std::setw(12) << "Mean (keV)"
+                  << std::setw(14) << "Fit area"
+                  << std::setw(16) << "Emitted weight"
+                  << "  Efficiency (%)\n";
+        for (size_t w = 0; w < results.size(); ++w) {
+            const PhotoResult& res = results[w];
+            const EffResult&   er  = effResults[w];
+            if (!res.valid) continue;
+
+            std::cout << std::fixed << std::setprecision(2)
+                      << std::setw(12) << res.mean * 1000.0;
+            if (er.ok) {
+                std::cout << std::setprecision(1)
+                          << std::setw(14) << er.area
+                          << std::setw(16) << er.gammaSum
+                          << std::setprecision(4)
+                          << "  " << er.eff * 100.0 << " +/- " << er.effErr * 100.0 << "\n";
+            } else {
+                std::cout << std::setw(14) << "n/a"
+                          << std::setw(16) << "n/a"
+                          << "  n/a\n";
+            }
+        }
+        std::cout << "============================\n";
+        std::cout.unsetf(std::ios::floatfield);
+        std::cout << std::setprecision(6);
+    }
+
     std::cout << "\nSaved data : " << csvName.Data() << "\n\n";
 
     // Cleanup
     delete hPHS;
+    delete hGammaE;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -1315,13 +1495,7 @@ void getEffCurve(const char* dir, const char* windowCsv)
         TH1D* hGammaE = nullptr;
 
         if (fPHS && !fPHS->IsZombie()) hPHS = getPHSFromFile(fPHS);
-        if (fGamma && !fGamma->IsZombie()) {
-            TH1* hStored = dynamic_cast<TH1*>(fGamma->Get("hGammaE"));
-            if (hStored) {
-                hGammaE = dynamic_cast<TH1D*>(hStored->Clone("hGammaE_loaded"));
-                if (hGammaE) hGammaE->SetDirectory(nullptr);
-            }
-        }
+        if (fGamma && !fGamma->IsZombie()) hGammaE = getGammaFromFile(fGamma);
         if (fPHS) fPHS->Close();
         if (fGamma) fGamma->Close();
 
