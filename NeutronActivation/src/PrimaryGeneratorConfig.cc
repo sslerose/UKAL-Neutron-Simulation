@@ -79,8 +79,7 @@ PrimaryGeneratorConfig::PrimaryGeneratorConfig()
     fGunEnergy(50.0*keV),        // Default gun energy
     fTimeExposure(1.0),          // seconds
     fOutputFileName(""),
-    fHasOutputFileName(false),
-    fMutex(G4MUTEX_INITIALIZER)
+    fHasOutputFileName(false)
 {
 }
 
