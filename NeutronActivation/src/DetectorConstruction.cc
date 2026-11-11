@@ -921,8 +921,8 @@ void DetectorConstruction::SetAbsorberRadius(G4double radius)
 
   fAbsorberRadius = radius;
 
-  fAbsorberTube->SetOuterRadius(fAbsorberRadius);
   fAbsorberAssemblyTube->SetOuterRadius(fAbsorberRadius);
+  fAbsorberTube->SetOuterRadius(fAbsorberRadius);
   fGoldFrontTube->SetOuterRadius(fAbsorberRadius);
   fGoldBackTube->SetOuterRadius(fAbsorberRadius);
 
@@ -952,6 +952,9 @@ void DetectorConstruction::SetAbsorberDistance(G4double distance)
   }
 
   fAbsorberAssemblyDistance = distance;
+
+  fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + (fAbsorberThickness + 2 * fGoldThickness) / 2;
+  fAbsorberAssemblyPV->SetTranslation(G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement));
 
   G4cout << "New absorber distance (to gold face): " << G4BestUnit(fAbsorberAssemblyDistance, "Length") << G4endl;
 
@@ -1043,14 +1046,22 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  Thickness: " << G4BestUnit(kDetectorLength, "Length") << G4endl;
   G4cout << "  Detector face distance from origin: " << G4BestUnit(fDetectorDistance, "Length") << G4endl;
   G4cout << "  Material: " << fLi6GlassMaterial->GetName() << G4endl;
-  G4cout << "  Density: " << fLi6GlassMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
+  G4cout << "    Density: " << fLi6GlassMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
 
-  G4cout << "\nAbsorber (Cylindrical):" << G4endl;
-  G4cout << "  Material: " << fAbsorberMaterial->GetName() << G4endl;
-  G4cout << "  Thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
-  G4cout << "  Radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
-  G4cout << "  Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
-  G4cout << "  Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
+  G4cout << "\nAbsorber Assembly (Cylindrical):" << G4endl;
+  G4cout << "  Distance from origin: " << G4BestUnit(fAbsorberAssemblyDistance, "Length") << G4endl;
+  G4cout << "  General parameters:" << G4endl;
+  G4cout << "    Radius: " << G4BestUnit(fAbsorberAssemblyTube->GetOuterRadius(), "Length") << G4endl;
+  G4cout << "    Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
+  G4cout << "  Internal absorber:" << G4endl;
+  G4cout << "    Material: " << fAbsorberMaterial->GetName() << G4endl;
+  G4cout << "      Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
+  G4cout << "    Thickness: " << G4BestUnit(fAbsorberTube->GetZHalfLength() * 2, "Length") << G4endl;
+  G4cout << "  Gold foils:" << G4endl;
+  G4cout << "    Material: " << fGoldMaterial->GetName() << G4endl;
+  G4cout << "      Density: " << fGoldMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
+  G4cout << "    Thickness: " << G4BestUnit(fGoldFrontTube->GetZHalfLength() * 2, "Length") << G4endl;
+  G4cout << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

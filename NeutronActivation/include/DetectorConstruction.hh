@@ -215,7 +215,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //========================================================================//
 
     // Gold foil
-    G4double fGoldThickness = 0.03 * mm;  // Thickness of gold foil
+    G4double fGoldThickness = 0.01 * mm;  // Thickness of gold foil
 
     // Absorber
     G4double fAbsorberThickness = 0.03 * mm;  // Thickness of absorber

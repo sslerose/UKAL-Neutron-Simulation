@@ -63,14 +63,6 @@ Run::Run(DetectorConstruction* det) : fDetector(det) {}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void Run::SetPrimary(G4ParticleDefinition* particle, G4double energy)
-{
-  fParticle = particle;
-  fEkin = energy;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
 void Run::CountProcesses(const G4VProcess* process)
 {
   if (process == nullptr) return;
@@ -215,10 +207,6 @@ void Run::Merge(const G4Run* run)
 {
   const Run* localRun = static_cast<const Run*>(run);
 
-  // primary particle info
-  fParticle = localRun->fParticle;
-  fEkin = localRun->fEkin;
-
   // map: processes count
   for (const auto& procCounter : localRun->fProcCounter) {
     G4String procName = procCounter.first;
@@ -244,20 +232,16 @@ void Run::EndOfRun()
   G4int prec = 5, wid = prec + 2;
   G4int dfprec = G4cout.precision(prec);
 
-  // run condition
-  G4Material* material = fDetector->GetAbsorberMaterial();
-
-  G4String Particle = fParticle->GetParticleName();
-  G4cout << "\n The run is " << numberOfEvent << " " << Particle << "(s) through "
-         << G4BestUnit(fDetector->GetAbsorberThickness(), "Length") << " of " << material->GetName()
-         << " (density: " << G4BestUnit(material->GetDensity(), "Volumic Mass") << ")" << G4endl;
-
   if (numberOfEvent == 0) {
     G4cout.precision(dfprec);
     return;
   }
 
-  // frequency of processes
+
+  //========================================================================//
+  // Print process calls frequency and generated particle statistics
+  //========================================================================//
+
   G4cout << G4endl;
   G4cout << "============================================================" << G4endl;
   G4cout << "                  Process calls frequency                   " << G4endl;
@@ -268,9 +252,6 @@ void Run::EndOfRun()
     G4int count = it->second;
     G4cout << "\t" << procName << "= " << count;
   }
-  G4cout << G4endl;
-
-  // particles count
   G4cout << G4endl;
   G4cout << "============================================================" << G4endl;
   G4cout << "      List of generated particles (with meanLife != 0)      " << G4endl;
@@ -293,26 +274,30 @@ void Run::EndOfRun()
       G4cout << "\tmean life = " << G4BestUnit(meanLife, "Time") << G4endl;
     }
   }
-
-  // histogram Id for populations
   G4cout << G4endl;
+
+
+  //========================================================================//
+  // Print histogram IDs for generated populations
+  //========================================================================//
+
   G4cout << "============================================================" << G4endl;
   G4cout << "          Histogram IDs for generated populations           " << G4endl;
   G4cout << "============================================================" << G4endl;
 
-  // Update the histogram titles according to the ion map
-  // and print new titles
+  // Update the histogram titles according to the ion map and print new titles
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
   for (const auto& ionMapElement : fgIonMap) {
     G4String ionName = ionMapElement.first;
     G4int h1Id = ionMapElement.second;
-    // print new titles
+
+    // Print new titles
     G4cout << " " << std::setw(20) << ionName << "  id = " << std::setw(3) << h1Id << G4endl;
 
-    // update histogram ids
+    // Update histogram ids
     if (!analysisManager->GetH1(h1Id)) continue;
-    // Skip inactive histograms, this is not necessary
-    // but it  makes the code safe wrt modifications in future
+
+    // Skip inactive histograms
     G4String title = analysisManager->GetH1Title(h1Id);
     title = ionName + title;
     analysisManager->SetH1Title(h1Id, title);
@@ -326,14 +311,14 @@ void Run::EndOfRun()
     analysisManager->ScaleH1(ih, fac);
   }
 
-  // remove all contents in fProcCounter, fCount
+  // Remove all contents in fProcCounter, fCount
   fProcCounter.clear();
   // fParticleDataMap.clear();
   fParticleDataMap1.clear();
   // fParticleDataMap2.clear();
   fgIonMap.clear();
 
-  // restore default format
+  // Restore default format
   G4cout.precision(dfprec);
 }
 

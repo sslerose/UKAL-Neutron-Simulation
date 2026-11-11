@@ -255,7 +255,6 @@ void PrimaryGeneratorConfig::PrintParameters() const
 {
   G4AutoLock lock(&fMutex);
   
-  G4cout << G4endl;
   G4cout << "============================================================" << G4endl;
   G4cout << "              Primary Generator Configuration               " << G4endl;
   G4cout << "============================================================" << G4endl;

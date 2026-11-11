@@ -87,7 +87,6 @@ void ActionInitialization::BuildForMaster() const
   
   // Print initial generator configuration from master thread
   G4cout << "\n*** Primary Generator initialized on master thread ***" << G4endl;
-  PrimaryGeneratorConfig::Instance()->PrintParameters();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

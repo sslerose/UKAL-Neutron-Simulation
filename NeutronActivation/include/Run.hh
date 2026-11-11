@@ -40,7 +40,6 @@
 #include <map>
 
 class DetectorConstruction;
-class G4ParticleDefinition;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -51,7 +50,6 @@ class Run : public G4Run
     ~Run() override = default;
 
   public:
-    void SetPrimary(G4ParticleDefinition* particle, G4double energy);
     void CountProcesses(const G4VProcess* process);
     void ParticleCount(G4String, G4double, G4double);
 
@@ -87,8 +85,6 @@ class Run : public G4Run
     static G4int fgIonId;
 
     DetectorConstruction* fDetector = nullptr;
-    G4ParticleDefinition* fParticle = nullptr;
-    G4double fEkin = 0.;
 
     std::map<G4String, G4int> fProcCounter;
     std::map<G4String, ParticleData> fParticleDataMap1;

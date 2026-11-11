@@ -98,16 +98,15 @@ void RunAction::BeginOfRunAction(const G4Run* run)
   if (isMaster) {
     G4Random::showEngineStatus();
     Run::InitProgressTracking(run->GetNumberOfEventToBeProcessed());
+
+    PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
+
+    fDetector->PrintParameters();
+
+    config->PrintParameters();
   }
 
-  // Store primary particle info in Run object
-  if (fPrimary) {
-    G4ParticleDefinition* particle = fPrimary->GetParticleGun()->GetParticleDefinition();
-    G4double energy = fPrimary->GetParticleGun()->GetParticleEnergy();
-    fRun->SetPrimary(particle, energy);
-  }
 
-  
   //========================================================================//
   // Set up analysis manager and open output file
   //========================================================================//
@@ -126,21 +125,18 @@ void RunAction::BeginOfRunAction(const G4Run* run)
 //------------------------------------------------------------------------//
 void RunAction::EndOfRunAction(const G4Run*)
 {
-  // Print neutron transport statistics (from Hadr04 Run class)
+  // Print neutron transport statistics
   if (isMaster) fRun->EndOfRun();
 
-  // Print detector analysis statistics
+
+  //========================================================================//
+  // Print neutron source statistics and save histograms and ntuple
+  //========================================================================//
+
   auto analysisManager = G4AnalysisManager::Instance();
   if (analysisManager->IsActive()) {
 
     if (isMaster) {
-      PrimaryGeneratorConfig* config = PrimaryGeneratorConfig::Instance();
-
-      fDetector->PrintParameters();
-
-      config->PrintParameters();
-      
-      G4cout << G4endl;
       G4cout << "============================================================" << G4endl;
       G4cout << "                Generated Neutron Statistics                " << G4endl;
       G4cout << "============================================================" << G4endl;
@@ -159,8 +155,8 @@ void RunAction::EndOfRunAction(const G4Run*)
         G4cout << "  Angle:  mean = " << analysisManager->GetH1(1)->mean()
               << " deg, RMS = " << analysisManager->GetH1(1)->rms() << " deg" << G4endl;
       }
+      G4cout << G4endl;
     }
-    
 
     // Save histograms and ntuple
     analysisManager->Write();
