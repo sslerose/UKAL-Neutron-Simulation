@@ -54,7 +54,7 @@
 #include "G4SystemOfUnits.hh"
 
 //========================================================================//
-// Detector assembly constants
+// Detector assembly dimensions
 //========================================================================//
 
 // World volume
@@ -85,6 +85,29 @@ constexpr G4double kDetectorRadius = 5.08 * cm / 2;
 
 // Photomultiplier tube (PMT) volume
 constexpr G4double kPMTThickness = 0.25 * cm;
+
+
+//========================================================================//
+// Detector assembly placements
+//========================================================================//
+
+// Aluminum can volume
+constexpr G4double kCanCapOffset = -(kInnerAssemblyLength - kCanCapThickness) / 2;
+
+// Silicon rubber volume
+constexpr G4double kRubberOffset = kCanCapOffset + (kCanCapThickness + kRubberThickness) / 2;
+
+// Teflon volume
+constexpr G4double kTeflonOffset = kRubberOffset + (kRubberThickness + kTeflonThickness) / 2;
+
+// Detector glass volume
+constexpr G4double kDetectorOffset = kTeflonOffset + (kTeflonThickness + kDetectorLength) / 2;
+
+// Photomultiplier tube (PMT) volume
+constexpr G4double kPMTOffset = kDetectorOffset + (kDetectorLength + kPMTThickness) / 2;
+
+// Detector assembly volume
+constexpr G4double kAssemblyLength = kHolderLength + kInnerAssemblyLength / 2;
 
 
 //========================================================================//

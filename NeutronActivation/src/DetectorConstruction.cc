@@ -74,31 +74,9 @@
 
 DetectorConstruction::DetectorConstruction()
 {
-  //========================================================================//
-  // Math for detector assembly dimensions and placement
-  //========================================================================//
-
-  // Aluminum can volume
-  fCanCapOffset = -(kInnerAssemblyLength - kCanCapThickness) / 2;
-
-  // Silicon rubber volume
-  fRubberOffset = fCanCapOffset + (kCanCapThickness + kRubberThickness) / 2;
-
-  // Teflon volume
-  fTeflonOffset = fRubberOffset + (kRubberThickness + kTeflonThickness) / 2;
-
-  // Detector glass volume
-  fDetectorOffset = fTeflonOffset + (kTeflonThickness + kDetectorLength) / 2;
-
-  // Photomultiplier tube (PMT) volume
-  fPMTOffset = fDetectorOffset + (kDetectorLength + kPMTThickness) / 2;
-
-  // Detector assembly volume
-  fAssemblyLength = kHolderLength + kInnerAssemblyLength / 2;
-
   // Detector placement
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Dist. from target to assembly face
-  fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
+  fAssemblyDisplacement = fAssemblyDistance + kAssemblyLength / 2;
   fRotationMatrix = new G4RotationMatrix();
   fRotationMatrix->rotateY(fAssemblyAngle); // Rotation of assembly around Y axis
   
@@ -282,7 +260,7 @@ void DetectorConstruction::DefineMaterials()
   fGoldMaterial = nist->FindOrBuildMaterial("G4_Au");
 
   // Absorber material
-  fAbsorberMaterial = nist->FindOrBuildMaterial("G4_Au");  // To be replaced with actual absorber material by macro
+  fAbsorberMaterial = nist->FindOrBuildMaterial("G4_Au");  // Replaceable by macro
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -311,13 +289,13 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
                                  fWorldMaterial, 
                                  "World");
 
-  fWorldPV = new G4PVPlacement(0,                      // no rotation
-                               G4ThreeVector(),        // at (0,0,0)
-                               fWorldLV,               // logical volume
-                               "World",                // name
-                               0,                      // mother volume
-                               false,                  // no boolean operation
-                               0);                     // copy number
+  fWorldPV = new G4PVPlacement(0,
+                               G4ThreeVector(),
+                               fWorldLV,
+                               "World",
+                               0,
+                               false,
+                               0);
 
 
   //========================================================================//
@@ -329,9 +307,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   // Position mother detector assembly volume within world volume
   // Front face at fAssemblyDistance from origin along z-axis
   G4Box* assemblyBox = new G4Box("AssemblyMother",
-                                 kHolderOuterRadius,    // Half-width of detector assembly
                                  kHolderOuterRadius,
-                                 fAssemblyLength / 2);  // Half-length of detector assembly
+                                 kHolderOuterRadius,
+                                 kAssemblyLength / 2);
 
   fAssemblyLV = new G4LogicalVolume(assemblyBox,
                                     fWorldMaterial,
@@ -341,199 +319,199 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   G4double assemblyX = -fAssemblyDisplacement * std::sin(fAssemblyAngle);
   G4double assemblyZ = fAssemblyDisplacement * std::cos(fAssemblyAngle);
 
-  fAssemblyPV = new G4PVPlacement(fRotationMatrix,                // rotation matrix
-                                  G4ThreeVector(assemblyX, 0, assemblyZ), // position at assemblyZ
-                                  fAssemblyLV,                    // logical volume
-                                  "AssemblyMother",               // name
-                                  fWorldLV,                       // mother volume
-                                  false,                          // no boolean operation
-                                  0);                             // copy number
+  fAssemblyPV = new G4PVPlacement(fRotationMatrix,
+                                  G4ThreeVector(assemblyX, 0, assemblyZ),
+                                  fAssemblyLV,
+                                  "AssemblyMother",
+                                  fWorldLV,
+                                  false,
+                                  0);
 
 
   // Create detector holder (mu metal)
   // Position holder inside assembly volume
   // Front end at fHolderDistance from assembly volume front face
   fHolderTube = new G4Tubs("Holder",
-                            kHolderInnerRadius,       // inner radius
-                            kHolderOuterRadius,       // outer radius
-                            kHolderLength / 2,        // half length
-                            0. * deg,                 // initial spanning angle
-                            360. * deg);              // final spanning angle
+                            kHolderInnerRadius,
+                            kHolderOuterRadius,
+                            kHolderLength / 2,
+                            0. * deg,
+                            360. * deg);
 
   fHolderLV = new G4LogicalVolume(fHolderTube,
                                   fMuMetalMaterial,
                                   "Holder");
 
-  fHolderPV = new G4PVPlacement(0,                          // no rotation
-                                G4ThreeVector(0, 0, kHolderOffset), // position
-                                fHolderLV,                  // logical volume
-                                "Holder",                   // name
-                                fAssemblyLV,                // mother volume
-                                false,                      // no boolean operation
-                                0);                         // copy number
+  fHolderPV = new G4PVPlacement(0,
+                                G4ThreeVector(0, 0, kHolderOffset),
+                                fHolderLV,
+                                "Holder",
+                                fAssemblyLV,
+                                false,
+                                0);
 
 
   // Create inner assembly volume (for positioning can and detector inside holder)
   // Position inside assembly volume
   // Front end flush with assembly volume front face
   G4Tubs* innerAssemblyTube = new G4Tubs("InnerAssembly",
-                                         0.0,                       // inner radius (solid cylinder)
-                                         kHolderInnerRadius,        // outer radius
-                                         kInnerAssemblyLength / 2,  // half length
-                                         0. * deg,                  // initial spanning angle
-                                         360. * deg);               // final spanning angle
+                                         0.0,
+                                         kHolderInnerRadius,
+                                         kInnerAssemblyLength / 2,
+                                         0. * deg,
+                                         360. * deg);
 
   fInnerAssemblyLV = new G4LogicalVolume(innerAssemblyTube,
                                          fWorldMaterial,
                                          "InnerAssembly");
 
-  G4double innerAssemblyZ = -(fAssemblyLength - kInnerAssemblyLength) / 2;  // position at front of assembly volume
+  G4double innerAssemblyZ = -(kAssemblyLength - kInnerAssemblyLength) / 2;  // position at front of assembly volume
 
-  fInnerAssemblyPV = new G4PVPlacement(0,                                    // no rotation
-                                       G4ThreeVector(0, 0, innerAssemblyZ),  // position
-                                       fInnerAssemblyLV,                     // logical volume
-                                       "InnerAssembly",                      // name
-                                       fAssemblyLV,                          // mother volume
-                                       false,                                // no boolean operation
-                                       0);                                   // copy number
+  fInnerAssemblyPV = new G4PVPlacement(0,
+                                       G4ThreeVector(0, 0, innerAssemblyZ),
+                                       fInnerAssemblyLV,
+                                       "InnerAssembly",
+                                       fAssemblyLV,
+                                       false,
+                                       0);
 
 
   // Create aluminum can
   // Position can inside inner assembly volume
   // Front end flush with inner assembly volume front face
   fCanTube = new G4Tubs("Can",
-                        kCanInnerRadius,          // inner radius
-                        kHolderInnerRadius,       // outer radius
-                        kInnerAssemblyLength / 2, // half length
-                        0. * deg,                 // initial spanning angle
-                        360. * deg);              // final spanning angle
+                        kCanInnerRadius,
+                        kHolderInnerRadius,
+                        kInnerAssemblyLength / 2,
+                        0. * deg,
+                        360. * deg);
                               
   fCanLV = new G4LogicalVolume(fCanTube,
                                fAluminumAlloyMaterial,
                                "Can");
 
-  fCanPV = new G4PVPlacement(0,                 // no rotation
-                             G4ThreeVector(),   // position
-                             fCanLV,            // logical volume
-                             "Can",             // name
-                             fInnerAssemblyLV,  // mother volume
-                             false,             // no boolean operation
-                             0);                // copy number
+  fCanPV = new G4PVPlacement(0,
+                             G4ThreeVector(),
+                             fCanLV,
+                             "Can",
+                             fInnerAssemblyLV,
+                             false,
+                             0);
 
 
   // Create can end cap
   // Position inside can volume
   // Cap-off front end of can (flush with inner assembly volume front face)
   fCanCapTube = new G4Tubs("CanCap",
-                            0.0,                  // inner radius (solid cylinder)
-                            kCanInnerRadius,      // outer radius
-                            kCanCapThickness / 2, // half length
-                            0. * deg,             // initial spanning angle
-                            360. * deg);          // final spanning angle
+                            0.0,
+                            kCanInnerRadius,
+                            kCanCapThickness / 2,
+                            0. * deg,
+                            360. * deg);
 
   fCanCapLV = new G4LogicalVolume(fCanCapTube,
                                   fAluminumAlloyMaterial,
                                   "CanCap");
 
-  fCanCapPV = new G4PVPlacement(0,                                  // no rotation
-                                G4ThreeVector(0, 0, fCanCapOffset), // position
-                                fCanCapLV,                          // logical volume
-                                "CanCap",                           // name
-                                fInnerAssemblyLV,                   // mother volume
-                                false,                              // no boolean operation
-                                0);                                 // copy number
+  fCanCapPV = new G4PVPlacement(0,
+                                G4ThreeVector(0, 0, kCanCapOffset),
+                                fCanCapLV,
+                                "CanCap",
+                                fInnerAssemblyLV,
+                                false,
+                                0);
   
 
   // Create silicon rubber layer
   // Position rubber inside aluminum can
   // Front end flush with inside face of can cap
   fRubberTube = new G4Tubs("Rubber",
-                            0.0,                  // inner radius (solid cylinder)
-                            kCanInnerRadius,      // outer radius
-                            kRubberThickness / 2, // half length
-                            0. * deg,             // initial spanning angle
-                            360. * deg);          // final spanning angle
+                            0.0,
+                            kCanInnerRadius,
+                            kRubberThickness / 2,
+                            0. * deg,
+                            360. * deg);
 
   fRubberLV = new G4LogicalVolume(fRubberTube,
                                   fSiliconRubberMaterial,
                                   "Rubber");
 
-  fRubberPV = new G4PVPlacement(0,                                  // no rotation
-                                G4ThreeVector(0, 0, fRubberOffset), // position
-                                fRubberLV,                          // logical volume
-                                "Rubber",                           // name
-                                fInnerAssemblyLV,                   // mother volume
-                                false,                              // no boolean operation
-                                0);                                 // copy number
+  fRubberPV = new G4PVPlacement(0,
+                                G4ThreeVector(0, 0, kRubberOffset),
+                                fRubberLV,
+                                "Rubber",
+                                fInnerAssemblyLV,
+                                false,
+                                0);
 
 
   // Create Teflon layer
   // Position Teflon inside aluminum can
   // Front end flush with inside face of rubber layer
   fTeflonTube = new G4Tubs("Teflon",
-                            0.0,                  // inner radius (solid cylinder)
-                            kDetectorRadius,      // outer radius
-                            kTeflonThickness / 2, // half length
-                            0. * deg,             // initial spanning angle
-                            360. * deg);          // final spanning angle
+                            0.0,
+                            kDetectorRadius,
+                            kTeflonThickness / 2,
+                            0. * deg,
+                            360. * deg);
 
   fTeflonLV = new G4LogicalVolume(fTeflonTube,
                                   fTeflonMaterial,
                                   "Teflon");
 
-  fTeflonPV = new G4PVPlacement(0,                                  // no rotation
-                                G4ThreeVector(0, 0, fTeflonOffset), // position
-                                fTeflonLV,                          // logical volume
-                                "Teflon",                           // name
-                                fInnerAssemblyLV,                   // mother volume
-                                false,                              // no boolean operation
-                                0);                                 // copy number
+  fTeflonPV = new G4PVPlacement(0,
+                                G4ThreeVector(0, 0, kTeflonOffset),
+                                fTeflonLV,
+                                "Teflon",
+                                fInnerAssemblyLV,
+                                false,
+                                0);
 
 
   // Create Li-6 glass detector
   // Position detector inside aluminum can
   // Front end flush with inside face of Teflon layer
   fDetectorTube = new G4Tubs("Detector",
-                              0.0,                  // inner radius (solid cylinder)
-                              kDetectorRadius,      // outer radius
-                              kDetectorLength / 2,  // half length
-                              0. * deg,             // initial spanning angle
-                              360. * deg);          // final spanning angle
+                              0.0,
+                              kDetectorRadius,
+                              kDetectorLength / 2,
+                              0. * deg,
+                              360. * deg);
 
   fDetectorLV = new G4LogicalVolume(fDetectorTube,
                                     fLi6GlassMaterial,
                                     "Detector");
   
-  fDetectorPV = new G4PVPlacement(0,                                    // no rotation
-                                  G4ThreeVector(0, 0, fDetectorOffset), // position
-                                  fDetectorLV,                          // logical volume
-                                  "Detector",                           // name
-                                  fInnerAssemblyLV,                     // mother volume
-                                  false,                                // no boolean operation
-                                  0);                                   // copy number
+  fDetectorPV = new G4PVPlacement(0,
+                                  G4ThreeVector(0, 0, kDetectorOffset),
+                                  fDetectorLV,
+                                  "Detector",
+                                  fInnerAssemblyLV,
+                                  false,
+                                  0);
 
 
   // Create photomultiplier tube (PMT) layer
   // Position PMT inside aluminum can
   // Front end flush with inside face of detector
   fPMTTube = new G4Tubs("PMT",
-                        0.0,                // inner radius (solid cylinder)
-                        kDetectorRadius,    // outer radius
-                        kPMTThickness / 2,  // half length
-                        0. * deg,           // initial spanning angle
-                        360. * deg);        // final spanning angle
+                        0.0,
+                        kDetectorRadius,
+                        kPMTThickness / 2,
+                        0. * deg,
+                        360. * deg);
 
   fPMTLV = new G4LogicalVolume(fPMTTube,
                                fBorosilicateMaterial,
                                "PMT");
 
-  fPMTPV = new G4PVPlacement(0,                               // no rotation
-                             G4ThreeVector(0, 0, fPMTOffset), // position
-                             fPMTLV,                          // logical volume
-                             "PMT",                           // name
-                             fInnerAssemblyLV,                // mother volume
-                             false,                           // no boolean operation
-                             0);                              // copy number
+  fPMTPV = new G4PVPlacement(0,
+                             G4ThreeVector(0, 0, kPMTOffset),
+                             fPMTLV,
+                             "PMT",
+                             fInnerAssemblyLV,
+                             false,
+                             0);
 
 
 
@@ -543,29 +521,30 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
 
   // Absorber assembly volume
 
-  G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness; // Length of absorber assembly (absorber + 2 gold foils)
+  // Length of absorber assembly (absorber + 2 gold foils)
+  G4double absorberAssemblyThickness = fAbsorberThickness + 2 * fGoldThickness;
 
-  // Absorber assembly placement
-  fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + absorberAssemblyThickness / 2; // Displacement of absorber assembly from origin (front face at fAbsorberAssemblyDistance)
+  // Displacement of absorber assembly from origin (front face at fAbsorberAssemblyDistance)
+  fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + absorberAssemblyThickness / 2;
 
   fAbsorberAssemblyTube = new G4Tubs("AbsorberAssembly",
-                                            0.0,                            // inner radius (solid cylinder)
-                                            fAbsorberRadius,                // outer radius
-                                            absorberAssemblyThickness / 2,  // half length
-                                            fStartAngle,                    // initial spanning angle
-                                            fEndAngle);                     // final spanning angle
+                                            0.0,
+                                            fAbsorberRadius,
+                                            absorberAssemblyThickness / 2,
+                                            fStartAngle,
+                                            fEndAngle);
 
   fAbsorberAssemblyLV = new G4LogicalVolume(fAbsorberAssemblyTube,
                                             fWorldMaterial,
                                             "AbsorberAssembly");
 
-  fAbsorberAssemblyPV = new G4PVPlacement(0,                                      // no rotation
-                                          G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement), // position
-                                          fAbsorberAssemblyLV,                    // logical volume
-                                          "AbsorberAssembly",                     // name
-                                          fWorldLV,                               // mother volume
-                                          false,                                  // no boolean operation
-                                          0);                                     // copy number
+  fAbsorberAssemblyPV = new G4PVPlacement(0,
+                                          G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement),
+                                          fAbsorberAssemblyLV,
+                                          "AbsorberAssembly",
+                                          fWorldLV,
+                                          false,
+                                          0);
 
 
   // Gold foil (front)
@@ -573,67 +552,67 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   G4double goldDisplacement = (fAbsorberThickness + fGoldThickness) / 2; // Displacement of gold foil from absorber assembly center
 
   fGoldFrontTube = new G4Tubs("GoldFrontFoil",
-                              0.0,                // inner radius (solid cylinder)
-                              fAbsorberRadius,    // outer radius
-                              fGoldThickness / 2, // half length
-                              fStartAngle,        // initial spanning angle
-                              fEndAngle);         // final spanning angle
+                              0.0,
+                              fAbsorberRadius,
+                              fGoldThickness / 2,
+                              fStartAngle,
+                              fEndAngle);
 
   fGoldFrontLV = new G4LogicalVolume(fGoldFrontTube,
                                      fGoldMaterial,
                                      "GoldFrontFoil");
 
-  fGoldFrontPV = new G4PVPlacement(0,                                       // no rotation
-                                   G4ThreeVector(0, 0, -goldDisplacement),  // position
-                                   fGoldFrontLV,                            // logical volume
-                                   "GoldFrontFoil",                         // name
-                                   fAbsorberAssemblyLV,                     // mother volume
-                                   false,                                   // no boolean operation
-                                   0);                                      // copy number
+  fGoldFrontPV = new G4PVPlacement(0,
+                                   G4ThreeVector(0, 0, -goldDisplacement),
+                                   fGoldFrontLV,
+                                   "GoldFrontFoil",
+                                   fAbsorberAssemblyLV,
+                                   false,
+                                   0);
 
 
   // Gold foil (back)
 
   fGoldBackTube = new G4Tubs("GoldBackFoil",
-                             0.0,                 // inner radius (solid cylinder)
-                             fAbsorberRadius,     // outer radius
-                             fGoldThickness / 2,  // half length
-                             fStartAngle,         // initial spanning angle
-                             fEndAngle);          // final spanning angle
+                             0.0,
+                             fAbsorberRadius,
+                             fGoldThickness / 2,
+                             fStartAngle,
+                             fEndAngle);
 
   fGoldBackLV = new G4LogicalVolume(fGoldBackTube,
                                     fGoldMaterial,
                                     "GoldBackFoil");
 
-  fGoldBackPV = new G4PVPlacement(0,                                      // no rotation
-                                  G4ThreeVector(0, 0, goldDisplacement), // position
-                                  fGoldBackLV,                            // logical volume
-                                  "GoldBackFoil",                         // name
-                                  fAbsorberAssemblyLV,                    // mother volume
-                                  false,                                  // no boolean operation
-                                  0);                                     // copy number
+  fGoldBackPV = new G4PVPlacement(0,
+                                  G4ThreeVector(0, 0, goldDisplacement),
+                                  fGoldBackLV,
+                                  "GoldBackFoil",
+                                  fAbsorberAssemblyLV,
+                                  false,
+                                  0);
 
 
   // Absorber
 
   fAbsorberTube = new G4Tubs("Absorber",
-                             0.0,                    // inner radius (solid cylinder)
-                             fAbsorberRadius,        // outer radius
-                             fAbsorberThickness / 2, // half length
-                             fStartAngle,            // initial spanning angle
-                             fEndAngle);             // final spanning angle
+                             0.0,
+                             fAbsorberRadius,
+                             fAbsorberThickness / 2,
+                             fStartAngle,
+                             fEndAngle);
 
   fAbsorberLV = new G4LogicalVolume(fAbsorberTube,
                                     fAbsorberMaterial,
                                     "Absorber");
 
-  fAbsorberPV = new G4PVPlacement(0,                      // no rotation
-                                  G4ThreeVector(0, 0, 0), // position
-                                  fAbsorberLV,            // logical volume
-                                  "Absorber",             // name
-                                  fAbsorberAssemblyLV,    // mother volume
-                                  false,                  // no boolean operation
-                                  0);                     // copy number
+  fAbsorberPV = new G4PVPlacement(0,
+                                  G4ThreeVector(0, 0, 0),
+                                  fAbsorberLV,
+                                  "Absorber",
+                                  fAbsorberAssemblyLV,
+                                  false,
+                                  0);
 
   // Return the root volume
   return fWorldPV;
@@ -689,7 +668,7 @@ void DetectorConstruction::SetDetectorDistance(G4double value)
   fDetectorDistance = value;  // Distance from target to detector face
   fAssemblyDistance = fDetectorDistance - kCanCapThickness - kRubberThickness - kTeflonThickness;  // Distance from target to assembly face
 
-  fAssemblyDisplacement = fAssemblyDistance + fAssemblyLength / 2;
+  fAssemblyDisplacement = fAssemblyDistance + kAssemblyLength / 2;
   G4double assemblyX = -fAssemblyDisplacement * fRotationMatrix->xz();
   G4double assemblyZ = fAssemblyDisplacement * fRotationMatrix->xx();
 
@@ -706,7 +685,6 @@ void DetectorConstruction::SetDetectorDistance(G4double value)
   G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
   if (visManager) {
     // Visualization is active - trigger an update
-    // G4UImanager::GetUIpointer()->ApplyCommand("/run/reinitializeGeometry");
     G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
   }
 }
@@ -745,7 +723,6 @@ void DetectorConstruction::SetDetectorAngle(G4double value)
   G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
   if (visManager) {
     // Visualization is active - trigger an update
-    // G4UImanager::GetUIpointer()->ApplyCommand("/run/reinitializeGeometry");
     G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
   }
 }
@@ -780,6 +757,7 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
     return;
   }
 
+  // Update world and assembly materials
   fWorldLV->SetMaterial(material);
   fAssemblyLV->SetMaterial(material);
   fInnerAssemblyLV->SetMaterial(material);
@@ -790,7 +768,8 @@ void DetectorConstruction::SetWorldMaterial(G4String value)
 
   G4cout << "New world material: " << fWorldMaterial->GetName() << G4endl;
 
-  // Notify run manager of geometry modification
+  // Notify run manager of physics modification
+  G4RunManager::GetRunManager()->GeometryHasBeenModified();
   G4RunManager::GetRunManager()->PhysicsHasBeenModified();
 
   // Update visualization (if it is active)
@@ -840,13 +819,14 @@ void DetectorConstruction::SetAbsorberMaterial(G4String value)
   }
 
   if (material) {
-    // Update absorber material
+    // Update primary absorber material
     fAbsorberLV->SetMaterial(material);
     fAbsorberMaterial = material;
 
-    G4cout << "New absorber material: " << fAbsorberMaterial->GetName() << G4endl;
+    G4cout << "New primary absorber material: " << fAbsorberMaterial->GetName() << G4endl;
 
-    // Notify run manager of geometry modification
+    // Notify run manager of physics modification
+    G4RunManager::GetRunManager()->GeometryHasBeenModified();
     G4RunManager::GetRunManager()->PhysicsHasBeenModified();
 
     // Update visualization if it is active
@@ -875,6 +855,7 @@ void DetectorConstruction::SetAbsorberThickness(G4double thickness)
     return;
   }
 
+  // Update primary absorber thickness
   fAbsorberThickness = thickness;
 
   // Calculate new absorber assembly parameters
@@ -893,8 +874,9 @@ void DetectorConstruction::SetAbsorberThickness(G4double thickness)
   fGoldFrontPV->SetTranslation(G4ThreeVector(0, 0, -goldDisplacement));
   fGoldBackPV->SetTranslation(G4ThreeVector(0, 0, goldDisplacement));
 
-  G4cout << "New absorber thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
+  G4cout << "New primary absorber thickness: " << G4BestUnit(fAbsorberThickness, "Length") << G4endl;
 
+  // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -919,8 +901,10 @@ void DetectorConstruction::SetAbsorberRadius(G4double radius)
     return;
   }
 
+  // Update absorber radius
   fAbsorberRadius = radius;
 
+  // Update absorber and absorber assembly dimensions
   fAbsorberAssemblyTube->SetOuterRadius(fAbsorberRadius);
   fAbsorberTube->SetOuterRadius(fAbsorberRadius);
   fGoldFrontTube->SetOuterRadius(fAbsorberRadius);
@@ -928,6 +912,7 @@ void DetectorConstruction::SetAbsorberRadius(G4double radius)
 
   G4cout << "New absorber radius: " << G4BestUnit(fAbsorberRadius, "Length") << G4endl;
 
+  // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -951,71 +936,16 @@ void DetectorConstruction::SetAbsorberDistance(G4double distance)
     return;
   }
 
+  // Update absorber distance
   fAbsorberAssemblyDistance = distance;
 
+  // Update absorber assembly displacement
   fAbsorberAssemblyDisplacement = fAbsorberAssemblyDistance + (fAbsorberThickness + 2 * fGoldThickness) / 2;
   fAbsorberAssemblyPV->SetTranslation(G4ThreeVector(0, 0, fAbsorberAssemblyDisplacement));
 
   G4cout << "New absorber distance (to gold face): " << G4BestUnit(fAbsorberAssemblyDistance, "Length") << G4endl;
 
-  G4RunManager::GetRunManager()->GeometryHasBeenModified();
-
-  // Update visualization if it is active
-  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
-  if (visManager) {
-    // Visualization is active - trigger an update
-    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
-  }
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-//------------------------------------------------------------------------//
-// Set absorber spanning angle (phi) start
-//------------------------------------------------------------------------//
-void DetectorConstruction::SetSpanningStartAngle(G4double startAngle)
-{
-  // Check that geometry has been constructed
-  if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber not yet constructed." << G4endl;
-    return;
-  }
-
-  fStartAngle = startAngle;
-
-  fAbsorberTube->SetStartPhiAngle(fStartAngle);
-  fGoldFrontTube->SetStartPhiAngle(fStartAngle);
-  fGoldBackTube->SetStartPhiAngle(fStartAngle);
-
-  G4RunManager::GetRunManager()->GeometryHasBeenModified();
-
-  // Update visualization if it is active
-  G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
-  if (visManager) {
-    // Visualization is active - trigger an update
-    G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
-  }
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-//------------------------------------------------------------------------//
-// Set absorber assembly spanning angle (phi) end
-//------------------------------------------------------------------------//
-void DetectorConstruction::SetSpanningEndAngle(G4double endAngle)
-{
-  // Check that geometry has been constructed
-  if (!fAbsorberAssemblyPV) {
-    G4cerr << "Absorber not yet constructed." << G4endl;
-    return;
-  }
-
-  fEndAngle = endAngle;
-
-  fAbsorberTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fGoldFrontTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-  fGoldBackTube->SetDeltaPhiAngle(fEndAngle - fStartAngle);
-
+  // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 
   // Update visualization if it is active
@@ -1053,7 +983,7 @@ void DetectorConstruction::PrintParameters()
   G4cout << "  General parameters:" << G4endl;
   G4cout << "    Radius: " << G4BestUnit(fAbsorberAssemblyTube->GetOuterRadius(), "Length") << G4endl;
   G4cout << "    Spanning angle (phi): " << fStartAngle / degree << " to " << fEndAngle / degree << " degrees" << G4endl;
-  G4cout << "  Internal absorber:" << G4endl;
+  G4cout << "  Primary absorber:" << G4endl;
   G4cout << "    Material: " << fAbsorberMaterial->GetName() << G4endl;
   G4cout << "      Density: " << fAbsorberMaterial->GetDensity()/(g/cm3) << " g/cm3" << G4endl;
   G4cout << "    Thickness: " << G4BestUnit(fAbsorberTube->GetZHalfLength() * 2, "Length") << G4endl;

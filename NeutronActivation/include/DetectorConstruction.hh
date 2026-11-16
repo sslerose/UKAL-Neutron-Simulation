@@ -78,8 +78,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     // Setters
     void SetDetectorDistance(G4double);
     void SetDetectorAngle(G4double);
-    void SetSpanningStartAngle(G4double);
-    void SetSpanningEndAngle(G4double);
     void SetWorldMaterial(G4String);
     void SetAbsorberMaterial(G4String);
     void SetAbsorberThickness(G4double);

@@ -191,26 +191,6 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* Det) : fDetector(Det)
   fAbsorberRadiusCmd->SetUnitCategory("Length");
   fAbsorberRadiusCmd->SetDefaultUnit("mm");
   fAbsorberRadiusCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
-  // Initial spanning angle of absorber
-  //========================================================================//
-  fSpanningStartAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberSpanningStartAngle", this);
-  fSpanningStartAngleCmd->SetGuidance("Set starting spanning angle of absorber");
-  fSpanningStartAngleCmd->SetParameterName("SpanningStartAngle", false);
-  fSpanningStartAngleCmd->SetUnitCategory("Angle");
-  fSpanningEndAngleCmd->SetDefaultUnit("deg");
-  fSpanningStartAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-
-  //========================================================================//
-  // Final spanning angle of absorber
-  //========================================================================//
-  fSpanningEndAngleCmd = new G4UIcmdWithADoubleAndUnit("/neutronAct/abs/setAbsorberSpanningEndAngle", this);
-  fSpanningEndAngleCmd->SetGuidance("Set ending spanning angle of absorber");
-  fSpanningEndAngleCmd->SetParameterName("SpanningEndAngle", false);
-  fSpanningEndAngleCmd->SetUnitCategory("Angle");
-  fSpanningEndAngleCmd->SetDefaultUnit("deg");
-  fSpanningEndAngleCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -222,8 +202,6 @@ DetectorMessenger::~DetectorMessenger()
   delete fAbsorDir;
   delete fDetectorDistanceCmd;
   delete fDetectorAngleCmd;
-  delete fSpanningStartAngleCmd;
-  delete fSpanningEndAngleCmd;
   delete fWorldMaterialCmd;
   delete fAbsorberMaterialCmd;
   delete fAbsorberThicknessCmd;
@@ -245,14 +223,6 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
 
   if (command == fDetectorAngleCmd) {
     fDetector->SetDetectorAngle(fDetectorAngleCmd->GetNewDoubleValue(newValue));
-  }
-
-  if (command == fSpanningStartAngleCmd) {
-    fDetector->SetSpanningStartAngle(fSpanningStartAngleCmd->GetNewDoubleValue(newValue));
-  }
-
-  if (command == fSpanningEndAngleCmd) {
-    fDetector->SetSpanningEndAngle(fSpanningEndAngleCmd->GetNewDoubleValue(newValue));
   }
 
   if (command == fWorldMaterialCmd) {

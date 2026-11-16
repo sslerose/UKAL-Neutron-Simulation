@@ -80,8 +80,6 @@ class DetectorMessenger : public G4UImessenger
     G4UIcmdWithoutParameter*    fPrintCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fDetectorDistanceCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fDetectorAngleCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit*  fSpanningStartAngleCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit*  fSpanningEndAngleCmd = nullptr;
     G4UIcommand*                fAbsorberMaterialCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fAbsorberThicknessCmd = nullptr;
     G4UIcmdWithADoubleAndUnit*  fAbsorberDistanceCmd = nullptr;
