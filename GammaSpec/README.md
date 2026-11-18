@@ -10,15 +10,16 @@ The gamma spectroscopy simulation, GammaSpec, tracks radioisotope decays of gene
   - [Interactive Mode](#interactive-mode)
   - [Batch Mode](#batch-mode)
   - [Available Commands](#available-commands)
-- [Test Run, Decay Modes, and Analysis](#test-run-decay-modes-and-analysis)
+- [Test Run and Decay Modes](#test-run-and-decay-modes)
   - [Cobalt-60 Test Run](#cobalt-60-test-run)
   - [Analogue Decays](#analogue-decays)
   - [Variance Reduction Decays](#variance-reduction-vr-decays)
-  - [Analysis](#analysis)
 - [Multi-Isotope Simulation](#multi-isotope-simulation)
   - [Creating a Run Info File](#creating-a-run-info-file)
   - [Running the Simulation](#running-the-simulation)
-  - [Analysis](#analysis-1)
+- [Analysis](#analysis)
+  - [Single-Isotope Analysis](#single-isotope-analysis)
+  - [Multi-Isotope Analysis](#multi-isotope-analysis)
 
 ## Building the Project
 
@@ -140,7 +141,7 @@ The following are commands available to use in an interactive session or as part
 `/gammaSpec/abs/setAbsorberSpanningEndAngle` : set the final spanning angle of the absorber and gold foils.
 
 
-## Test Run, Decay Modes, and Analysis
+## Test Run and Decay Modes
 
 Before making your own simulation macros, you should test that the simulation is working and understand the sampling methods of the simulated radioactive decays.
 
@@ -162,37 +163,6 @@ The decay bias profile defines the time windows in which radioactive decays are 
 
 The source time profile describes the time history of the source during the simulation (i.e., when primaries are generated relative to $t=0$) and is convolved with the decay rate. For GammaSpec, the radioisotope population has already been determined and is present at $t=0$, so the source time profile may be omitted.
 
-### Analysis
-
-*The analysis functions detailed below will not work if multiple windows are defined in the decay bias profile. This capability may be added in the future.*
-
-With either ROOT data file from the test runs, we can calculate a pulse-height spectrum (PHS) from energy deposits in the HPGe detector and a gamma energy spectrum for those gammas that leave the absorber. We can also perform photopeak analysis on our PHS over energy ranges of interest.
-
-From the `Data_Test` directory, open ROOT with
-```bash
-root -l
-```
-then load the analysis file and run the print functions command to see the available functions, their purpose, and their arguments:
-```bash
-.L AnalyzePHS.C
-printFuncs()
-```
-The test runs simulate a single radioisotope, so the PHS and gamma spectrum of the analogue run, for example, are calculated by
-```bash
-analyzePHS("co60_an.root", 1.0, 2000, 2.0, true)
-```
-where the collection window, number of bins, and max energy arguments have been chosen for convenience. As an output, the function creates PNGs of the PHS and gamma spectrum with accompanying CSV files for bin-center and counts data, CSV files of a sample of the emitted particle and decay product populations, and a ROOT file of the resulting PHS (via the `true` parameter).
-
-With the ROOT file of the PHS, you may also view the graph interactively by
-```bash
-viewPHS("co60_an_PHS_1.00us.root")
-```
-By clicking and dragging along energy axis, select a region around the first obvious peak near 1.2 MeV, and define an energy region that just captures the peak, say 1.168 - 1.178 MeV. Do the same for the second peak near 1.3 MeV, and define a region like 1.328 - 1.337 MeV. We can then perform photopeak analysis on both peaks simultaneously as
-```bash
-analyzePhoto("co60_an_PHS_1.00us.root", {{1.168, 1.178}, {1.328, 1.337}})
-```
-
-If we perform the same analysis on the VR data, the resulting spectra will depend on the time window defined in `measures.data`. With a half-life of approximately 5.25 years, a (reasonable) VR measurement of Cobalt-60 will generally require a bias window on the order of several hours. The PHS will look very similar, as there is no implementation of background noise.
 
 
 ## Multi-Isotope Simulation
@@ -253,11 +223,50 @@ Each ion is defined by its atomic number and mass number, and the saved ROOT fil
 **NOTE 2:** If you changed the geometry or material properties of the absorber in your preceeding NeutronActivation simulation, make the same changes in your GammaSpec macro using the available commands.
 
 
-### Analysis
+
+## Analysis
+
+### Single-Isotope Analysis
+
+*The analysis functions detailed below will not work if multiple windows are defined in the decay bias profile. This capability may be added in the future.*
+
+With either ROOT data file from the test runs, we can calculate a pulse-height spectrum (PHS) from energy deposits in the HPGe detector and a gamma energy spectrum for those gammas that leave the absorber. We can also perform photopeak analysis on our PHS over energy ranges of interest.
+
+From the `Data_Test` directory, open ROOT with
+```bash
+root -l
+```
+then load the analysis file and run the print functions command to see the available functions, their purpose, and their arguments:
+```bash
+.L AnalyzePHS.C
+printFuncs()
+```
+The test runs simulate a single radioisotope, so the PHS and gamma spectrum of the analogue run, for example, are calculated by
+```bash
+analyzePHS("co60_an.root", 1.0, 2000, 2.0, true)
+```
+where the collection window, number of bins, and max energy arguments have been chosen for convenience. As an output, the function creates PNGs and ROOT files of the pulse-height and gamma spectra. Optionally, one may create CSV files of the PHS bin-center and counts data and a sample of the emitted particle population via the `saveCSV` parameter (set to `true` above, default to `false`).
+
+With the ROOT file of the PHS, you may also view the graph interactively using
+```bash
+viewPHS("co60_an_PHS_1.00us.root")
+```
+By clicking and dragging along the energy axis, select a region around the first obvious peak near 1.2 MeV, and define an energy region that just captures the peak (say, 1.168 - 1.178 MeV). Do the same for the second peak near 1.3 MeV (perhaps 1.328 - 1.337 MeV). We can then perform photopeak analysis on both peaks simultaneously as
+```bash
+analyzePhoto("co60_an_PHS_1.00us.root", {{1.168, 1.178}, {1.328, 1.337}})
+```
+
+If we perform the same analysis on the VR data, the resulting spectra will depend on the time window defined in `measures.data`. With a half-life of approximately 5.25 years, a (reasonable) VR measurement of Cobalt-60 will generally require a bias window on the order of several hours. The PHS will look very similar, as there is no implementation of background noise.
+
+### Efficiency Curves
+
+Absolute efficiency curves for a particular detector configuration can be calculated using a set of standard sources
+
+### Multi-Isotope Analysis
 
 Any individual ROOT file can be analyzed in the same manner as the test run, or the set of ROOT files can be analyzed as a whole by
 ```bash
-analyzePHSTotal("runs.info", "/path/to/rootfiles", "outStem", window_us, nBins, eMax, toPlot, saveRoot)
+analyzePHSTotal("runs.info", "/path/to/rootfiles", "outStem", window_us, nBins, eMax, toPlot, saveCSV)
 ```
 with all but the info file path being optional arguments:
 - rootDir   - directory containing the .root files (default = ".")
@@ -265,7 +274,7 @@ with all but the info file path being optional arguments:
 - window_us - charge-collection window length in microseconds (default = 1.0)
 - nBins     - number of histogram bins (default = 3000)
 - eMax      - histogram upper edge in MeV (default = 3.0)
-- toPlot    - also save the per-run PHS and gamma plots/CSVs (default = false)
-- saveRoot  - also save the combined PHS as its own .root file (default = false)
+- toPlot    - also save the per-run PHS and gamma plots (default = false)
+- saveCSV  - also save the combined PHS bin-center and counts data to a CSV file (default = false)
 
 Photopeak analysis can be further conducted on the combined PHS if one saves the resulting ROOT file (`saveRoot=true`).

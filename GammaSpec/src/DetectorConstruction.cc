@@ -271,7 +271,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructVolumes()
   fRotationMatrix[1] = new G4RotationMatrix();
   fRotationMatrix[1]->rotateY(180 * deg); // Back HPGe - rotated 180 degrees about Y axis
 
-  G4double fHPGEDisplacement[2] = {fHPGEDistance[0] + kMotherHalfLength, fHPGEDistance[1] + kMotherHalfLength}; // Distance from origin to detector center
+  // Distance from origin to detector center
+  fHPGEDisplacement[0] = fHPGEDistance[0] + kMotherHalfLength;
+  fHPGEDisplacement[1] = fHPGEDistance[1] + kMotherHalfLength;
 
   fHPGEMotherPV[0] = new G4PVPlacement(fRotationMatrix[0],
                                         G4ThreeVector(0, 0, -fHPGEDisplacement[0]),
@@ -689,15 +691,18 @@ void DetectorConstruction::SetDetectorDistance(G4int detectorID, G4double value)
   fHPGEDistance[detectorID] = value;                                  // Distance from origin to detector face
   fHPGEDisplacement[detectorID] = fHPGEDistance[detectorID] + kMotherHalfLength;  // Distance from origin to detector center
 
+  G4double assemblyX = fHPGEDisplacement[detectorID] * -(fRotationMatrix[detectorID]->xz());
+  G4double assemblyZ = fHPGEDisplacement[detectorID] * -(fRotationMatrix[detectorID]->xx());
+
   // Update assembly position
   if (detectorID == 0) {
-    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(0, 0, -fHPGEDisplacement[detectorID]));
+    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, -assemblyZ));
   }
   else if (detectorID == 1) {
-    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(0, 0, fHPGEDisplacement[detectorID]));
+    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, assemblyZ));
   }
 
-  G4cout << "New HPGe detector distance to source: " << G4BestUnit(fHPGEDistance[detectorID], "Length") << G4endl;
+  G4cout << "New HPGe detector distance to origin: " << G4BestUnit(fHPGEDistance[detectorID], "Length") << G4endl;
 
   // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
@@ -724,18 +729,21 @@ void DetectorConstruction::SetDetectorAngle(G4int detectorID, G4double value)
   }
 
   // Create rotation matrix and calculate new assembly position
-  fHPGEAngle[detectorID] = -value;  // Negative to restore right-handed rotation about y-axis
+  fHPGEAngle[detectorID] = value;
   *fRotationMatrix[detectorID] = G4RotationMatrix();
   fRotationMatrix[detectorID]->rotateY(fHPGEAngle[detectorID]);
+  
+  G4RotationMatrix* rotationMatrix = new G4RotationMatrix();
+  rotationMatrix->rotateY(-fHPGEAngle[detectorID]);
 
-  G4double assemblyX = -fHPGEDisplacement[0] * fRotationMatrix[detectorID]->xz();
-  G4double assemblyZ = fHPGEDisplacement[1] * fRotationMatrix[detectorID]->xx();
+  G4double assemblyX = fHPGEDisplacement[detectorID] * -(fRotationMatrix[detectorID]->xz());
+  G4double assemblyZ = fHPGEDisplacement[detectorID] * -(fRotationMatrix[detectorID]->xx());
 
   // Update assembly rotation and position
-  fHPGEMotherPV[detectorID]->SetRotation(fRotationMatrix[detectorID]);
+  fHPGEMotherPV[detectorID]->SetRotation(rotationMatrix);
   fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, assemblyZ));
 
-  G4cout << "New angle for detector " << detectorID << ": " << -fHPGEAngle[detectorID] / degree << " degrees" << G4endl;
+  G4cout << "New angle for detector " << detectorID << ": " << fHPGEAngle[detectorID] / degree << " degrees" << G4endl;
 
   // Notify run manager of geometry modification
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
@@ -744,7 +752,6 @@ void DetectorConstruction::SetDetectorAngle(G4int detectorID, G4double value)
   G4VVisManager* visManager = G4VVisManager::GetConcreteInstance();
   if (visManager) {
     // Visualization is active - trigger an update
-    // G4UImanager::GetUIpointer()->ApplyCommand("/run/reinitializeGeometry");
     G4UImanager::GetUIpointer()->ApplyCommand("/vis/scene/notifyHandlers");
   }
 }

@@ -1,5 +1,9 @@
-# Macro file for visualization initialization
-# This is run automatically when starting in interactive mode
+# --------------------------------------------
+# Interactive visualization macro
+#
+# This is run automatically when starting in
+# interactive mode
+# --------------------------------------------
 
 # Initialize kernel
 /run/initialize
@@ -14,17 +18,24 @@
 # Draw geometry
 /vis/drawVolume
 
-# Set camera position (view from side)
-/vis/viewer/set/viewpointVector 1 1 1
-/vis/viewer/set/lightsVector -1 0 0
+# ============================================
+# CAMERA POSITIONING
+# ============================================
 
-# Set zoom and style
+/vis/viewer/set/viewpointVector 1 1 1
+
+# ============================================
+# LIGHTING AND RENDERING
+# ============================================
+
+/vis/viewer/set/lightsVector -1 0 0
 /vis/viewer/set/style surface
 /vis/viewer/set/auxiliaryEdge true
-/vis/viewer/set/lineSegmentsPerCircle 100
+/vis/viewer/set/lineSegmentsPerCircle 50
 
-# Draw coordinate axes (5 cm length)
-/vis/scene/add/axes 0 0 0 5 cm
+# ============================================
+# PARTICLE BEHAVIOR
+# ============================================
 
 # To draw particle trajectories (when you run events)
 /vis/scene/add/trajectories smooth
@@ -36,6 +47,15 @@
 # Draw hits at end of event
 /vis/scene/add/hits
 
+# To superimpose all of the events from a given run:
+/vis/scene/endOfEventAction accumulate
+
+# ============================================
+# SCENE ELEMENTS
+# ============================================
+
+# Draw coordinate axes (5 cm length)
+/vis/scene/add/axes 0 0 0 5 cm
 
 # Make the World box, mother volumes, and vacuums invisible
 /vis/geometry/set/visibility World 0 false
@@ -44,6 +64,9 @@
 /vis/geometry/set/visibility AbsorberAssembly 0 false
 /vis/geometry/set/visibility InnerStruct 0 false
 
+# ============================================
+# COLOR SCHEME
+# ============================================
 
 # Add color to volumes (depth, r, g, b, alpha)
 /vis/viewer/set/background white
@@ -65,10 +88,6 @@
 /vis/geometry/set/colour OuterDeadLayerCap 0 0.55 0.40 0.60 0.5
 /vis/geometry/set/colour InnerDeadLayer 0 0.55 0.40 0.60 0.5
 /vis/geometry/set/colour InnerDeadLayerCap 0 0.55 0.40 0.60 0.5
-
-
-# To superimpose all of the events from a given run:
-/vis/scene/endOfEventAction accumulate
 
 # Re-establish auto refreshing
 /vis/viewer/set/autoRefresh true

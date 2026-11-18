@@ -151,8 +151,11 @@
 ///                                    gammaPath is given, also the integration
 ///                                    range, fit area, emitted gamma weight, and
 ///                                    efficiency (fraction, error, and percent)
-///   Terminal                       - per-peak and summary efficiency table when
-///                                    gammaPath is given
+///   <stem>_Photopeaks.txt          - text report holding everything printed to the
+///                                    terminal: per-window fit results and, when
+///                                    gammaPath is given, per-peak and summary
+///                                    efficiency tables
+///   Terminal                       - same content as the text report
 ///
 /// Algorithm:
 ///   The input is verified to be a processed PHS by the presence of the "hPHS"
@@ -1012,16 +1015,32 @@ void viewPHS(const char* filePath, double window_us = 1.0, int nBins = 3000, dou
 //------------------------------------------------------------------------//
 struct PhotoResult {
     bool   valid = false;
-    std::unique_ptr<TF1> fit;           // Gaussian fit over the window
+    std::unique_ptr<TF1> fit;   // Gaussian fit over the window
     double windowLow  = 0.0;
     double windowHigh = 0.0;
-    double seed       = 0.0;            // Center of the highest bin in the window
+    double seed       = 0.0;    // Center of the highest bin in the window
     double mean       = 0.0;
     double sigma      = 0.0;
-    double peakLow    = 0.0;            // Integration range: mean +/- 2 sigma
+    double peakLow    = 0.0;    // Integration range: mean +/- 2 sigma
     double peakHigh   = 0.0;
-    double peakCounts = 0.0;            // PHS counts over the integration range
+    double peakCounts = 0.0;    // PHS counts over the integration range
 };
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//------------------------------------------------------------------------//
+// Write the fit summary of one photopeak window to a stream
+//------------------------------------------------------------------------//
+void printPhotoBlock(std::ostream& os, const PhotoResult& res)
+{
+    os << "\n=== Photopeak [" << res.windowLow << ", " << res.windowHigh << "] MeV ===\n"
+       << "  Seed energy  : " << res.seed  << " MeV\n"
+       << "  Mean         : " << res.mean  << " MeV\n"
+       << "  Sigma        : " << res.sigma << " MeV\n"
+       << "  Integration  : [" << res.peakLow << ", " << res.peakHigh << "] MeV (+/-2 sigma)\n"
+       << "  Peak counts  : " << res.peakCounts << "\n"
+       << "==========================================\n";
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -1097,14 +1116,6 @@ std::vector<PhotoResult> processPhoto(TH1D* hPHS, const std::vector<std::vector<
 
         double ppCount = hPHS->Integral(hPHS->FindBin(peakLow), hPHS->FindBin(peakHigh));
 
-        std::cout << "\n=== Photopeak [" << windowLow << ", " << windowHigh << "] MeV ===\n"
-                  << "  Seed energy  : " << photopeak << " MeV\n"
-                  << "  Mean         : " << mean      << " MeV\n"
-                  << "  Sigma        : " << sigma     << " MeV\n"
-                  << "  Integration  : [" << peakLow << ", " << peakHigh << "] MeV (+/-2 sigma)\n"
-                  << "  Peak counts  : " << ppCount   << "\n"
-                  << "==========================================\n";
-
         PhotoResult& res = results[w];
         res.valid      = true;
         res.fit        = std::move(peakFit);
@@ -1116,6 +1127,8 @@ std::vector<PhotoResult> processPhoto(TH1D* hPHS, const std::vector<std::vector<
         res.peakLow    = peakLow;
         res.peakHigh   = peakHigh;
         res.peakCounts = ppCount;
+
+        printPhotoBlock(std::cout, res);
     }
 
     return results;
@@ -1191,11 +1204,23 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows,
         }
     }
 
-    std::cout << "\n=== Photopeak Analysis ===\n"
-              << "  Spectrum : " << stem.Data() << "\n";
-    if (doEff) std::cout << "  Gamma    : " << gammaPath << "\n";
-    std::cout << "  Windows  : " << windows.size() << "\n"
-              << "==========================\n";
+    // Text report mirroring everything written to the terminal
+    TString txtName = stem + "_Photopeaks.txt";
+    std::ofstream txt(txtName.Data());
+    auto printBoth = [&txt](const std::string& s) {
+        std::cout << s;
+        txt << s;
+    };
+
+    {
+        std::ostringstream header;
+        header << "\n=== Photopeak Analysis ===\n"
+               << "  Spectrum : " << stem.Data() << "\n";
+        if (doEff) header << "  Gamma    : " << gammaPath << "\n";
+        header << "  Windows  : " << windows.size() << "\n"
+               << "==========================\n";
+        printBoth(header.str());
+    }
 
     gStyle->SetOptStat(0);
 
@@ -1215,6 +1240,11 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows,
     //========================================================================//
 
     std::vector<PhotoResult> results = processPhoto(hPHS, windows);
+
+    // processPhoto prints each window's fit block to the terminal; add it to the report
+    for (const PhotoResult& res : results) {
+        if (res.valid) printPhotoBlock(txt, res);
+    }
 
     // Efficiency of one window; ok stays false when it could not be determined
     struct EffResult {
@@ -1266,10 +1296,12 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows,
                 er.eff      = area / gammaSum;
                 er.effErr   = er.eff * relErr;
 
-                std::cout << "  Peak " << res.mean * 1000.0 << " keV : area = " << area
-                          << ", emitted = " << gammaSum
-                          << ", efficiency = " << er.eff * 100.0
-                          << " +/- " << er.effErr * 100.0 << " %\n";
+                std::ostringstream line;
+                line << "  Peak " << res.mean * 1000.0 << " keV : area = " << area
+                     << ", emitted = " << gammaSum
+                     << ", efficiency = " << er.eff * 100.0
+                     << " +/- " << er.effErr * 100.0 << " %\n";
+                printBoth(line.str());
             }
         }
 
@@ -1326,7 +1358,7 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows,
 
         TString pngName = stem + TString::Format("_Photopeak_%.1fkeV.png", res.mean * 1000.0);
         cPeak->SaveAs(pngName.Data());
-        std::cout << "Saved plot : " << pngName.Data() << "\n";
+        printBoth(std::string("Saved plot : ") + pngName.Data() + "\n");
 
         delete leg;
         delete cPeak;
@@ -1341,36 +1373,38 @@ void analyzePhoto(const char* phsPath, std::vector<std::vector<double>> windows,
     //========================================================================//
 
     if (doEff) {
-        std::cout << "\n=== Photopeak Efficiency ===\n"
-                  << std::setw(12) << "Mean (keV)"
-                  << std::setw(14) << "Fit area"
-                  << std::setw(16) << "Emitted weight"
-                  << "  Efficiency (%)\n";
+        std::ostringstream table;
+        table << "\n=== Photopeak Efficiency ===\n"
+              << std::setw(12) << "Mean (keV)"
+              << std::setw(14) << "Fit area"
+              << std::setw(16) << "Emitted weight"
+              << "  Efficiency (%)\n";
         for (size_t w = 0; w < results.size(); ++w) {
             const PhotoResult& res = results[w];
             const EffResult&   er  = effResults[w];
             if (!res.valid) continue;
 
-            std::cout << std::fixed << std::setprecision(2)
-                      << std::setw(12) << res.mean * 1000.0;
+            table << std::fixed << std::setprecision(2)
+                  << std::setw(12) << res.mean * 1000.0;
             if (er.ok) {
-                std::cout << std::setprecision(1)
-                          << std::setw(14) << er.area
-                          << std::setw(16) << er.gammaSum
-                          << std::setprecision(4)
-                          << "  " << er.eff * 100.0 << " +/- " << er.effErr * 100.0 << "\n";
+                table << std::setprecision(1)
+                      << std::setw(14) << er.area
+                      << std::setw(16) << er.gammaSum
+                      << std::setprecision(4)
+                      << "  " << er.eff * 100.0 << " +/- " << er.effErr * 100.0 << "\n";
             } else {
-                std::cout << std::setw(14) << "n/a"
-                          << std::setw(16) << "n/a"
-                          << "  n/a\n";
+                table << std::setw(14) << "n/a"
+                      << std::setw(16) << "n/a"
+                      << "  n/a\n";
             }
         }
-        std::cout << "============================\n";
-        std::cout.unsetf(std::ios::floatfield);
-        std::cout << std::setprecision(6);
+        table << "============================\n";
+        printBoth(table.str());
     }
 
-    std::cout << "\nSaved data : " << csvName.Data() << "\n\n";
+    printBoth(std::string("\nSaved data : ") + csvName.Data() + "\n");
+    printBoth(std::string("Saved data : ") + txtName.Data() + "\n\n");
+    txt.close();
 
     // Cleanup
     delete hPHS;
