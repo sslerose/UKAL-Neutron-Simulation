@@ -73,14 +73,6 @@
 /vis/geometry/set/colour InnerDeadLayerCap 0 0.55 0.40 0.60 1
 
 # ============================================
-# CUTAWAY PLANES (CROSS SECTION VIS)
-# ============================================
-
-#/vis/viewer/set/cutawayMode union
-#/vis/viewer/addCutawayPlane 0 0 0 cm -1 0 0
-#/vis/viewer/addCutawayPlane 0 0 0 cm 0 -1 0
-
-# ============================================
 # EXPORT SETTINGS AND PRODUCTION
 # ============================================
 

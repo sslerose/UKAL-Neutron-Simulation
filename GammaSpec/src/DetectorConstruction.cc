@@ -53,7 +53,7 @@
 
 #include "G4Box.hh"
 #include "G4Tubs.hh"
-#include "G4SubtractionSolid.hh"
+#include "G4Polycone.hh"
 #include "G4RotationMatrix.hh"
 #include "G4GeometryManager.hh"
 #include "G4LogicalVolume.hh"
@@ -73,10 +73,6 @@
 
 DetectorConstruction::DetectorConstruction()
 {
-  //========================================================================//
-  // Math for detector assembly placement
-  //========================================================================//
-
   // Initialize materials and detector messenger
   DefineMaterials();
   fDetectorMessenger = new DetectorMessenger(this);
@@ -526,29 +522,20 @@ void DetectorConstruction::BuildDetectorStack(G4LogicalVolume* motherLV, G4Logic
   //========================================================================//
 
   if (firstBuild) {
-    G4Tubs* solid = new G4Tubs("ActiveCrystalInit",
-                                kActiveRIn,
-                                kActiveROut,
-                                kActiveHalfLength,
-                                0., 360.*deg);
-
-    G4Tubs* bore = new G4Tubs("ActiveCrystalBore",
-                              kActiveBoreRIn,
-                              kActiveBoreROut,
-                              kActiveBoreHalfLength + kActiveBoreHalfLength * 0.05,  // Add extra length to ensure complete subtraction
-                              0., 360.*deg);
-
-    G4ThreeVector borePosition(0, 0, -(kActiveHalfLength - kActiveBoreHalfLength) - kActiveBoreHalfLength * 0.05);  // Shift for extra length
-
-    G4SubtractionSolid* subSolid = new G4SubtractionSolid("ActiveCrystal",
-                                                          solid,
-                                                          bore,
-                                                          0,
-                                                          borePosition);
-
-    fActiveCrystalLV = new G4LogicalVolume(subSolid,
-                                            fHPGEMaterial,
-                                            "ActiveCrystal");
+    // Solid cylinder with a blind bore open on the -z face
+    const G4double zBoreFloor = -kActiveHalfLength + 2.*kActiveBoreHalfLength;
+    
+    const G4double zPlane[] = { -kActiveHalfLength, zBoreFloor,      zBoreFloor,   kActiveHalfLength };
+    const G4double rInner[] = { kActiveBoreROut,    kActiveBoreROut, kActiveRIn,   kActiveRIn        };
+    const G4double rOuter[] = { kActiveROut,        kActiveROut,     kActiveROut,  kActiveROut       };
+    
+    G4Polycone* crystalSolid = new G4Polycone("ActiveCrystal",
+                                          0., 360.*deg,
+                                          4, zPlane, rInner, rOuter);
+    
+    fActiveCrystalLV = new G4LogicalVolume(crystalSolid,
+                                       fHPGEMaterial,
+                                       "ActiveCrystal");
   }
 
   new G4PVPlacement(0,

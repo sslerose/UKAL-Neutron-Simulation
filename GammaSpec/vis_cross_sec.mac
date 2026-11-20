@@ -1,0 +1,116 @@
+# --------------------------------------------
+# Visualization export macro
+#
+# Execute this macro to create an image of
+# the simulated detector model
+# --------------------------------------------
+
+# Set verbose mode for confirmation
+/vis/verbose confirmations
+
+# Open TSG_OFFSCREEN viewer with high resolution
+# Format: /vis/open TSG_OFFSCREEN [width]x[height]
+/vis/open TSG_OFFSCREEN 1200x900
+/vis/viewer/reset
+
+# Draw the geometry
+/vis/drawVolume
+
+# ============================================
+# CAMERA POSITIONING
+# ============================================
+
+/vis/viewer/set/viewpointVector 0.6 0.5 0.6
+/vis/viewer/set/targetPoint -50 -40 80 mm
+/vis/viewer/zoom 2
+
+# ============================================
+# LIGHTING AND RENDERING
+# ============================================
+
+/vis/viewer/set/lightsVector 1 1 0.25
+/vis/viewer/set/style surface
+/vis/viewer/set/auxiliaryEdge false
+#/vis/viewer/set/hiddenEdge true
+/vis/viewer/set/lineSegmentsPerCircle 48
+
+# ============================================
+# SCENE ELEMENTS
+# ============================================
+
+# Make container volumes invisible
+/vis/geometry/set/visibility World 0 false
+/vis/geometry/set/visibility DetectorMother_1 0 false
+/vis/geometry/set/visibility DetectorMother_2 0 false
+/vis/geometry/set/visibility AbsorberAssembly -1 false
+/vis/geometry/set/visibility InnerStruct 0 false
+#/vis/geometry/set/visibility ActiveCrystal 0 false
+
+# ============================================
+# COLOR SCHEME
+# ============================================
+
+# Background
+/vis/viewer/set/background white
+
+# Detector structure
+/vis/geometry/set/colour Cryostat 0 0.40 0.40 0.40 1
+/vis/geometry/set/colour CryostatCap 0 0.40 0.40 0.40 1
+/vis/geometry/set/colour DetectorCup 0 0.40 0.40 0.40 1
+/vis/geometry/set/colour DetectorCupCap 0 0.40 0.40 0.40 1
+
+/vis/geometry/set/colour AlSheet 0 0.40 0.40 0.40 1
+/vis/geometry/set/colour MylarSheet 0 0.40 0.40 0.40 1
+
+# HPGe crystal
+/vis/geometry/set/colour ActiveCrystal 0 0.50 0.70 0.50 0.8
+
+/vis/geometry/set/colour OuterDeadLayer 0 0.55 0.40 0.60 1
+/vis/geometry/set/colour OuterDeadLayerCap 0 0.55 0.40 0.60 1
+/vis/geometry/set/colour InnerDeadLayer 0 0.55 0.40 0.60 1
+/vis/geometry/set/colour InnerDeadLayerCap 0 0.55 0.40 0.60 1
+
+# ============================================
+# CUTAWAY PLANES (CROSS SECTION VIS)
+# ============================================
+
+/vis/viewer/set/cutawayMode union
+/vis/viewer/addCutawayPlane 0 0 0 cm -1 0 0
+/vis/viewer/addCutawayPlane 0 0 0 cm 0 -1 0
+/vis/viewer/addCutawayPlane 0 0 0 cm 0 0 -1
+
+# ============================================
+# EXPORT SETTINGS AND PRODUCTION
+# ============================================
+
+# Option 1: High-quality PNG with zbuffer (recommended for complex geometry)
+#/vis/tsg/offscreen/set/format zb_png
+#/vis/tsg/offscreen/set/file hpge_setup_2.png
+#/vis/viewer/rebuild
+
+# Option 2: PDF via gl2ps (vector format, but no transparency)
+# Uncomment if you prefer PDF output:
+#/vis/tsg/offscreen/set/transparency false
+#/vis/tsg/offscreen/set/format gl2ps_pdf
+#/vis/tsg/offscreen/set/file hpge_setup.pdf
+#/vis/viewer/rebuild
+#/vis/tsg/offscreen/set/transparency true
+
+# Option 3: EPS for LaTeX (vector format, but no transparency)
+# Uncomment if you prefer EPS output:
+#/vis/tsg/offscreen/set/transparency false
+#/vis/tsg/offscreen/set/format gl2ps_eps
+#/vis/tsg/offscreen/set/file hpge_setup.eps
+#/vis/viewer/rebuild
+#/vis/tsg/offscreen/set/transparency true
+
+# Option 4: High-resolution PNG (2400x1800)
+# Uncomment for even higher resolution:
+/vis/tsg/offscreen/set/size 2400 1800
+/vis/tsg/offscreen/set/format zb_png
+/vis/tsg/offscreen/set/file hpge_cross_sec_hires.png
+/vis/viewer/rebuild
+/vis/tsg/offscreen/set/size 0 0  # Return to default size
+
+# Return to normal verbose mode
+/vis/verbose warnings
