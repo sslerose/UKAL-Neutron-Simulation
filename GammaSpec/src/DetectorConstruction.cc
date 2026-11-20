@@ -683,7 +683,7 @@ void DetectorConstruction::SetDetectorDistance(G4int detectorID, G4double value)
 
   // Update assembly position
   if (detectorID == 0) {
-    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, -assemblyZ));
+    fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, assemblyZ));
   }
   else if (detectorID == 1) {
     fHPGEMotherPV[detectorID]->SetTranslation(G4ThreeVector(assemblyX, 0, assemblyZ));
